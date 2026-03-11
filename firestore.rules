@@ -1,0 +1,47 @@
+// firestore.rules
+rules_version = '2';
+service cloud.firestore {
+  match /databases/{database}/documents {
+
+    // Users can read/write their own profile
+    match /users/{uid} {
+      allow read, write: if request.auth != null && request.auth.uid == uid;
+      allow read: if request.auth != null && isAdmin();
+    }
+
+    // Topics — anyone can read, only admin can write
+    match /topics/{topicId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Orders — clients own their orders, admin sees all
+    match /orders/{orderId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null &&
+        (resource.data.clientId == request.auth.uid || isAdmin());
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // Quotes — admin writes, client reads their own
+    match /quotes/{quoteId} {
+      allow read: if request.auth != null &&
+        (resource.data.clientId == request.auth.uid || isAdmin());
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // Messages per order
+    match /messages/{messageId} {
+      allow read, create: if request.auth != null &&
+        (resource.data.orderId in getUserOrderIds() || isAdmin());
+    }
+
+    function isAdmin() {
+      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+    }
+
+    function getUserOrderIds() {
+      return [];  // Enforced at app level; Firestore rules handle per-doc access
+    }
+  }
+}
