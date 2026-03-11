@@ -44,84 +44,80 @@ function Layout() {
 /* ─── 404 Page ─────────────────────────────────────────────── */
 function NotFound() {
   return (
-    <div
-      style={{
-        minHeight: '100vh',
-        display: 'flex',
-        alignItems: 'center',
-        justifyContent: 'center',
-        background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 60%, #1D4ED8 100%)',
-        textAlign: 'center',
-        padding: '100px 16px',
-        fontFamily: "'Times New Roman', Georgia, serif",
-        position: 'relative',
-        overflow: 'hidden',
-      }}
-    >
-      {/* Subtle pattern overlay */}
-      <div
-        style={{
-          position: 'absolute',
-          inset: 0,
-          backgroundImage:
-            "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none' fill-rule='evenodd'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
-          pointerEvents: 'none',
-        }}
-      />
+    <div style={{
+      minHeight: '100vh',
+      display: 'flex',
+      alignItems: 'center',
+      justifyContent: 'center',
+      background: '#020B18',
+      textAlign: 'center',
+      padding: '100px 16px',
+      fontFamily: "'Times New Roman', Georgia, serif",
+      position: 'relative',
+      overflow: 'hidden',
+    }}>
+
+      {/* Grid lines background */}
+      <div style={{
+        position: 'absolute', inset: 0, pointerEvents: 'none',
+        backgroundImage: `
+          linear-gradient(rgba(6,182,212,0.04) 1px, transparent 1px),
+          linear-gradient(90deg, rgba(6,182,212,0.04) 1px, transparent 1px)`,
+        backgroundSize: '48px 48px',
+      }} />
+
+      {/* Cyan radial glow */}
+      <div style={{
+        position: 'absolute', top: '10%', left: '50%',
+        transform: 'translateX(-50%)',
+        width: 600, height: 400,
+        background: 'radial-gradient(ellipse, rgba(6,182,212,0.10) 0%, transparent 70%)',
+        pointerEvents: 'none',
+      }} />
 
       <div style={{ position: 'relative', zIndex: 1 }}>
-        {/* Large 404 watermark */}
-        <div
-          style={{
-            fontFamily: "'Times New Roman', Georgia, serif",
-            fontSize: 'clamp(80px, 18vw, 140px)',
-            fontWeight: 700,
-            color: '#FFFFFF',
-            opacity: 0.07,
-            lineHeight: 1,
-            marginBottom: 8,
-            letterSpacing: '-0.04em',
-            userSelect: 'none',
-          }}
-        >
+
+        {/* 404 watermark */}
+        <div style={{
+          fontFamily: "'Times New Roman', Georgia, serif",
+          fontSize: 'clamp(80px, 20vw, 150px)',
+          fontWeight: 700,
+          color: '#06B6D4',
+          opacity: 0.06,
+          lineHeight: 1,
+          marginBottom: 4,
+          letterSpacing: '-0.05em',
+          userSelect: 'none',
+        }}>
           404
         </div>
 
-        {/* Decorative rule */}
-        <div
-          style={{
-            width: 60,
-            height: 3,
-            background: '#DBEAFE',
-            borderRadius: 2,
-            margin: '0 auto 24px',
-            opacity: 0.7,
-          }}
-        />
+        {/* Cyan glow line */}
+        <div style={{
+          width: 60, height: 2,
+          background: 'linear-gradient(90deg, transparent, #06B6D4, transparent)',
+          margin: '0 auto 24px',
+          borderRadius: 2,
+        }} />
 
-        <h2
-          style={{
-            fontFamily: "'Times New Roman', Georgia, serif",
-            fontSize: 'clamp(22px, 4vw, 30px)',
-            fontWeight: 700,
-            color: '#FFFFFF',
-            marginBottom: 12,
-            letterSpacing: '-0.01em',
-          }}
-        >
+        <h2 style={{
+          fontFamily: "'Times New Roman', Georgia, serif",
+          fontSize: 'clamp(20px, 4vw, 28px)',
+          fontWeight: 700,
+          color: '#FFFFFF',
+          marginBottom: 14,
+          letterSpacing: '-0.01em',
+        }}>
           Page Not Found
         </h2>
 
-        <p
-          style={{
-            color: 'rgba(255, 255, 255, 0.72)',
-            marginBottom: 36,
-            fontSize: 16,
-            maxWidth: 380,
-            margin: '0 auto 36px',
-            lineHeight: 1.7,
-          }}
-        >
+        <p style={{
+          color: '#94A3B8',
+          fontSize: 16,
+          lineHeight: 1.75,
+          maxWidth: 360,
+          margin: '0 auto 36px',
+        }}>
           The page you're looking for doesn't exist or may have been moved.
         </p>
 
@@ -131,22 +127,24 @@ function NotFound() {
             display: 'inline-flex',
             alignItems: 'center',
             gap: 8,
-            background: '#FFFFFF',
-            color: '#1E3A8A',
+            background: '#06B6D4',
+            color: '#020B18',
             fontFamily: "'Times New Roman', Georgia, serif",
             fontWeight: 700,
             fontSize: 15,
-            padding: '12px 30px',
+            padding: '12px 32px',
             borderRadius: 8,
             textDecoration: 'none',
-            boxShadow: '0 4px 16px rgba(0,0,0,0.2)',
+            boxShadow: '0 4px 24px rgba(6,182,212,0.30)',
             transition: 'background 0.2s, transform 0.15s',
           }}
           onMouseEnter={e => {
-            e.currentTarget.style.background = '#DBEAFE';
+            e.currentTarget.style.background = '#22D3EE';
+            e.currentTarget.style.transform = 'translateY(-1px)';
           }}
           onMouseLeave={e => {
-            e.currentTarget.style.background = '#FFFFFF';
+            e.currentTarget.style.background = '#06B6D4';
+            e.currentTarget.style.transform = 'translateY(0)';
           }}
         >
           ← Return Home
@@ -163,40 +161,30 @@ export default function App() {
       <BrowserRouter>
         <Layout />
 
-        {/* Toast notifications — styled for deep blue theme */}
+        {/* Toast notifications — navy + cyan theme */}
         <Toaster
           position="top-right"
           toastOptions={{
             duration: 4000,
             style: {
-              background: '#FFFFFF',
-              color: '#1F2937',
-              border: '1.5px solid #D1D5DB',
-              borderLeft: '4px solid #1E3A8A',
+              background: '#0D2040',
+              color: '#E8F4FD',
+              border: '1px solid #112952',
+              borderLeft: '4px solid #06B6D4',
               fontFamily: "'Times New Roman', Georgia, serif",
               fontSize: 14,
               borderRadius: 8,
-              boxShadow: '0 4px 20px rgba(30, 58, 138, 0.12)',
+              boxShadow: '0 4px 24px rgba(0,0,0,0.5), 0 0 20px rgba(6,182,212,0.08)',
               padding: '12px 16px',
               maxWidth: 380,
             },
             success: {
-              style: {
-                borderLeftColor: '#16A34A',
-              },
-              iconTheme: {
-                primary: '#16A34A',
-                secondary: '#FFFFFF',
-              },
+              style: { borderLeftColor: '#10B981' },
+              iconTheme: { primary: '#10B981', secondary: '#0D2040' },
             },
             error: {
-              style: {
-                borderLeftColor: '#DC2626',
-              },
-              iconTheme: {
-                primary: '#DC2626',
-                secondary: '#FFFFFF',
-              },
+              style: { borderLeftColor: '#EF4444' },
+              iconTheme: { primary: '#EF4444', secondary: '#0D2040' },
             },
           }}
         />
