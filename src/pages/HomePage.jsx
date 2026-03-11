@@ -21,7 +21,7 @@ const TOPICS = [
 
 const TESTIMONIALS = [
   { name: 'Adaeze O.', role: 'Graduate Student', text: 'The quality was exceptional. Delivered ahead of schedule and the research depth was exactly what I needed for my thesis.', stars: 5 },
-  { name: 'Emeka T.', role: 'Business Analyst', text: 'Professional, thorough, and worth every kobo. I've used The Elites Cafe three times now and won't go anywhere else.', stars: 5 },
+  { name: 'Emeka T.', role: 'Business Analyst', text: "Professional, thorough, and worth every kobo. I've used The Elites Cafe three times now and won't go anywhere else.", stars: 5 },
   { name: 'Fatima H.', role: 'Postgrad Researcher', text: 'The payment system is transparent and secure. I loved being able to preview the work before final payment.', stars: 5 },
 ];
 
