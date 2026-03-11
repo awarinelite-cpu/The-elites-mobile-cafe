@@ -365,7 +365,7 @@ function TestimonialCard({ data }) {
           <Star key={i} size={13} fill="var(--gold)" color="var(--gold)" />
         ))}
       </div>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 14, lineHeight: 1.75, marginBottom: 20, fontStyle: 'italic', fontFamily: 'var(--font-display)', fontSize: 16 }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.75, marginBottom: 20, fontStyle: 'italic', fontFamily: 'var(--font-display)', fontSize: 16 }}>
         "{data.text}"
       </p>
       <div>
