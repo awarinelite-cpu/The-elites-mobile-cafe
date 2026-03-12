@@ -1,23 +1,48 @@
 // src/context/AuthContext.jsx
 import { createContext, useContext, useEffect, useState } from 'react';
 import { onAuthStateChanged } from 'firebase/auth';
-import { auth } from '../firebase/config';
-import { getUserProfile } from '../firebase/authService';
+import { doc, getDoc } from 'firebase/firestore';
+import { auth, db } from '../firebase/config';
 
 const AuthContext = createContext(null);
 
+const ADMIN_EMAILS = ['awarinelite@gmail.com'];
+
 export const AuthProvider = ({ children }) => {
-  const [user, setUser] = useState(null);
+  const [user, setUser]       = useState(null);
   const [profile, setProfile] = useState(null);
   const [loading, setLoading] = useState(true);
 
   useEffect(() => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
-      setUser(firebaseUser);
       if (firebaseUser) {
-        const prof = await getUserProfile(firebaseUser.uid);
-        setProfile(prof);
+        setUser(firebaseUser);
+
+        // Try to get profile from Firestore
+        try {
+          const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
+          const data = snap.exists() ? snap.data() : {};
+
+          // Force admin if email matches — regardless of Firestore
+          const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
+
+          setProfile({
+            ...data,
+            email: firebaseUser.email,
+            isAdmin,
+            role: isAdmin ? 'Admin' : (data.role || 'client'),
+          });
+        } catch {
+          // Even if Firestore fails, still set admin by email
+          const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
+          setProfile({
+            email: firebaseUser.email,
+            isAdmin,
+            role: isAdmin ? 'Admin' : 'client',
+          });
+        }
       } else {
+        setUser(null);
         setProfile(null);
       }
       setLoading(false);
