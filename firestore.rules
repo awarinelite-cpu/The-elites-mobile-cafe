@@ -1,21 +1,43 @@
-// firestore.rules
 rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read/write their own profile; admin can read/list all
+    // â”€â”€ USERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Users read/write their own doc; admin can read all
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
       allow read, list:  if request.auth != null && isAdmin();
+      // Allow admin to toggle isAdmin flag on other users
+      allow update: if request.auth != null && isAdmin();
     }
 
-    // Topics â€” anyone can read, only admin can write
+    // â”€â”€ RESEARCH TOPICS (admin collection) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Used by AdminPage â€” anyone can read, only admin writes
+    match /researchTopics/{topicId} {
+      allow read: if true;
+      allow write: if request.auth != null && isAdmin();
+    }
+
+    // â”€â”€ TOPICS (orderService collection) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /topics/{topicId} {
       allow read: if true;
       allow write: if request.auth != null && isAdmin();
     }
 
-    // Orders â€” clients own their orders, admin sees all
+    // â”€â”€ SERVICE REQUESTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Created by any logged-in user (all 10 service pages + RequestPage)
+    // Read/update by owner or admin; only admin can delete
+    match /serviceRequests/{docId} {
+      allow create: if request.auth != null;
+      allow read, update: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      // Writers need to read requests assigned to them
+      allow read: if request.auth != null &&
+        resource.data.assignedWriterId == request.auth.uid;
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // â”€â”€ ORDERS (orderService.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /orders/{orderId} {
       allow create: if request.auth != null;
       allow read, update: if request.auth != null &&
@@ -23,38 +45,56 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // Quotes â€” admin writes, client reads their own
+    // â”€â”€ QUOTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /quotes/{quoteId} {
       allow read: if request.auth != null &&
         (resource.data.clientId == request.auth.uid || isAdmin());
       allow write: if request.auth != null && isAdmin();
     }
 
-    // Messages per order
+    // â”€â”€ MESSAGES (orderService threads) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /messages/{messageId} {
-      allow read, create: if request.auth != null &&
-        (resource.data.orderId in getUserOrderIds() || isAdmin());
+      allow read, create: if request.auth != null;
     }
 
-    // âœ… NEW â€” Admin DM threads
+    // â”€â”€ ADMIN DM THREADS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Each user can only read/write their own thread; admin reads all
     match /adminMessages/{userId}/messages/{msgId} {
-      allow read, write: if request.auth != null;
+      allow read, write: if request.auth != null &&
+        (request.auth.uid == userId || isAdmin());
     }
 
-    // Payment splits â€” admin writes, writer reads their own
+    // â”€â”€ PAYMENT SPLITS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Only admin can create/update splits
+    // Writers can read splits where they are the writerId OR referrerId
     match /paymentSplits/{docId} {
       allow create, update: if request.auth != null && isAdmin();
-      allow read: if request.auth != null &&
-        (resource.data.writerId == request.auth.uid || isAdmin());
+      allow read: if request.auth != null && (
+        isAdmin() ||
+        resource.data.writerId   == request.auth.uid ||
+        resource.data.referrerId == request.auth.uid
+      );
     }
 
+    // â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // Each user reads/updates (marks read) their own; admin creates all
+    match /notifications/{docId} {
+      allow read, update: if request.auth != null &&
+        (resource.data.userId == request.auth.uid || isAdmin());
+      allow create: if request.auth != null;
+      allow delete: if request.auth != null &&
+        resource.data.userId == request.auth.uid;
+    }
+
+    // â”€â”€ HELPER FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     function isAdmin() {
       let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return data.isAdmin == true || data.role == 'Admin' || data.role == 'admin';
     }
 
-    function getUserOrderIds() {
-      return [];  // Enforced at app level; Firestore rules handle per-doc access
+    function isWriter() {
+      let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return data.isWriter == true || data.role == 'writer';
     }
   }
 }
