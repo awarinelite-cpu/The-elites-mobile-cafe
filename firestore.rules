@@ -3,10 +3,10 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // Users can read/write their own profile
+    // Users can read/write their own profile; admin can read/list all
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
-      allow read: if request.auth != null && isAdmin();
+      allow read, list:  if request.auth != null && isAdmin();
     }
 
     // Topics â€” anyone can read, only admin can write
@@ -42,7 +42,8 @@ service cloud.firestore {
     }
 
     function isAdmin() {
-      return get(/databases/$(database)/documents/users/$(request.auth.uid)).data.role == 'admin';
+      let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
+      return data.isAdmin == true || data.role == 'Admin' || data.role == 'admin';
     }
 
     function getUserOrderIds() {
