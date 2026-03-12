@@ -6,7 +6,8 @@ import { auth, db } from '../firebase/config';
 
 const AuthContext = createContext(null);
 
-const ADMIN_EMAILS = ['awarinelite@gmail.com'];
+// ── All admin emails ─────────────────────────────────────────
+const ADMIN_EMAILS = ['awarinelite@gmail.com', 'admin@elitesmobilecafe.com'];
 
 export const AuthProvider = ({ children }) => {
   const [user, setUser]       = useState(null);
@@ -17,15 +18,14 @@ export const AuthProvider = ({ children }) => {
     const unsub = onAuthStateChanged(auth, async (firebaseUser) => {
       if (firebaseUser) {
         setUser(firebaseUser);
-
-        // Try to get profile from Firestore
         try {
           const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
           const data = snap.exists() ? snap.data() : {};
-
-          // Force admin if email matches — regardless of Firestore
-          const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
-
+          // Check email list, Firestore isAdmin, or role
+          const isAdmin =
+            ADMIN_EMAILS.includes(firebaseUser.email) ||
+            data.isAdmin === true ||
+            data.role === 'Admin';
           setProfile({
             ...data,
             email: firebaseUser.email,
@@ -33,7 +33,6 @@ export const AuthProvider = ({ children }) => {
             role: isAdmin ? 'Admin' : (data.role || 'client'),
           });
         } catch {
-          // Even if Firestore fails, still set admin by email
           const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
           setProfile({
             email: firebaseUser.email,
