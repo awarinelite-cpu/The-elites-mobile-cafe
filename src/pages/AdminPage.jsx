@@ -1,704 +1,692 @@
 // src/pages/AdminPage.jsx
 import { useState, useEffect, useRef } from 'react';
 import {
-  collection, addDoc, updateDoc, deleteDoc, doc,
-  onSnapshot, serverTimestamp, orderBy, query, getDocs
+  collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
+  onSnapshot, query, orderBy, serverTimestamp, getDoc
 } from 'firebase/firestore';
-import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
-import { db, storage } from '../firebase/config';
-import toast from 'react-hot-toast';
+import { db } from '../firebase/config';
+import { showInAppNotification } from '../hooks/useNotifications';
 
-/* ── Tab config ─────────────────────────────────────────────── */
+// ── Icons (inline SVG to avoid lucide dependency issues) ────
+const Icon = ({ d, size = 18, color = 'currentColor' }) => (
+  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
+    stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
+    <path d={d} />
+  </svg>
+);
+
 const TABS = [
   { key: 'requests',  label: '📋 Service Requests' },
   { key: 'topics',    label: '📚 Research Topics' },
   { key: 'messages',  label: '💬 Messages' },
+  { key: 'users',     label: '👥 Users' },
 ];
 
-const STATUS_OPTIONS = ['pending', 'reviewing', 'accepted', 'in_progress', 'completed', 'rejected'];
+const STATUS_OPTIONS = ['pending','reviewing','accepted','in_progress','completed','rejected'];
 const STATUS_COLORS  = {
-  pending:     { bg: '#FEF9C3', color: '#92400E' },
-  reviewing:   { bg: '#DBEAFE', color: '#1E3A8A' },
-  accepted:    { bg: '#CCFBF1', color: '#0F766E' },
-  in_progress: { bg: '#EDE9FE', color: '#6D28D9' },
-  completed:   { bg: '#DCFCE7', color: '#15803D' },
-  rejected:    { bg: '#FEE2E2', color: '#DC2626' },
+  pending:     { bg: 'rgba(245,158,11,0.12)',  color: '#D97706' },
+  reviewing:   { bg: 'rgba(37,99,235,0.12)',   color: '#2563EB' },
+  accepted:    { bg: 'rgba(13,148,136,0.12)',  color: '#0D9488' },
+  in_progress: { bg: 'rgba(139,92,246,0.12)', color: '#7C3AED' },
+  completed:   { bg: 'rgba(22,163,74,0.12)',   color: '#16A34A' },
+  rejected:    { bg: 'rgba(239,68,68,0.12)',   color: '#DC2626' },
 };
 
 const CATEGORIES = [
-  'Nursing Science', 'Public Health', 'Technology', 'Business',
-  'Economics', 'Psychology', 'Sociology', 'Environmental Science', 'Other'
+  'Nursing', 'Medicine', 'Public Health', 'Midwifery',
+  'Pharmacology', 'Community Health', 'Mental Health', 'Other'
 ];
 
-/* ════════════════════════════════════════════════════════════ */
 export default function AdminPage() {
-  const [tab, setTab] = useState('requests');
-
-  return (
-    <div style={{ minHeight: '100vh', background: '#F1F5F9', fontFamily: "'Times New Roman', Georgia, serif" }}>
-
-      {/* Header */}
-      <div style={{ background: '#172554', borderBottom: '3px solid #0D9488', padding: '20px 24px' }}>
-        <h1 style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 700, margin: 0 }}>⚙️ Admin Dashboard</h1>
-        <p style={{ color: 'rgba(255,255,255,0.60)', fontSize: 13, margin: '4px 0 0' }}>Elite Mobile Cafe — Full Control Panel</p>
-      </div>
-
-      {/* Tabs */}
-      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '0 24px', display: 'flex', gap: 4 }}>
-        {TABS.map(t => (
-          <button key={t.key} onClick={() => setTab(t.key)} style={{
-            background: 'none', border: 'none', cursor: 'pointer',
-            padding: '16px 20px', fontSize: 14, fontWeight: 700,
-            fontFamily: "'Times New Roman', serif",
-            color: tab === t.key ? '#0D9488' : '#6B7280',
-            borderBottom: tab === t.key ? '3px solid #0D9488' : '3px solid transparent',
-            transition: 'color 0.2s',
-          }}>{t.label}</button>
-        ))}
-      </div>
-
-      {/* Content */}
-      <div style={{ padding: '28px 24px', maxWidth: 1100, margin: '0 auto' }}>
-        {tab === 'requests' && <RequestsTab />}
-        {tab === 'topics'   && <TopicsTab />}
-        {tab === 'messages' && <MessagesTab />}
-      </div>
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════
-   TAB 1 — SERVICE REQUESTS
-════════════════════════════════════════════════════════════ */
-function RequestsTab() {
-  const [requests, setRequests]     = useState([]);
-  const [loading, setLoading]       = useState(true);
-  const [selected, setSelected]     = useState(null);
-  const [adminNote, setAdminNote]   = useState('');
-  const [agreedPrice, setAgreedPrice] = useState('');
-  const [saving, setSaving]         = useState(false);
+  const [tab, setTab]                   = useState('requests');
+  const [requests, setRequests]         = useState([]);
+  const [topics, setTopics]             = useState([]);
+  const [users, setUsers]               = useState([]);
+  const [selectedRequest, setSelectedRequest] = useState(null);
+  const [selectedUser, setSelectedUser] = useState(null);
+  const [messages, setMessages]         = useState([]);
+  const [newMessage, setNewMessage]     = useState('');
+  const [recording, setRecording]       = useState(false);
+  const [audioBlob, setAudioBlob]       = useState(null);
+  const [topicForm, setTopicForm]       = useState(null); // null = closed, {} = new, {id,...} = edit
   const [filterStatus, setFilterStatus] = useState('all');
+  const [saving, setSaving]             = useState(false);
+  const [toast, setToast]               = useState('');
+  const mediaRecorder                   = useRef(null);
+  const audioChunks                     = useRef([]);
+  const messagesEnd                     = useRef(null);
+  const chatUnsub                       = useRef(null);
 
+  // ── Load requests realtime ──────────────────────────────
   useEffect(() => {
     const q = query(collection(db, 'serviceRequests'), orderBy('createdAt', 'desc'));
     const unsub = onSnapshot(q, snap => {
       setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
     });
-    return unsub;
+    return () => unsub();
   }, []);
 
-  const openRequest = (r) => {
-    setSelected(r);
-    setAdminNote(r.adminNote || '');
-    setAgreedPrice(r.agreedPrice || '');
+  // ── Load topics ─────────────────────────────────────────
+  useEffect(() => {
+    const q = query(collection(db, 'researchTopics'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, snap => {
+      setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+    return () => unsub();
+  }, []);
+
+  // ── Load users ──────────────────────────────────────────
+  useEffect(() => {
+    if (tab !== 'users') return;
+    getDocs(collection(db, 'users')).then(snap => {
+      setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+    });
+  }, [tab]);
+
+  // ── Load chat messages for selected user ────────────────
+  useEffect(() => {
+    if (chatUnsub.current) chatUnsub.current();
+    if (!selectedUser) return;
+
+    const threadId = selectedUser.id;
+    const q = query(
+      collection(db, 'adminMessages', threadId, 'messages'),
+      orderBy('createdAt', 'asc')
+    );
+    chatUnsub.current = onSnapshot(q, snap => {
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+    return () => chatUnsub.current?.();
+  }, [selectedUser]);
+
+  const showToast = (msg) => {
+    setToast(msg);
+    setTimeout(() => setToast(''), 3000);
   };
 
-  const saveChanges = async (newStatus) => {
-    if (!selected) return;
+  // ── Update request status / note / price ───────────────
+  const updateRequest = async (id, data) => {
     setSaving(true);
     try {
-      await updateDoc(doc(db, 'serviceRequests', selected.id), {
-        status: newStatus || selected.status,
-        adminNote,
-        agreedPrice,
-        updatedAt: serverTimestamp(),
+      await updateDoc(doc(db, 'serviceRequests', id), { ...data, updatedAt: serverTimestamp() });
+      // Notify client
+      const req = requests.find(r => r.id === id);
+      if (req?.userId && data.status) {
+        await addDoc(collection(db, 'notifications'), {
+          userId: req.userId,
+          title: `Request ${data.status.replace('_', ' ')}`,
+          body: `Your ${req.serviceTitle} request is now ${data.status.replace('_', ' ')}`,
+          type: 'alert',
+          read: false,
+          createdAt: serverTimestamp(),
+        });
+      }
+      showToast('✅ Request updated');
+    } catch (e) { showToast('❌ Error: ' + e.message); }
+    setSaving(false);
+  };
+
+  // ── Send text message ───────────────────────────────────
+  const sendMessage = async () => {
+    if (!newMessage.trim() && !audioBlob) return;
+    if (!selectedUser) return;
+
+    const threadId = selectedUser.id;
+    const msgData = {
+      sender: 'admin',
+      createdAt: serverTimestamp(),
+    };
+
+    if (audioBlob) {
+      // Convert audio to base64
+      const reader = new FileReader();
+      reader.readAsDataURL(audioBlob);
+      reader.onloadend = async () => {
+        await addDoc(collection(db, 'adminMessages', threadId, 'messages'), {
+          ...msgData, type: 'audio', audioData: reader.result,
+        });
+        // Notify client
+        await addDoc(collection(db, 'notifications'), {
+          userId: selectedUser.id,
+          title: '🎙️ Voice message from Admin',
+          body: 'Admin sent you a voice message',
+          type: 'message', read: false, createdAt: serverTimestamp(),
+        });
+        setAudioBlob(null);
+      };
+    } else {
+      await addDoc(collection(db, 'adminMessages', threadId, 'messages'), {
+        ...msgData, type: 'text', text: newMessage.trim(),
       });
-      toast.success('Request updated!');
-      setSelected(s => ({ ...s, status: newStatus || s.status, adminNote, agreedPrice }));
-    } catch (e) {
-      toast.error('Failed to save.');
-    } finally {
-      setSaving(false);
+      await addDoc(collection(db, 'notifications'), {
+        userId: selectedUser.id,
+        title: '💬 Message from Admin',
+        body: newMessage.trim().slice(0, 80),
+        type: 'message', read: false, createdAt: serverTimestamp(),
+      });
+      setNewMessage('');
     }
   };
 
-  const filtered = filterStatus === 'all' ? requests : requests.filter(r => r.status === filterStatus);
+  // ── Voice recording ─────────────────────────────────────
+  const startRecording = async () => {
+    try {
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      audioChunks.current = [];
+      mediaRecorder.current = new MediaRecorder(stream);
+      mediaRecorder.current.ondataavailable = e => audioChunks.current.push(e.data);
+      mediaRecorder.current.onstop = () => {
+        const blob = new Blob(audioChunks.current, { type: 'audio/webm' });
+        setAudioBlob(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mediaRecorder.current.start();
+      setRecording(true);
+    } catch { showToast('❌ Microphone access denied'); }
+  };
 
-  if (loading) return <Loader />;
+  const stopRecording = () => {
+    mediaRecorder.current?.stop();
+    setRecording(false);
+  };
 
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: 20 }}>
-
-      {/* List */}
-      <div>
-        {/* Filter bar */}
-        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
-          {['all', ...STATUS_OPTIONS].map(s => (
-            <button key={s} onClick={() => setFilterStatus(s)} style={{
-              padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
-              border: '1px solid', cursor: 'pointer', fontFamily: "'Times New Roman', serif",
-              background: filterStatus === s ? '#0D9488' : '#FFFFFF',
-              color: filterStatus === s ? '#FFFFFF' : '#6B7280',
-              borderColor: filterStatus === s ? '#0D9488' : '#E2E8F0',
-            }}>{s === 'all' ? 'All' : s.replace('_', ' ')}</button>
-          ))}
-        </div>
-
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.length === 0 && <Empty text="No requests found." />}
-          {filtered.map(r => {
-            const sc = STATUS_COLORS[r.status] || STATUS_COLORS.pending;
-            return (
-              <div key={r.id} onClick={() => openRequest(r)} style={{
-                background: selected?.id === r.id ? '#F0FDFA' : '#FFFFFF',
-                border: `1px solid ${selected?.id === r.id ? '#0D9488' : '#E2E8F0'}`,
-                borderRadius: 10, padding: '14px 18px', cursor: 'pointer',
-                transition: 'border-color 0.2s',
-              }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
-                  <div>
-                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1E3A8A' }}>{r.serviceTitle}</div>
-                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{r.fullName} · {r.phone}</div>
-                    <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
-                      {r.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now'}
-                    </div>
-                  </div>
-                  <span style={{
-                    background: sc.bg, color: sc.color,
-                    fontSize: 10, fontWeight: 700, padding: '3px 10px',
-                    borderRadius: 20, textTransform: 'uppercase', whiteSpace: 'nowrap',
-                  }}>{r.status?.replace('_', ' ')}</span>
-                </div>
-              </div>
-            );
-          })}
-        </div>
-      </div>
-
-      {/* Detail panel */}
-      {selected && (
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: 24, position: 'sticky', top: 20, alignSelf: 'start' }}>
-          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
-            <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1E3A8A', margin: 0 }}>{selected.serviceTitle}</h3>
-            <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF' }}>✕</button>
-          </div>
-
-          {/* Client info */}
-          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
-            <Row label="Name"     value={selected.fullName} />
-            <Row label="Email"    value={selected.email} />
-            <Row label="Phone"    value={selected.phone} />
-            {selected.deadline && <Row label="Deadline" value={selected.deadline} />}
-          </div>
-
-          {/* Extra fields */}
-          {Object.entries(selected)
-            .filter(([k]) => !['id','serviceKey','serviceTitle','fullName','email','phone','details','deadline','status','userId','createdAt','updatedAt','adminNote','agreedPrice','paymentStatus'].includes(k))
-            .map(([k, v]) => v && <Row key={k} label={k} value={String(v)} />)
-          }
-
-          {/* Details */}
-          <div style={{ marginBottom: 16 }}>
-            <div style={{ fontSize: 12, fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', marginBottom: 6 }}>Project Details</div>
-            <div style={{ background: '#F8FAFC', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>{selected.details}</div>
-          </div>
-
-          {/* Status changer */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Update Status</label>
-            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-              {STATUS_OPTIONS.map(s => {
-                const sc = STATUS_COLORS[s];
-                return (
-                  <button key={s} onClick={() => saveChanges(s)} style={{
-                    padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
-                    cursor: 'pointer', border: '1px solid',
-                    background: selected.status === s ? sc.color : sc.bg,
-                    color: selected.status === s ? '#FFFFFF' : sc.color,
-                    borderColor: sc.color,
-                    fontFamily: "'Times New Roman', serif",
-                  }}>{s.replace('_', ' ')}</button>
-                );
-              })}
-            </div>
-          </div>
-
-          {/* Agreed price */}
-          <div style={{ marginBottom: 14 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Agreed Price (₦)</label>
-            <input value={agreedPrice} onChange={e => setAgreedPrice(e.target.value)}
-              placeholder="e.g. 15000"
-              style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}
-              onFocus={e => e.target.style.borderColor = '#0D9488'}
-              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
-            />
-          </div>
-
-          {/* Admin note */}
-          <div style={{ marginBottom: 16 }}>
-            <label style={{ fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Admin Note to Client</label>
-            <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)}
-              placeholder="Write a note that the client will see..."
-              rows={3}
-              style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none', resize: 'vertical' }}
-              onFocus={e => e.target.style.borderColor = '#0D9488'}
-              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
-            />
-          </div>
-
-          <button onClick={() => saveChanges()} disabled={saving} style={{
-            width: '100%', background: '#0D9488', color: '#FFFFFF',
-            border: 'none', borderRadius: 8, padding: '12px',
-            fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
-            fontFamily: "'Times New Roman', serif", opacity: saving ? 0.7 : 1,
-          }}>
-            {saving ? 'Saving...' : '💾 Save Changes'}
-          </button>
-        </div>
-      )}
-    </div>
-  );
-}
-
-/* ════════════════════════════════════════════════════════════
-   TAB 2 — RESEARCH TOPICS
-════════════════════════════════════════════════════════════ */
-function TopicsTab() {
-  const [topics, setTopics]     = useState([]);
-  const [loading, setLoading]   = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const [editing, setEditing]   = useState(null);
-  const [saving, setSaving]     = useState(false);
-
-  const blank = { title: '', category: '', pages: '', price: '', badge: '', description: '' };
-  const [form, setForm] = useState(blank);
-
-  useEffect(() => {
-    const q = query(collection(db, 'topics'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, snap => {
-      setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setLoading(false);
-    });
-    return unsub;
-  }, []);
-
-  const openNew = () => { setEditing(null); setForm(blank); setShowForm(true); };
-  const openEdit = (t) => { setEditing(t); setForm({ title: t.title, category: t.category, pages: t.pages, price: t.price, badge: t.badge || '', description: t.description || '' }); setShowForm(true); };
-
-  const save = async () => {
-    if (!form.title || !form.category || !form.price) { toast.error('Title, category and price are required.'); return; }
+  // ── Topic CRUD ──────────────────────────────────────────
+  const saveTopic = async (formData) => {
     setSaving(true);
     try {
-      const data = { ...form, updatedAt: serverTimestamp() };
-      if (editing) {
-        await updateDoc(doc(db, 'topics', editing.id), data);
-        toast.success('Topic updated!');
+      if (formData.id) {
+        const { id, ...rest } = formData;
+        await updateDoc(doc(db, 'researchTopics', id), { ...rest, updatedAt: serverTimestamp() });
+        showToast('✅ Topic updated');
       } else {
-        await addDoc(collection(db, 'topics'), { ...data, createdAt: serverTimestamp() });
-        toast.success('Topic added!');
+        await addDoc(collection(db, 'researchTopics'), { ...formData, createdAt: serverTimestamp() });
+        showToast('✅ Topic added');
       }
-      setShowForm(false);
-    } catch (e) { toast.error('Failed to save topic.'); }
-    finally { setSaving(false); }
+      setTopicForm(null);
+    } catch (e) { showToast('❌ ' + e.message); }
+    setSaving(false);
   };
 
   const deleteTopic = async (id) => {
     if (!window.confirm('Delete this topic?')) return;
-    try { await deleteDoc(doc(db, 'topics', id)); toast.success('Topic deleted.'); }
-    catch (e) { toast.error('Failed to delete.'); }
+    await deleteDoc(doc(db, 'researchTopics', id));
+    showToast('🗑️ Topic deleted');
   };
 
-  const setBadge = async (id, badge) => {
-    await updateDoc(doc(db, 'topics', id), { badge, updatedAt: serverTimestamp() });
-    toast.success('Badge updated!');
+  const toggleAdminUser = async (userId, current) => {
+    await updateDoc(doc(db, 'users', userId), { isAdmin: !current });
+    setUsers(u => u.map(x => x.id === userId ? { ...x, isAdmin: !current } : x));
+    showToast(!current ? '✅ Admin granted' : '✅ Admin removed');
   };
 
-  const BADGE_OPTIONS = ['', 'Popular', 'New', 'Hidden'];
+  // ── Filtered requests ───────────────────────────────────
+  const filtered = filterStatus === 'all'
+    ? requests
+    : requests.filter(r => r.status === filterStatus);
 
-  if (loading) return <Loader />;
+  // ── Styles ──────────────────────────────────────────────
+  const s = {
+    page:       { minHeight: '100vh', background: 'var(--bg-primary)', paddingBottom: 60 },
+    header:     { background: 'linear-gradient(135deg,var(--blue-deep),var(--teal-dark))', padding: '32px 24px', color: '#fff' },
+    inner:      { maxWidth: 1200, margin: '0 auto', padding: '0 20px' },
+    tabs:       { display: 'flex', gap: 4, padding: '16px 20px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', overflowX: 'auto' },
+    tab:        (active) => ({ padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.2s', background: active ? 'var(--teal)' : 'transparent', color: active ? '#fff' : 'var(--text-secondary)' }),
+    card:       { background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, padding: 20, marginBottom: 12 },
+    badge:      (status) => ({ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, background: STATUS_COLORS[status]?.bg || '#eee', color: STATUS_COLORS[status]?.color || '#333' }),
+    btn:        (bg, color='#fff') => ({ background: bg, color, border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all 0.2s' }),
+    input:      { width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', marginBottom: 12 },
+    label:      { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
+    grid2:      { display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, height: 'calc(100vh - 260px)' },
+    userList:   { background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden' },
+    chatArea:   { background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
+  };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
-        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1E3A8A', margin: 0 }}>Research Topics ({topics.length})</h2>
-        <button onClick={openNew} style={{
-          background: '#0D9488', color: '#FFFFFF', border: 'none',
-          borderRadius: 8, padding: '10px 22px', fontSize: 14, fontWeight: 700,
-          cursor: 'pointer', fontFamily: "'Times New Roman', serif",
-        }}>+ Add New Topic</button>
+    <div style={s.page}>
+      {/* Header */}
+      <div style={s.header}>
+        <div style={s.inner}>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: '#fff', marginBottom: 4 }}>
+            🛡️ Admin Control Panel
+          </h1>
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>
+            Manage requests, topics, users and communications
+          </p>
+        </div>
       </div>
 
-      {/* Form modal */}
-      {showForm && (
-        <div style={{
-          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
-          display: 'flex', alignItems: 'center', justifyContent: 'center',
-          zIndex: 1000, padding: 16,
-        }}>
-          <div style={{ background: '#FFFFFF', borderRadius: 14, padding: 32, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
-              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1E3A8A', margin: 0 }}>{editing ? 'Edit Topic' : 'Add New Topic'}</h3>
-              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#9CA3AF' }}>✕</button>
-            </div>
+      {/* Tabs */}
+      <div style={s.tabs}>
+        {TABS.map(t => (
+          <button key={t.key} style={s.tab(tab === t.key)} onClick={() => setTab(t.key)}>
+            {t.label}
+            {t.key === 'requests' && requests.filter(r => r.status === 'pending').length > 0 && (
+              <span style={{ marginLeft: 6, background: '#EF4444', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 11 }}>
+                {requests.filter(r => r.status === 'pending').length}
+              </span>
+            )}
+          </button>
+        ))}
+      </div>
 
-            {[
-              { name: 'title',       label: 'Topic Title *',    placeholder: 'e.g. Effect of malaria in Lagos' },
-              { name: 'pages',       label: 'Page Range',       placeholder: 'e.g. 15–20' },
-              { name: 'price',       label: 'Price *',          placeholder: 'e.g. ₦12,000' },
-              { name: 'description', label: 'Short Description',placeholder: 'Brief summary of the topic...' },
-            ].map(f => (
-              <div key={f.name} style={{ marginBottom: 14 }}>
-                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', marginBottom: 5 }}>{f.label}</label>
-                <input value={form[f.name]} onChange={e => setForm(p => ({ ...p, [f.name]: e.target.value }))}
-                  placeholder={f.placeholder}
-                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}
-                  onFocus={e => e.target.style.borderColor = '#0D9488'}
-                  onBlur={e => e.target.style.borderColor = '#E2E8F0'}
-                />
+      <div style={{ ...s.inner, paddingTop: 24 }}>
+
+        {/* ── SERVICE REQUESTS ── */}
+        {tab === 'requests' && (
+          <div style={{ display: 'grid', gridTemplateColumns: selectedRequest ? '1fr 1fr' : '1fr', gap: 20 }}>
+            {/* List */}
+            <div>
+              {/* Filter */}
+              <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
+                {['all', ...STATUS_OPTIONS].map(st => (
+                  <button key={st} onClick={() => setFilterStatus(st)}
+                    style={{ ...s.btn(filterStatus === st ? 'var(--teal)' : 'var(--bg-secondary)', filterStatus === st ? '#fff' : 'var(--text-secondary)'), padding: '6px 12px', fontSize: 12 }}>
+                    {st.replace('_', ' ')}
+                  </button>
+                ))}
               </div>
-            ))}
 
-            <div style={{ marginBottom: 14 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', marginBottom: 5 }}>Category *</label>
-              <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
-                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}>
-                <option value="">-- Select Category --</option>
-                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
-              </select>
-            </div>
-
-            <div style={{ marginBottom: 20 }}>
-              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', marginBottom: 5 }}>Badge</label>
-              <select value={form.badge} onChange={e => setForm(p => ({ ...p, badge: e.target.value }))}
-                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}>
-                {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b || 'None'}</option>)}
-              </select>
-            </div>
-
-            <div style={{ display: 'flex', gap: 10 }}>
-              <button onClick={() => setShowForm(false)} style={{ flex: 1, background: '#F1F5F9', color: '#6B7280', border: 'none', borderRadius: 8, padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Times New Roman', serif" }}>Cancel</button>
-              <button onClick={save} disabled={saving} style={{ flex: 2, background: '#0D9488', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '12px', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'Times New Roman', serif", opacity: saving ? 0.7 : 1 }}>
-                {saving ? 'Saving...' : editing ? '💾 Update Topic' : '➕ Add Topic'}
-              </button>
-            </div>
-          </div>
-        </div>
-      )}
-
-      {/* Topics list */}
-      {topics.length === 0 && <Empty text="No topics yet. Add your first topic!" />}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
-        {topics.filter(t => t.badge !== 'Hidden').concat(topics.filter(t => t.badge === 'Hidden')).map(t => (
-          <div key={t.id} style={{
-            background: t.badge === 'Hidden' ? '#F9FAFB' : '#FFFFFF',
-            border: '1px solid #E2E8F0', borderTop: '4px solid #0D9488',
-            borderRadius: 10, padding: '18px 20px',
-            opacity: t.badge === 'Hidden' ? 0.6 : 1,
-          }}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
-              <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.category}</div>
-              {t.badge && (
-                <span style={{
-                  fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
-                  background: t.badge === 'Popular' ? '#FEF3C7' : t.badge === 'New' ? '#DCFCE7' : '#F3F4F6',
-                  color: t.badge === 'Popular' ? '#92400E' : t.badge === 'New' ? '#15803D' : '#6B7280',
-                }}>{t.badge}</span>
+              {filtered.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No requests found</div>
               )}
-            </div>
-            <div style={{ fontWeight: 700, fontSize: 15, color: '#1F2937', lineHeight: 1.4, marginBottom: 6 }}>{t.title}</div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 14 }}>
-              <span style={{ color: '#9CA3AF' }}>{t.pages} pages</span>
-              <span style={{ color: '#0D9488', fontWeight: 700 }}>{t.price}</span>
-            </div>
 
-            {/* Badge quick set */}
-            <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
-              {BADGE_OPTIONS.map(b => (
-                <button key={b} onClick={() => setBadge(t.id, b)} style={{
-                  padding: '3px 9px', borderRadius: 20, fontSize: 10, fontWeight: 700,
-                  border: '1px solid', cursor: 'pointer', fontFamily: "'Times New Roman', serif",
-                  background: t.badge === b ? '#0D9488' : '#F8FAFC',
-                  color: t.badge === b ? '#FFFFFF' : '#6B7280',
-                  borderColor: t.badge === b ? '#0D9488' : '#E2E8F0',
-                }}>{b || 'None'}</button>
+              {filtered.map(req => (
+                <div key={req.id} style={{ ...s.card, cursor: 'pointer', border: selectedRequest?.id === req.id ? '2px solid var(--teal)' : '1px solid var(--border-card)' }}
+                  onClick={() => setSelectedRequest(req)}>
+                  <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
+                    <div>
+                      <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', fontFamily: 'var(--font-display)' }}>
+                        {req.serviceTitle || req.serviceKey}
+                      </div>
+                      <div style={{ fontSize: 13, color: 'var(--text-muted)', marginTop: 2 }}>
+                        {req.name} · {req.email}
+                      </div>
+                    </div>
+                    <span style={s.badge(req.status)}>{req.status?.replace('_', ' ')}</span>
+                  </div>
+                  <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.5 }}>
+                    {req.description?.slice(0, 100)}{req.description?.length > 100 ? '...' : ''}
+                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-hint)' }}>
+                    {req.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now'}
+                  </div>
+                </div>
               ))}
             </div>
 
-            <div style={{ display: 'flex', gap: 8 }}>
-              <button onClick={() => openEdit(t)} style={{ flex: 1, background: '#EFF6FF', color: '#1E3A8A', border: 'none', borderRadius: 6, padding: '8px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Times New Roman', serif" }}>✏️ Edit</button>
-              <button onClick={() => deleteTopic(t.id)} style={{ flex: 1, background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: 6, padding: '8px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Times New Roman', serif" }}>🗑️ Delete</button>
-            </div>
-          </div>
-        ))}
-      </div>
-    </div>
-  );
-}
+            {/* Detail Panel */}
+            {selectedRequest && (
+              <div style={{ ...s.card, position: 'sticky', top: 80, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+                  <h3 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Request Details</h3>
+                  <button onClick={() => setSelectedRequest(null)} style={s.btn('#eee', '#333')}>✕ Close</button>
+                </div>
 
-/* ════════════════════════════════════════════════════════════
-   TAB 3 — MESSAGES
-════════════════════════════════════════════════════════════ */
-function MessagesTab() {
-  const [clients, setClients]     = useState([]);
-  const [selected, setSelected]   = useState(null);
-  const [messages, setMessages]   = useState([]);
-  const [text, setText]           = useState('');
-  const [sending, setSending]     = useState(false);
-  const [recording, setRecording] = useState(false);
-  const [mediaRec, setMediaRec]   = useState(null);
-  const [audioChunks, setAudioChunks] = useState([]);
-  const bottomRef = useRef(null);
-
-  // Load all users who have submitted requests
-  useEffect(() => {
-    const q = query(collection(db, 'serviceRequests'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, snap => {
-      const seen = new Set();
-      const list = [];
-      snap.docs.forEach(d => {
-        const data = d.data();
-        const key = data.userId || data.email;
-        if (!seen.has(key)) {
-          seen.add(key);
-          list.push({ userId: data.userId, email: data.email, fullName: data.fullName, phone: data.phone });
-        }
-      });
-      setClients(list);
-    });
-    return unsub;
-  }, []);
-
-  // Load messages for selected client
-  useEffect(() => {
-    if (!selected) return;
-    const threadId = selected.userId || selected.email.replace(/[^a-zA-Z0-9]/g, '_');
-    const q = query(collection(db, 'adminMessages', threadId, 'messages'), orderBy('createdAt', 'asc'));
-    const unsub = onSnapshot(q, snap => {
-      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
-    });
-    return unsub;
-  }, [selected]);
-
-  const getThreadId = () => selected.userId || selected.email.replace(/[^a-zA-Z0-9]/g, '_');
-
-  const sendText = async () => {
-    if (!text.trim() || !selected) return;
-    setSending(true);
-    try {
-      const threadId = getThreadId();
-      await addDoc(collection(db, 'adminMessages', threadId, 'messages'), {
-        type: 'text', content: text.trim(),
-        from: 'admin', createdAt: serverTimestamp(),
-      });
-      // Also write to client's notification
-      await addDoc(collection(db, 'notifications'), {
-        userId: selected.userId || null,
-        email: selected.email,
-        message: text.trim(),
-        from: 'admin',
-        read: false,
-        createdAt: serverTimestamp(),
-      });
-      setText('');
-    } catch (e) { toast.error('Failed to send.'); }
-    finally { setSending(false); }
-  };
-
-  const startRecording = async () => {
-    try {
-      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
-      const mr = new MediaRecorder(stream);
-      const chunks = [];
-      mr.ondataavailable = e => chunks.push(e.data);
-      mr.onstop = async () => {
-        const blob = new Blob(chunks, { type: 'audio/webm' });
-        await sendAudio(blob);
-        stream.getTracks().forEach(t => t.stop());
-      };
-      mr.start();
-      setMediaRec(mr);
-      setAudioChunks(chunks);
-      setRecording(true);
-    } catch (e) {
-      toast.error('Microphone access denied.');
-    }
-  };
-
-  const stopRecording = () => {
-    mediaRec?.stop();
-    setRecording(false);
-    setMediaRec(null);
-  };
-
-  const sendAudio = async (blob) => {
-    if (!selected) return;
-    setSending(true);
-    try {
-      const threadId = getThreadId();
-      const storageRef = ref(storage, `adminAudio/${threadId}/${Date.now()}.webm`);
-      await uploadBytes(storageRef, blob);
-      const url = await getDownloadURL(storageRef);
-      await addDoc(collection(db, 'adminMessages', threadId, 'messages'), {
-        type: 'audio', content: url,
-        from: 'admin', createdAt: serverTimestamp(),
-      });
-      await addDoc(collection(db, 'notifications'), {
-        userId: selected.userId || null,
-        email: selected.email,
-        message: '🎙️ Admin sent you a voice message',
-        from: 'admin',
-        read: false,
-        createdAt: serverTimestamp(),
-      });
-      toast.success('Voice message sent!');
-    } catch (e) { toast.error('Failed to send audio.'); }
-    finally { setSending(false); }
-  };
-
-  return (
-    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, height: '70vh' }}>
-
-      {/* Client list */}
-      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E2E8F0', fontWeight: 700, fontSize: 13, color: '#1E3A8A', textTransform: 'uppercase', letterSpacing: 0.5 }}>
-          Clients ({clients.length})
-        </div>
-        <div style={{ overflowY: 'auto', flex: 1 }}>
-          {clients.length === 0 && <Empty text="No clients yet." />}
-          {clients.map((c, i) => (
-            <div key={i} onClick={() => setSelected(c)} style={{
-              padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid #F1F5F9',
-              background: selected?.email === c.email ? '#F0FDFA' : '#FFFFFF',
-              borderLeft: selected?.email === c.email ? '3px solid #0D9488' : '3px solid transparent',
-              transition: 'background 0.15s',
-            }}>
-              <div style={{ fontWeight: 700, fontSize: 14, color: '#1F2937' }}>{c.fullName}</div>
-              <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{c.email}</div>
-              <div style={{ fontSize: 12, color: '#9CA3AF' }}>{c.phone}</div>
-            </div>
-          ))}
-        </div>
-      </div>
-
-      {/* Chat panel */}
-      {!selected ? (
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
-          <div style={{ textAlign: 'center', color: '#9CA3AF' }}>
-            <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
-            <div style={{ fontSize: 15, fontWeight: 600 }}>Select a client to start messaging</div>
-          </div>
-        </div>
-      ) : (
-        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-          {/* Chat header */}
-          <div style={{ padding: '14px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 12 }}>
-            <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 700, fontSize: 16 }}>
-              {selected.fullName?.[0]?.toUpperCase()}
-            </div>
-            <div>
-              <div style={{ fontWeight: 700, fontSize: 15, color: '#1F2937' }}>{selected.fullName}</div>
-              <div style={{ fontSize: 12, color: '#9CA3AF' }}>{selected.email}</div>
-            </div>
-          </div>
-
-          {/* Messages */}
-          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
-            {messages.length === 0 && (
-              <div style={{ textAlign: 'center', color: '#D1D5DB', marginTop: 40, fontSize: 14 }}>No messages yet. Say hello! 👋</div>
-            )}
-            {messages.map(m => (
-              <div key={m.id} style={{
-                alignSelf: m.from === 'admin' ? 'flex-end' : 'flex-start',
-                maxWidth: '72%',
-              }}>
-                {m.type === 'text' ? (
-                  <div style={{
-                    background: m.from === 'admin' ? '#0D9488' : '#F1F5F9',
-                    color: m.from === 'admin' ? '#FFFFFF' : '#1F2937',
-                    padding: '10px 14px', borderRadius: m.from === 'admin' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
-                    fontSize: 14, lineHeight: 1.6,
-                  }}>{m.content}</div>
-                ) : (
-                  <div style={{ background: m.from === 'admin' ? '#CCFBF1' : '#F1F5F9', padding: '10px 14px', borderRadius: 12 }}>
-                    <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, marginBottom: 4 }}>🎙️ Voice Message</div>
-                    <audio controls src={m.content} style={{ width: '100%', height: 36 }} />
+                {/* Info */}
+                {[
+                  ['Service', selectedRequest.serviceTitle],
+                  ['Client', selectedRequest.name],
+                  ['Email', selectedRequest.email],
+                  ['Phone', selectedRequest.phone],
+                  ['Description', selectedRequest.description],
+                  ['Deadline', selectedRequest.deadline],
+                ].map(([label, val]) => val ? (
+                  <div key={label} style={{ marginBottom: 12 }}>
+                    <div style={s.label}>{label}</div>
+                    <div style={{ fontSize: 14, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: 8 }}>{val}</div>
                   </div>
-                )}
-                <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3, textAlign: m.from === 'admin' ? 'right' : 'left' }}>
-                  {m.from === 'admin' ? 'You (Admin)' : selected.fullName} · {m.createdAt?.toDate?.()?.toLocaleTimeString?.() || ''}
+                ) : null)}
+
+                {/* Extra fields */}
+                {selectedRequest.extraData && Object.entries(selectedRequest.extraData).map(([k, v]) => (
+                  <div key={k} style={{ marginBottom: 10 }}>
+                    <div style={s.label}>{k.replace(/([A-Z])/g, ' $1')}</div>
+                    <div style={{ fontSize: 13, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '7px 10px', borderRadius: 6 }}>{v}</div>
+                  </div>
+                ))}
+
+                <div style={{ height: 1, background: 'var(--border)', margin: '20px 0' }} />
+
+                {/* Status */}
+                <div style={{ marginBottom: 12 }}>
+                  <label style={s.label}>Update Status</label>
+                  <select
+                    defaultValue={selectedRequest.status}
+                    onChange={e => setSelectedRequest(r => ({ ...r, status: e.target.value }))}
+                    style={s.input}>
+                    {STATUS_OPTIONS.map(st => <option key={st} value={st}>{st.replace('_', ' ')}</option>)}
+                  </select>
+                </div>
+
+                {/* Price */}
+                <div style={{ marginBottom: 12 }}>
+                  <label style={s.label}>Agreed Price (₦)</label>
+                  <input type="number" placeholder="e.g. 15000"
+                    defaultValue={selectedRequest.agreedPrice || ''}
+                    onChange={e => setSelectedRequest(r => ({ ...r, agreedPrice: e.target.value }))}
+                    style={s.input} />
+                </div>
+
+                {/* Admin note */}
+                <div style={{ marginBottom: 16 }}>
+                  <label style={s.label}>Note to Client</label>
+                  <textarea rows={3} placeholder="Write a note visible to the client..."
+                    defaultValue={selectedRequest.adminNote || ''}
+                    onChange={e => setSelectedRequest(r => ({ ...r, adminNote: e.target.value }))}
+                    style={{ ...s.input, resize: 'vertical' }} />
+                </div>
+
+                <div style={{ display: 'flex', gap: 10 }}>
+                  <button style={{ ...s.btn('var(--teal)'), flex: 1 }} disabled={saving}
+                    onClick={() => updateRequest(selectedRequest.id, {
+                      status: selectedRequest.status,
+                      agreedPrice: selectedRequest.agreedPrice,
+                      adminNote: selectedRequest.adminNote,
+                    })}>
+                    {saving ? 'Saving...' : '💾 Save Changes'}
+                  </button>
+                  <button style={s.btn('var(--blue-deep)')}
+                    onClick={() => { setSelectedUser({ id: selectedRequest.userId, name: selectedRequest.name }); setTab('messages'); }}>
+                    💬 Message
+                  </button>
                 </div>
               </div>
-            ))}
-            <div ref={bottomRef} />
+            )}
           </div>
+        )}
 
-          {/* Input bar */}
-          <div style={{ padding: '12px 16px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
-            <textarea
-              value={text}
-              onChange={e => setText(e.target.value)}
-              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
-              placeholder="Type a message... (Enter to send)"
-              rows={2}
-              style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none', resize: 'none' }}
-              onFocus={e => e.target.style.borderColor = '#0D9488'}
-              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
-            />
-
-            {/* Send text */}
-            <button onClick={sendText} disabled={sending || !text.trim()} style={{
-              background: '#0D9488', color: '#FFFFFF', border: 'none',
-              borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 700,
-              cursor: 'pointer', fontFamily: "'Times New Roman', serif",
-              opacity: !text.trim() ? 0.5 : 1,
-            }}>Send</button>
-
-            {/* Voice message */}
-            <button
-              onClick={recording ? stopRecording : startRecording}
-              disabled={sending}
-              title={recording ? 'Stop recording' : 'Record voice message'}
-              style={{
-                background: recording ? '#DC2626' : '#172554',
-                color: '#FFFFFF', border: 'none',
-                borderRadius: 8, padding: '10px 14px', fontSize: 18,
-                cursor: 'pointer',
-                animation: recording ? 'pulse-rec 1s infinite' : 'none',
-              }}
-            >{recording ? '⏹' : '🎙️'}</button>
-          </div>
-
-          {recording && (
-            <div style={{ padding: '6px 16px 10px', background: '#FEF2F2', textAlign: 'center', fontSize: 12, color: '#DC2626', fontWeight: 700 }}>
-              🔴 Recording... tap ⏹ to stop and send
+        {/* ── RESEARCH TOPICS ── */}
+        {tab === 'topics' && (
+          <div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+              <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>
+                Research Topics ({topics.length})
+              </h2>
+              <button style={s.btn('var(--teal)')}
+                onClick={() => setTopicForm({ title: '', category: 'Nursing', pages: '', price: '', description: '', badge: '' })}>
+                ＋ Add New Topic
+              </button>
             </div>
-          )}
+
+            {/* Topic Form */}
+            {topicForm && (
+              <div style={{ ...s.card, border: '2px solid var(--teal)', marginBottom: 24 }}>
+                <h3 style={{ fontFamily: 'var(--font-display)', marginBottom: 20, color: 'var(--teal)' }}>
+                  {topicForm.id ? '✏️ Edit Topic' : '➕ Add New Topic'}
+                </h3>
+                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
+                  {[
+                    { key: 'title', label: 'Title', placeholder: 'e.g. Effect of hypertension in elderly patients' },
+                    { key: 'price', label: 'Price (₦)', placeholder: 'e.g. ₦5,000', type: 'text' },
+                    { key: 'pages', label: 'Pages', placeholder: 'e.g. 65 pages' },
+                  ].map(f => (
+                    <div key={f.key} style={f.key === 'title' ? { gridColumn: '1/-1' } : {}}>
+                      <label style={s.label}>{f.label}</label>
+                      <input type={f.type || 'text'} placeholder={f.placeholder}
+                        value={topicForm[f.key] || ''}
+                        onChange={e => setTopicForm(p => ({ ...p, [f.key]: e.target.value }))}
+                        style={s.input} />
+                    </div>
+                  ))}
+
+                  <div>
+                    <label style={s.label}>Category</label>
+                    <select value={topicForm.category || 'Nursing'}
+                      onChange={e => setTopicForm(p => ({ ...p, category: e.target.value }))}
+                      style={s.input}>
+                      {CATEGORIES.map(c => <option key={c}>{c}</option>)}
+                    </select>
+                  </div>
+
+                  <div>
+                    <label style={s.label}>Badge</label>
+                    <select value={topicForm.badge || ''}
+                      onChange={e => setTopicForm(p => ({ ...p, badge: e.target.value }))}
+                      style={s.input}>
+                      <option value="">None</option>
+                      <option value="Popular">🔥 Popular</option>
+                      <option value="New">✨ New</option>
+                      <option value="Hidden">🚫 Hidden</option>
+                    </select>
+                  </div>
+
+                  <div style={{ gridColumn: '1/-1' }}>
+                    <label style={s.label}>Description</label>
+                    <textarea rows={3} placeholder="Brief description of the topic..."
+                      value={topicForm.description || ''}
+                      onChange={e => setTopicForm(p => ({ ...p, description: e.target.value }))}
+                      style={{ ...s.input, resize: 'vertical' }} />
+                  </div>
+                </div>
+
+                <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
+                  <button style={{ ...s.btn('var(--teal)'), flex: 1 }} disabled={saving}
+                    onClick={() => saveTopic(topicForm)}>
+                    {saving ? 'Saving...' : topicForm.id ? '💾 Update Topic' : '➕ Add Topic'}
+                  </button>
+                  <button style={s.btn('#94A3B8')} onClick={() => setTopicForm(null)}>Cancel</button>
+                </div>
+              </div>
+            )}
+
+            {/* Topics Table */}
+            <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead style={{ background: 'var(--bg-secondary)' }}>
+                  <tr>
+                    {['Title', 'Category', 'Pages', 'Price', 'Badge', 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {topics.map(t => (
+                    <tr key={t.id} style={{ opacity: t.badge === 'Hidden' ? 0.5 : 1 }}>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-primary)', fontWeight: 600, borderBottom: '1px solid var(--border)', maxWidth: 300 }}>{t.title}</td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{t.category}</td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{t.pages}</td>
+                      <td style={{ padding: '13px 16px', color: 'var(--gold)', fontWeight: 700, borderBottom: '1px solid var(--border)' }}>{t.price}</td>
+                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                        {t.badge && <span style={{ ...s.badge(t.badge === 'Popular' ? 'accepted' : t.badge === 'New' ? 'reviewing' : 'rejected'), textTransform: 'none' }}>{t.badge}</span>}
+                      </td>
+                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button style={{ ...s.btn('var(--blue-deep)'), padding: '5px 12px' }}
+                            onClick={() => setTopicForm({ ...t })}>✏️ Edit</button>
+                          <button style={{ ...s.btn('#EF4444'), padding: '5px 12px' }}
+                            onClick={() => deleteTopic(t.id)}>🗑️</button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {topics.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No topics yet. Add your first one!</div>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── MESSAGES ── */}
+        {tab === 'messages' && (
+          <div style={s.grid2}>
+            {/* Client List */}
+            <div style={s.userList}>
+              <div style={{ padding: '16px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14, color: 'var(--text-primary)' }}>
+                💬 Client Threads
+              </div>
+              <div style={{ overflowY: 'auto', height: 'calc(100% - 53px)' }}>
+                {requests
+                  .filter((r, i, arr) => arr.findIndex(x => x.userId === r.userId) === i)
+                  .map(req => (
+                    <div key={req.userId}
+                      onClick={() => setSelectedUser({ id: req.userId, name: req.name, email: req.email })}
+                      style={{ padding: '14px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', background: selectedUser?.id === req.userId ? 'var(--teal-glow)' : 'transparent', transition: 'all 0.15s' }}>
+                      <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)' }}>{req.name}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 2 }}>{req.email}</div>
+                      <div style={{ fontSize: 11, color: 'var(--teal)', marginTop: 3 }}>{req.serviceTitle}</div>
+                    </div>
+                  ))}
+                {requests.length === 0 && (
+                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No clients yet</div>
+                )}
+              </div>
+            </div>
+
+            {/* Chat Window */}
+            <div style={s.chatArea}>
+              {!selectedUser ? (
+                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', flexDirection: 'column', gap: 12 }}>
+                  <span style={{ fontSize: '3rem' }}>💬</span>
+                  <p>Select a client to start chatting</p>
+                </div>
+              ) : (
+                <>
+                  {/* Chat Header */}
+                  <div style={{ padding: '14px 18px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)', borderRadius: '12px 12px 0 0' }}>
+                    <div style={{ fontWeight: 700, color: 'var(--text-primary)' }}>{selectedUser.name}</div>
+                    <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedUser.email}</div>
+                  </div>
+
+                  {/* Messages */}
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                    {messages.map(msg => (
+                      <div key={msg.id} style={{ display: 'flex', justifyContent: msg.sender === 'admin' ? 'flex-end' : 'flex-start' }}>
+                        <div style={{
+                          maxWidth: '70%', padding: '10px 14px', borderRadius: 14,
+                          background: msg.sender === 'admin' ? 'var(--teal)' : 'var(--bg-tertiary)',
+                          color: msg.sender === 'admin' ? '#fff' : 'var(--text-primary)',
+                          border: msg.sender !== 'admin' ? '1px solid var(--border)' : 'none',
+                          borderBottomRightRadius: msg.sender === 'admin' ? 4 : 14,
+                          borderBottomLeftRadius: msg.sender !== 'admin' ? 4 : 14,
+                          fontSize: 14, lineHeight: 1.5,
+                        }}>
+                          {msg.type === 'audio' ? (
+                            <audio controls src={msg.audioData} style={{ maxWidth: 200, height: 36 }} />
+                          ) : (
+                            msg.text
+                          )}
+                          <div style={{ fontSize: 10, opacity: 0.6, marginTop: 4, textAlign: 'right' }}>
+                            {msg.createdAt?.toDate?.()?.toLocaleTimeString?.('en', { hour: '2-digit', minute: '2-digit' }) || ''}
+                          </div>
+                        </div>
+                      </div>
+                    ))}
+                    {messages.length === 0 && (
+                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40, fontSize: 13 }}>
+                        No messages yet. Start the conversation!
+                      </div>
+                    )}
+                    <div ref={messagesEnd} />
+                  </div>
+
+                  {/* Audio preview */}
+                  {audioBlob && (
+                    <div style={{ padding: '8px 16px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: 10 }}>
+                      <audio controls src={URL.createObjectURL(audioBlob)} style={{ height: 36, flex: 1 }} />
+                      <button onClick={() => setAudioBlob(null)} style={s.btn('#EF4444', '#fff')}>✕</button>
+                      <button onClick={sendMessage} style={s.btn('var(--teal)')}>Send 🎙️</button>
+                    </div>
+                  )}
+
+                  {/* Input Row */}
+                  {!audioBlob && (
+                    <div style={{ padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, background: 'var(--bg-card)', borderRadius: '0 0 12px 12px' }}>
+                      <input
+                        value={newMessage}
+                        onChange={e => setNewMessage(e.target.value)}
+                        onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()}
+                        placeholder="Type a message..."
+                        style={{ ...s.input, marginBottom: 0, flex: 1 }}
+                      />
+                      <button
+                        onMouseDown={startRecording}
+                        onMouseUp={stopRecording}
+                        onTouchStart={startRecording}
+                        onTouchEnd={stopRecording}
+                        style={{ ...s.btn(recording ? '#EF4444' : 'var(--bg-secondary)', recording ? '#fff' : 'var(--text-secondary)'), padding: '10px 14px', fontSize: 18, border: '1px solid var(--border)' }}
+                        title="Hold to record voice">
+                        {recording ? '⏹' : '🎙️'}
+                      </button>
+                      <button onClick={sendMessage} style={{ ...s.btn('var(--teal)'), padding: '10px 16px' }}>
+                        ➤
+                      </button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ── USERS ── */}
+        {tab === 'users' && (
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginBottom: 20 }}>
+              Registered Users ({users.length})
+            </h2>
+            <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead style={{ background: 'var(--bg-secondary)' }}>
+                  <tr>
+                    {['Name', 'Email', 'Joined', 'Admin', 'Actions'].map(h => (
+                      <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                    ))}
+                  </tr>
+                </thead>
+                <tbody>
+                  {users.map(u => (
+                    <tr key={u.id}>
+                      <td style={{ padding: '13px 16px', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{u.name || u.displayName || '—'}</td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{u.email}</td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
+                        {u.createdAt?.toDate?.()?.toLocaleDateString?.() || '—'}
+                      </td>
+                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                        {u.isAdmin
+                          ? <span style={s.badge('accepted')}>✅ Admin</span>
+                          : <span style={s.badge('pending')}>User</span>}
+                      </td>
+                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                        <div style={{ display: 'flex', gap: 6 }}>
+                          <button
+                            style={{ ...s.btn(u.isAdmin ? '#EF4444' : 'var(--blue-deep)'), padding: '5px 12px', fontSize: 12 }}
+                            onClick={() => toggleAdminUser(u.id, u.isAdmin)}>
+                            {u.isAdmin ? '🚫 Remove Admin' : '🛡️ Make Admin'}
+                          </button>
+                          <button style={{ ...s.btn('var(--teal)'), padding: '5px 12px', fontSize: 12 }}
+                            onClick={() => { setSelectedUser(u); setTab('messages'); }}>
+                            💬 Message
+                          </button>
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+              {users.length === 0 && (
+                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No users yet</div>
+              )}
+            </div>
+          </div>
+        )}
+      </div>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{
+          position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)',
+          background: 'rgba(15,23,42,0.95)', color: '#fff', padding: '12px 24px',
+          borderRadius: 24, fontSize: 14, fontWeight: 600, zIndex: 9999,
+          backdropFilter: 'blur(10px)', border: '1px solid rgba(13,148,136,0.4)',
+          boxShadow: '0 8px 32px rgba(0,0,0,0.4)', whiteSpace: 'nowrap',
+          fontFamily: 'var(--font-body)',
+        }}>
+          {toast}
         </div>
       )}
-
-      <style>{`
-        @keyframes pulse-rec {
-          0%, 100% { opacity: 1; }
-          50% { opacity: 0.6; }
-        }
-      `}</style>
     </div>
   );
-}
-
-/* ── Small helpers ───────────────────────────────────────── */
-function Row({ label, value }) {
-  return (
-    <div style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 13 }}>
-      <span style={{ color: '#9CA3AF', minWidth: 70, textTransform: 'capitalize' }}>{label}:</span>
-      <span style={{ color: '#1F2937', fontWeight: 600, wordBreak: 'break-word' }}>{value}</span>
-    </div>
-  );
-}
-
-function Loader() {
-  return (
-    <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF' }}>
-      <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#0D9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
-      <div style={{ marginTop: 12, fontSize: 14 }}>Loading...</div>
-      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
-    </div>
-  );
-}
-
-function Empty({ text }) {
-  return <div style={{ textAlign: 'center', padding: '40px 0', color: '#D1D5DB', fontSize: 14 }}>{text}</div>;
 }
