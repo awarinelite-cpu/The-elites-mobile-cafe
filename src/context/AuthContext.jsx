@@ -6,7 +6,6 @@ import { auth, db } from '../firebase/config';
 
 const AuthContext = createContext(null);
 
-// ── All admin emails ─────────────────────────────────────────
 const ADMIN_EMAILS = ['awarinelite@gmail.com', 'admin@elitesmobilecafe.com'];
 
 export const AuthProvider = ({ children }) => {
@@ -21,24 +20,18 @@ export const AuthProvider = ({ children }) => {
         try {
           const snap = await getDoc(doc(db, 'users', firebaseUser.uid));
           const data = snap.exists() ? snap.data() : {};
-          // Check email list, Firestore isAdmin, or role
-          const isAdmin =
-            ADMIN_EMAILS.includes(firebaseUser.email) ||
-            data.isAdmin === true ||
-            data.role === 'Admin';
+          const isAdmin  = ADMIN_EMAILS.includes(firebaseUser.email) || data.isAdmin === true || data.role === 'Admin';
+          const isWriter = !isAdmin && (data.isWriter === true || data.role === 'writer');
           setProfile({
             ...data,
             email: firebaseUser.email,
             isAdmin,
-            role: isAdmin ? 'Admin' : (data.role || 'client'),
+            isWriter,
+            role: isAdmin ? 'Admin' : isWriter ? 'writer' : (data.role || 'client'),
           });
         } catch {
           const isAdmin = ADMIN_EMAILS.includes(firebaseUser.email);
-          setProfile({
-            email: firebaseUser.email,
-            isAdmin,
-            role: isAdmin ? 'Admin' : 'client',
-          });
+          setProfile({ email: firebaseUser.email, isAdmin, isWriter: false, role: isAdmin ? 'Admin' : 'client' });
         }
       } else {
         setUser(null);
