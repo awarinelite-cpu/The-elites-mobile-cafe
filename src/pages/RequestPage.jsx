@@ -19,18 +19,23 @@ export default function RequestPage() {
     if (!user) { navigate('/register'); return; }
     try {
       await createOrder({
-        clientId: user.uid,
-        clientName: profile?.name || user.displayName,
-        clientEmail: user.email,
-        customTopic: data.title,
-        topicTitle: data.title,
-        details: data.details,
-        pages: data.pages,
-        category: data.category,
-        deadline: data.deadline || '',
-        additionalNotes: data.notes || '',
-        referredBy: profile?.referredBy || null,
-      });
+  userId:       user.uid,           // ← AdminPage reads req.userId for notifications
+  clientId:     user.uid,
+  clientName:   profile?.name || user.displayName,
+  clientEmail:  user.email,
+  name:         profile?.name || user.displayName,   // ← AdminPage shows req.name
+  email:        user.email,                           // ← AdminPage shows req.email
+  serviceTitle: data.title,         // ← AdminPage reads req.serviceTitle
+  topicTitle:   data.title,
+  description:  data.details,       // ← AdminPage shows req.description
+  details:      data.details,
+  pages:        data.pages,
+  category:     data.category,
+  deadline:     data.deadline || '',
+  additionalNotes: data.notes || '',
+  referredBy:   profile?.referredBy || null,
+  status:       'pending',
+});
       toast.success('Request submitted! We\'ll send you a price quote within 24 hours.');
       navigate('/dashboard');
     } catch (e) {
