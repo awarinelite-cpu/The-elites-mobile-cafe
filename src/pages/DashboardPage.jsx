@@ -413,16 +413,30 @@ function MessagesTab({ user, profile }) {
   const sendText = async () => {
     if (!text.trim() || !user) return;
     setSending(true);
+    const txt = text.trim();
     try {
-      const txt = text.trim();
-      setText('');
       await addDoc(collection(db, 'adminMessages', user.uid, 'messages'), {
-        sender: 'client',
+        sender:     'client',
         senderName: profile?.name || user.displayName || 'Client',
-        type: 'text',
-        text: txt,
+        type:       'text',
+        text:       txt,
+        createdAt:  ts(),
+      });
+      setText(''); // ← only clear AFTER successful save
+      await addDoc(collection(db, 'notifications'), {
+        userId:    'admin',
+        title:     `💬 Message from ${profile?.name || 'Client'}`,
+        body:      txt.slice(0, 80),
+        type:      'message',
+        read:      false,
         createdAt: ts(),
       });
+    } catch (e) {
+      console.error('Send failed:', e);
+      alert('Message failed to send. Please try again.');
+    }
+    setSending(false);
+  };
     } catch (e) { console.error(e); }
     setSending(false);
   };
@@ -462,11 +476,7 @@ function MessagesTab({ user, profile }) {
         await addDoc(collection(db, 'adminMessages', user.uid, 'messages'), {
           sender: 'client',
           senderName: profile?.name || user.displayName || 'Client',
-          type: 'audio',
-          audioData: reader.result,
           createdAt: ts(),
-        });
-        setAudioBlob(null);
       } catch (e) { console.error(e); }
       setSending(false);
     };
