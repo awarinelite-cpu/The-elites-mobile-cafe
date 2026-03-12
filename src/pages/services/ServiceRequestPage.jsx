@@ -1,20 +1,17 @@
 // src/pages/services/ServiceRequestPage.jsx
-// Reusable request form for all Elite Mobile Cafe services.
-// Each service page imports this and passes its config as props.
-
 import { useState } from 'react';
 import { useNavigate } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
-import { db } from '../../firebase/index';
+import { db } from '../../firebase/firebaseConfig';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
 
 export default function ServiceRequestPage({
-  serviceKey,       // e.g. 'research_projects'
-  serviceTitle,     // e.g. 'Research Projects'
-  serviceIcon,      // emoji e.g. '🔬'
-  serviceDesc,      // short description shown at top
-  extraFields = [], // [{name, label, type, placeholder, required, options}]
+  serviceKey,
+  serviceTitle,
+  serviceIcon,
+  serviceDesc,
+  extraFields = [],
 }) {
   const { user } = useAuth();
   const navigate = useNavigate();
@@ -42,13 +39,13 @@ export default function ServiceRequestPage({
         serviceKey,
         serviceTitle,
         ...form,
-        status: 'pending',        // pending → reviewing → accepted → in_progress → completed
+        status: 'pending',
         userId: user?.uid || null,
         createdAt: serverTimestamp(),
         updatedAt: serverTimestamp(),
         adminNote: '',
         agreedPrice: null,
-        paymentStatus: 'not_set', // not_set → agreed → paid
+        paymentStatus: 'not_set',
       });
       toast.success('Request submitted! We will review and get back to you shortly.');
       navigate('/dashboard');
@@ -63,18 +60,14 @@ export default function ServiceRequestPage({
   return (
     <div className="request-page">
       <div className="request-card">
-
-        {/* Header */}
         <div className="service-icon-badge">{serviceIcon}</div>
         <h1>{serviceTitle}</h1>
         <p className="subtitle">{serviceDesc}</p>
 
-        {/* Status info strip */}
         <div className="alert alert-info" style={{ marginBottom: 28 }}>
-          📋 After submitting, our team will review your request, discuss details &amp; pricing with you, then begin work once agreed.
+          📋 After submitting, our team will review your request, discuss details & pricing with you, then begin work once agreed.
         </div>
 
-        {/* Core fields */}
         <div className="form-group">
           <label>Full Name *</label>
           <input name="fullName" value={form.fullName} onChange={handle} placeholder="Enter your full name" />
@@ -90,7 +83,6 @@ export default function ServiceRequestPage({
           <input name="phone" value={form.phone} onChange={handle} placeholder="e.g. 08012345678" />
         </div>
 
-        {/* Extra fields per service */}
         {extraFields.map(f => (
           <div className="form-group" key={f.name}>
             <label>{f.label}{f.required ? ' *' : ''}</label>
@@ -107,7 +99,6 @@ export default function ServiceRequestPage({
           </div>
         ))}
 
-        {/* Project details */}
         <div className="form-group">
           <label>Project Details / Description *</label>
           <textarea
@@ -119,29 +110,22 @@ export default function ServiceRequestPage({
           />
         </div>
 
-        {/* Deadline */}
         <div className="form-group">
           <label>Preferred Deadline</label>
           <input name="deadline" type="date" value={form.deadline} onChange={handle} />
         </div>
 
-        {/* Submit */}
         <button
           className="btn btn-primary btn-full btn-lg"
           onClick={submit}
           disabled={submitting}
           style={{ marginTop: 8 }}
         >
-          {submitting ? (
-            <><span className="spinner spinner-white" style={{ width: 18, height: 18 }} /> Submitting...</>
-          ) : (
-            <>📤 Submit Request</>
-          )}
+          {submitting ? 'Submitting...' : '📤 Submit Request'}
         </button>
 
         <p style={{ textAlign: 'center', marginTop: 16, fontSize: 13, color: 'var(--text-muted)' }}>
-          Already submitted?{' '}
-          <a href="/dashboard">View your requests →</a>
+          Already submitted? <a href="/dashboard">View your requests →</a>
         </p>
       </div>
     </div>
