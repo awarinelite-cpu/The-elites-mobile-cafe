@@ -5,7 +5,7 @@
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { useState } from 'react';
-import useDarkMode from '../hooks/useDarkMode';
+import useDarkMode from '../../hooks/useDarkMode';
 
 export default function Navbar({ user, onLogout }) {
   const { dark, toggle } = useDarkMode();
