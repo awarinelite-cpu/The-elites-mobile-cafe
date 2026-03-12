@@ -48,7 +48,7 @@ function Layout() {
 
           {/* Protected */}
           <Route path="/dashboard" element={<ProtectedRoute><DashboardPage /></ProtectedRoute>} />
-          <Route path="/admin"     element={<ProtectedRoute adminOnly><AdminPage /></ProtectedRoute>} />
+          <Route path="/admin"     element={<ProtectedRoute><AdminPage /></ProtectedRoute>} />
 
           {/* ── Services (each protected — user must log in to request) ── */}
           <Route path="/services/research-projects"
