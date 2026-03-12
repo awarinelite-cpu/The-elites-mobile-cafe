@@ -6,7 +6,7 @@ import {
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
 
-const STATUS_OPTIONS = ['pending','reviewing','accepted','in_progress','completed','rejected'];
+const STATUS_OPTIONS = ['pending','reviewing','accepted','priced','in_progress','completed','rejected'];
 const STATUS_COLORS  = {
   pending:     { bg: 'rgba(245,158,11,0.12)',  color: '#D97706' },
   reviewing:   { bg: 'rgba(37,99,235,0.12)',   color: '#2563EB' },
@@ -14,6 +14,7 @@ const STATUS_COLORS  = {
   in_progress: { bg: 'rgba(139,92,246,0.12)', color: '#7C3AED' },
   completed:   { bg: 'rgba(22,163,74,0.12)',   color: '#16A34A' },
   rejected:    { bg: 'rgba(239,68,68,0.12)',   color: '#DC2626' },
+  priced: { bg: 'rgba(201,168,76,0.12)', color: '#C9A84C' },
 };
 const CATEGORIES = ['Nursing','Medicine','Public Health','Midwifery','Pharmacology','Community Health','Mental Health','Other'];
 const TABS = [
@@ -202,13 +203,41 @@ export default function AdminPage() {
       }
 
       if (req?.userId && data.status) {
-        await addDoc(collection(db, 'notifications'), {
-          userId: req.userId,
-          title: `Request ${data.status.replace('_', ' ')}`,
-          body: `Your ${req.serviceTitle} request is now ${data.status.replace('_', ' ')}`,
-          type: 'alert', read: false, createdAt: serverTimestamp(),
-        });
-      }
+  const price = data.agreedPrice || req?.agreedPrice;
+  const note  = data.adminNote  || req?.adminNote;
+  const title_ = req.serviceTitle || req.serviceKey || req.topicTitle || 'your request';
+  let notifTitle, notifBody;
+
+  if (data.status === 'priced' && price) {
+    notifTitle = '💰 Your Request Has Been Priced';
+    notifBody  = `"${title_}" has been priced at ₦${Number(price).toLocaleString()}.${note ? ` Note: ${note}` : ''} Please log in to pay and activate your order.`;
+  } else if (data.status === 'accepted') {
+    notifTitle = '✅ Request Accepted';
+    notifBody  = `"${title_}" has been accepted and is under review.${note ? ` Note: ${note}` : ''}`;
+  } else if (data.status === 'in_progress') {
+    notifTitle = '⚙️ Work In Progress';
+    notifBody  = `Work has started on "${title_}".${note ? ` Note: ${note}` : ''}`;
+  } else if (data.status === 'completed') {
+    notifTitle = '🎉 Order Completed!';
+    notifBody  = `"${title_}" is complete and ready.${note ? ` ${note}` : ''}`;
+  } else if (data.status === 'rejected') {
+    notifTitle = '❌ Request Not Accepted';
+    notifBody  = `"${title_}" was not accepted.${note ? ` Reason: ${note}` : ''}`;
+  } else {
+    notifTitle = `📋 Request ${data.status.replace(/_/g, ' ')}`;
+    notifBody  = `"${title_}" is now ${data.status.replace(/_/g, ' ')}.${note ? ` Note: ${note}` : ''}`;
+  }
+
+  await addDoc(collection(db, 'notifications'), {
+    userId:    req.userId,
+    title:     notifTitle,
+    body:      notifBody,
+    orderId:   id,
+    type:      data.status === 'priced' ? 'payment' : 'alert',
+    read:      false,
+    createdAt: serverTimestamp(),
+  });
+}
       showToast('✅ Request updated');
     } catch (e) { showToast('❌ ' + e.message); }
     setSaving(false);
