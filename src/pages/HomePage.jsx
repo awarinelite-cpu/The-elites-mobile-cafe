@@ -29,7 +29,6 @@ export default function HomePage() {
   const heroRef = useRef(null);
 
   useEffect(() => {
-    // Parallax on hero background
     const handleScroll = () => {
       if (heroRef.current) {
         heroRef.current.style.transform = `translateY(${window.scrollY * 0.3}px)`;
@@ -47,7 +46,6 @@ export default function HomePage() {
         minHeight: '100vh', position: 'relative', display: 'flex',
         alignItems: 'center', overflow: 'hidden',
       }}>
-        {/* Background layers */}
         <div ref={heroRef} style={{
           position: 'absolute', inset: 0, zIndex: 0,
           background: `
@@ -55,15 +53,11 @@ export default function HomePage() {
             radial-gradient(ellipse 50% 40% at 20% 80%, rgba(201,168,76,0.04) 0%, transparent 60%)
           `,
         }} />
-
-        {/* Grid texture */}
         <div style={{
           position: 'absolute', inset: 0, zIndex: 0, opacity: 0.03,
           backgroundImage: `linear-gradient(var(--gold) 1px, transparent 1px), linear-gradient(90deg, var(--gold) 1px, transparent 1px)`,
           backgroundSize: '60px 60px',
         }} />
-
-        {/* Decorative ring */}
         <div style={{
           position: 'absolute', right: '-10%', top: '10%',
           width: '55vw', height: '55vw', maxWidth: 700, maxHeight: 700,
@@ -77,7 +71,6 @@ export default function HomePage() {
 
         <div style={{ maxWidth: 1200, margin: '0 auto', padding: '120px clamp(16px, 4vw, 60px) 80px', position: 'relative', zIndex: 1, width: '100%' }}>
           <div style={{ maxWidth: 680 }}>
-
             <div className="animate-fade-up delay-1" style={{
               display: 'inline-flex', alignItems: 'center', gap: 8,
               border: '1px solid var(--border-gold)', borderRadius: 30,
@@ -138,7 +131,6 @@ export default function HomePage() {
               </Link>
             </div>
 
-            {/* Stats */}
             <div className="animate-fade-up delay-5" style={{ display: 'flex', gap: 32, marginTop: 56, flexWrap: 'wrap' }}>
               {[['500+', 'Projects Delivered'], ['98%', 'Client Satisfaction'], ['24hr', 'Average Turnaround']].map(([n, l]) => (
                 <div key={l}>
@@ -160,7 +152,6 @@ export default function HomePage() {
               How It Works
             </h2>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(230px, 1fr))', gap: 24 }}>
             {STEPS.map((step, i) => (
               <StepCard key={i} step={step} index={i} />
@@ -185,7 +176,6 @@ export default function HomePage() {
               View all topics <ArrowRight size={13} />
             </Link>
           </div>
-
           <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 20 }}>
             {TOPICS.map((topic, i) => (
               <TopicCard key={i} topic={topic} />
@@ -365,7 +355,7 @@ function TestimonialCard({ data }) {
           <Star key={i} size={13} fill="var(--gold)" color="var(--gold)" />
         ))}
       </div>
-      <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.75, marginBottom: 20, fontStyle: 'italic', fontFamily: 'var(--font-display)', fontSize: 16 }}>
+      <p style={{ color: 'var(--text-secondary)', fontSize: 16, lineHeight: 1.75, marginBottom: 20, fontStyle: 'italic', fontFamily: 'var(--font-display)' }}>
         "{data.text}"
       </p>
       <div>
