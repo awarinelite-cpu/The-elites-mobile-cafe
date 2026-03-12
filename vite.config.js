@@ -1,10 +1,7 @@
 // vite.config.js
-// Replace your existing vite.config.js with this
-// It auto-injects Firebase env vars into the service worker at build time
-
 import { defineConfig, loadEnv } from 'vite';
 import react from '@vitejs/plugin-react';
-import { writeFileSync } from 'fs';
+import { writeFileSync, mkdirSync } from 'fs';
 import { resolve } from 'path';
 
 export default defineConfig(({ mode }) => {
@@ -13,13 +10,15 @@ export default defineConfig(({ mode }) => {
   return {
     plugins: [
       react(),
-
-      // ── Auto-inject env vars into service worker ──────────
       {
         name: 'inject-sw-env',
         buildStart() {
-          const swContent = `
-importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
+          const publicDir = resolve(process.cwd(), 'public');
+
+          // Create public/ folder if it doesn't exist
+          mkdirSync(publicDir, { recursive: true });
+
+          const swContent = `importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-app-compat.js');
 importScripts('https://www.gstatic.com/firebasejs/10.7.1/firebase-messaging-compat.js');
 
 firebase.initializeApp({
@@ -63,13 +62,9 @@ self.addEventListener('notificationclick', (event) => {
       return clients.openWindow('/dashboard');
     })
   );
-});
-`;
-          // Write the populated service worker into public/
-          writeFileSync(
-            resolve(process.cwd(), 'public/firebase-messaging-sw.js'),
-            swContent.trim()
-          );
+});`;
+
+          writeFileSync(resolve(publicDir, 'firebase-messaging-sw.js'), swContent);
         },
       },
     ],
