@@ -202,7 +202,7 @@ export default function DashboardPage() {
       {/* Main content */}
       <main style={{ flex: 1, padding: 'clamp(20px,3vw,36px)', overflowY: 'auto', minWidth: 0 }}>
         {tab === 'overview'  && <Overview  stats={stats} orders={orders} loading={loading} s={s} onPay={handlePayNow} paying={paying} />}
-        {tab === 'orders'    && <OrdersTab orders={orders} loading={loading} s={s} onPay={handlePayNow} paying={paying} />}
+       {tab === 'orders' && <OrdersTab orders={orders} loading={loading} s={s} onPay={handlePayNow} paying={paying} user={user} profile={profile} />}
         {tab === 'messages'  && <MessagesTab user={user} profile={profile} />}
         {tab === 'payments'  && <PaymentsTab orders={orders} stats={stats} />}
       </main>
@@ -260,7 +260,7 @@ function Overview({ stats, orders, loading, s, onPay, paying }) {
 }
 
 // ── Orders ────────────────────────────────────────────────────
-function OrdersTab({ orders, loading, s, onPay, paying }) {
+function OrdersTab({ orders, loading, s, onPay, paying, user, profile }) {
   if (loading) return <div style={{ padding: 60, textAlign: 'center' }}><div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTop: '3px solid var(--teal)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} /></div>;
   return (
     <div>
@@ -288,25 +288,90 @@ function OrdersTab({ orders, loading, s, onPay, paying }) {
                 </div>
               </div>
               {o.adminNote && (
-                <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>
-                  💬 <strong>Admin note:</strong> {o.adminNote}
+  <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)', marginBottom: 12 }}>
+    💬 <strong>Admin note:</strong> {o.adminNote}
+  </div>
+)}
+
+{/* ── PRICED: show offer + negotiation UI ── */}
+{o.status === 'priced' && (o.agreedPrice || o.totalAmount) && (
+  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+
+    {/* Admin's price offer box */}
+    <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 10, padding: '14px 16px', marginBottom: 14 }}>
+      <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
+        💰 Price Offer from Admin
+      </div>
+      <div style={{ fontSize: 26, fontWeight: 800, color: 'var(--gold)', marginBottom: 4, fontFamily: 'var(--font-display)' }}>
+        ₦{Number(o.agreedPrice || o.totalAmount).toLocaleString()}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+        Review this offer and accept or negotiate below.
+      </div>
+    </div>
+
+    {/* Negotiation history — previous back-and-forth */}
+    {o.priceNegotiation?.length > 0 && (
+      <div style={{ marginBottom: 12, display: 'flex', flexDirection: 'column', gap: 6 }}>
+        {o.priceNegotiation.map((entry, i) => (
+          <div key={i} style={{ display: 'flex', justifyContent: entry.from === 'client' ? 'flex-end' : 'flex-start' }}>
+            <div style={{
+              maxWidth: '80%', padding: '8px 12px', borderRadius: 10, fontSize: 13,
+              background: entry.from === 'client' ? 'var(--teal)' : 'var(--bg-secondary)',
+              color: entry.from === 'client' ? '#fff' : 'var(--text-primary)',
+              border: entry.from !== 'client' ? '1px solid var(--border)' : 'none',
+            }}>
+              <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 3, fontWeight: 700 }}>
+                {entry.from === 'client' ? 'You' : '🛡️ Admin'}
+              </div>
+              {entry.counterPrice && (
+                <div style={{ fontWeight: 800, marginBottom: 2 }}>
+                  Counter: ₦{Number(entry.counterPrice).toLocaleString()}
                 </div>
               )}
-              {/* Pay Now button — shows when order is priced but not yet paid */}
-              {o.status === 'priced' && (o.agreedPrice || o.totalAmount) && (
-                <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', justifyContent: 'space-between', flexWrap: 'wrap', gap: 10 }}>
-                  <div>
-                    <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 2 }}>Amount due</div>
-                    <div style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700 }}>₦{Number(o.agreedPrice || o.totalAmount).toLocaleString()}</div>
-                  </div>
-                  <button
-                    onClick={() => onPay(o)}
-                    disabled={paying === o.id}
-                    style={{ background: paying === o.id ? 'rgba(201,168,76,0.4)' : 'var(--gold)', color: '#0a0a0f', border: 'none', borderRadius: 10, padding: '12px 28px', cursor: paying === o.id ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', transition: 'all 0.2s', display: 'flex', alignItems: 'center', gap: 8 }}>
-                    {paying === o.id ? '⏳ Opening...' : '💳 Pay Now'}
-                  </button>
-                </div>
-              )}
+              <div>{entry.message}</div>
+            </div>
+          </div>
+        ))}
+      </div>
+    )}
+
+    {/* Response UI — only if client hasn't responded yet */}
+    {!o.clientPriceResponse
+      ? <ClientPriceResponse order={o} user={user} profile={profile} />
+      : (
+        <div style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>
+          ⏳ Your response has been sent. Waiting for admin to confirm.
+        </div>
+      )
+    }
+  </div>
+)}
+
+{/* ── ACCEPTED: price agreed → show Pay Now ── */}
+{o.status === 'accepted' && (o.agreedPrice || o.totalAmount) && (
+  <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}>
+    <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 10, padding: '14px 16px', marginBottom: 12 }}>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>✅ Price agreed</div>
+      <div style={{ fontSize: 22, fontWeight: 800, color: 'var(--gold)', fontFamily: 'var(--font-display)', marginBottom: 4 }}>
+        ₦{Number(o.agreedPrice || o.totalAmount).toLocaleString()}
+      </div>
+      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>
+        Make a 50% advance payment to begin your project.
+      </div>
+    </div>
+    <button onClick={() => onPay(o)} disabled={paying === o.id}
+      style={{ width: '100%', background: paying === o.id ? 'rgba(201,168,76,0.4)' : 'var(--gold)', color: '#0a0a0f', border: 'none', borderRadius: 10, padding: '13px', cursor: paying === o.id ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      {paying === o.id ? '⏳ Opening...' : `💳 Pay 50% Advance — ₦${Math.round(Number(o.agreedPrice || o.totalAmount) / 2).toLocaleString()}`}
+    </button>
+  </div>
+)}
+
+{o.status === 'paid' && (
+  <div style={{ marginTop: 12, padding: '8px 14px', background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: 8, fontSize: 13, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 6 }}>
+    ✅ Payment confirmed · Ref: <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{o.paystackRef}</span>
+  </div>
+)}
               {o.status === 'paid' && (
                 <div style={{ marginTop: 12, padding: '8px 14px', background: 'rgba(22,163,74,0.1)', border: '1px solid rgba(22,163,74,0.3)', borderRadius: 8, fontSize: 13, color: '#16A34A', display: 'flex', alignItems: 'center', gap: 6 }}>
                   ✅ Payment confirmed · Ref: <span style={{ fontFamily: 'monospace', fontSize: 11 }}>{o.paystackRef}</span>
