@@ -2,23 +2,9 @@
 import { useState, useEffect, useRef } from 'react';
 import {
   collection, doc, getDocs, addDoc, updateDoc, deleteDoc,
-  onSnapshot, query, orderBy, where, serverTimestamp, getDoc
+  onSnapshot, query, orderBy, where, serverTimestamp,
 } from 'firebase/firestore';
 import { db } from '../firebase/config';
-
-const Icon = ({ d, size = 18, color = 'currentColor' }) => (
-  <svg width={size} height={size} viewBox="0 0 24 24" fill="none"
-    stroke={color} strokeWidth="2" strokeLinecap="round" strokeLinejoin="round">
-    <path d={d} />
-  </svg>
-);
-
-const TABS = [
-  { key: 'requests', label: '📋 Service Requests' },
-  { key: 'topics',   label: '📚 Research Topics'  },
-  { key: 'messages', label: '💬 Messages'          },
-  { key: 'users',    label: '👥 Users'             },
-];
 
 const STATUS_OPTIONS = ['pending','reviewing','accepted','in_progress','completed','rejected'];
 const STATUS_COLORS  = {
@@ -29,10 +15,12 @@ const STATUS_COLORS  = {
   completed:   { bg: 'rgba(22,163,74,0.12)',   color: '#16A34A' },
   rejected:    { bg: 'rgba(239,68,68,0.12)',   color: '#DC2626' },
 };
-
-const CATEGORIES = [
-  'Nursing','Medicine','Public Health','Midwifery',
-  'Pharmacology','Community Health','Mental Health','Other'
+const CATEGORIES = ['Nursing','Medicine','Public Health','Midwifery','Pharmacology','Community Health','Mental Health','Other'];
+const TABS = [
+  { key: 'requests', label: '📋 Service Requests' },
+  { key: 'topics',   label: '📚 Research Topics'  },
+  { key: 'messages', label: '💬 Messages'          },
+  { key: 'users',    label: '👥 Users'             },
 ];
 
 export default function AdminPage() {
@@ -41,7 +29,7 @@ export default function AdminPage() {
   const [topics, setTopics]                   = useState([]);
   const [users, setUsers]                     = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
-  const [selectedOrder, setSelectedOrder]     = useState(null); // for messages tab
+  const [selectedUser, setSelectedUser]       = useState(null);
   const [messages, setMessages]               = useState([]);
   const [newMessage, setNewMessage]           = useState('');
   const [recording, setRecording]             = useState(false);
@@ -50,46 +38,38 @@ export default function AdminPage() {
   const [filterStatus, setFilterStatus]       = useState('all');
   const [saving, setSaving]                   = useState(false);
   const [toast, setToast]                     = useState('');
-  const mediaRecorder                         = useRef(null);
-  const audioChunks                           = useRef([]);
-  const messagesEnd                           = useRef(null);
-  const msgUnsub                              = useRef(null);
+  const mediaRecorder = useRef(null);
+  const audioChunks   = useRef([]);
+  const messagesEnd   = useRef(null);
+  const msgUnsub      = useRef(null);
 
-  // ── Load requests realtime ──────────────────────────────
+  // ── Realtime loads ──────────────────────────────────────
   useEffect(() => {
-    const q = query(collection(db, 'serviceRequests'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, snap => {
-      setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const unsub = onSnapshot(query(collection(db, 'serviceRequests'), orderBy('createdAt', 'desc')),
+      snap => setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     return unsub;
   }, []);
 
-  // ── Load topics ─────────────────────────────────────────
   useEffect(() => {
-    const q = query(collection(db, 'researchTopics'), orderBy('createdAt', 'desc'));
-    const unsub = onSnapshot(q, snap => {
-      setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() })));
-    });
+    const unsub = onSnapshot(query(collection(db, 'researchTopics'), orderBy('createdAt', 'desc')),
+      snap => setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
     return unsub;
   }, []);
 
-  // ── Load users ──────────────────────────────────────────
   useEffect(() => {
-    if (tab !== 'users') return;
+    if (tab !== 'users' && tab !== 'messages') return;
     getDocs(collection(db, 'users')).then(snap => {
       setUsers(snap.docs.map(d => ({ id: d.id, ...d.data() })));
     });
   }, [tab]);
 
-  // ── Subscribe to messages for selected order ────────────
-  // Uses the SAME 'messages' collection that the client reads from
+  // ── Chat subscription — general per-user thread ─────────
+  // Collection: adminMessages/{userId}/messages
   useEffect(() => {
     if (msgUnsub.current) { msgUnsub.current(); msgUnsub.current = null; }
-    if (!selectedOrder) { setMessages([]); return; }
-
+    if (!selectedUser) { setMessages([]); return; }
     const q = query(
-      collection(db, 'messages'),
-      where('orderId', '==', selectedOrder.id),
+      collection(db, 'adminMessages', selectedUser.id, 'messages'),
       orderBy('createdAt', 'asc')
     );
     msgUnsub.current = onSnapshot(q, snap => {
@@ -97,11 +77,11 @@ export default function AdminPage() {
       setTimeout(() => messagesEnd.current?.scrollIntoView({ behavior: 'smooth' }), 100);
     });
     return () => msgUnsub.current?.();
-  }, [selectedOrder]);
+  }, [selectedUser]);
 
   const showToast = (msg) => { setToast(msg); setTimeout(() => setToast(''), 3000); };
 
-  // ── Update request ──────────────────────────────────────
+  // ── Update service request ──────────────────────────────
   const updateRequest = async (id, data) => {
     setSaving(true);
     try {
@@ -116,31 +96,27 @@ export default function AdminPage() {
         });
       }
       showToast('✅ Request updated');
-    } catch (e) { showToast('❌ Error: ' + e.message); }
+    } catch (e) { showToast('❌ ' + e.message); }
     setSaving(false);
   };
 
-  // ── Send message (writes to shared 'messages' collection) ─
+  // ── Send message ────────────────────────────────────────
   const sendMessage = async () => {
+    if (!selectedUser) return;
     if (!newMessage.trim() && !audioBlob) return;
-    if (!selectedOrder) return;
 
     try {
       if (audioBlob) {
         const reader = new FileReader();
         reader.readAsDataURL(audioBlob);
         reader.onloadend = async () => {
-          await addDoc(collection(db, 'messages'), {
-            orderId: selectedOrder.id,
-            senderId: 'admin',
-            senderName: 'Admin',
-            senderRole: 'admin',
-            type: 'audio',
-            audioData: reader.result,
+          await addDoc(collection(db, 'adminMessages', selectedUser.id, 'messages'), {
+            sender: 'admin', senderName: 'Admin',
+            type: 'audio', audioData: reader.result,
             createdAt: serverTimestamp(),
           });
           await addDoc(collection(db, 'notifications'), {
-            userId: selectedOrder.userId,
+            userId: selectedUser.id,
             title: '🎙️ Voice message from Admin',
             body: 'Admin sent you a voice message',
             type: 'message', read: false, createdAt: serverTimestamp(),
@@ -150,17 +126,13 @@ export default function AdminPage() {
       } else {
         const txt = newMessage.trim();
         setNewMessage('');
-        await addDoc(collection(db, 'messages'), {
-          orderId: selectedOrder.id,
-          senderId: 'admin',
-          senderName: 'Admin',
-          senderRole: 'admin',
-          type: 'text',
-          text: txt,
+        await addDoc(collection(db, 'adminMessages', selectedUser.id, 'messages'), {
+          sender: 'admin', senderName: 'Admin',
+          type: 'text', text: txt,
           createdAt: serverTimestamp(),
         });
         await addDoc(collection(db, 'notifications'), {
-          userId: selectedOrder.userId,
+          userId: selectedUser.id,
           title: '💬 Message from Admin',
           body: txt.slice(0, 80),
           type: 'message', read: false, createdAt: serverTimestamp(),
@@ -184,7 +156,6 @@ export default function AdminPage() {
       setRecording(true);
     } catch { showToast('❌ Microphone access denied'); }
   };
-
   const stopRecording = () => { mediaRecorder.current?.stop(); setRecording(false); };
 
   // ── Topic CRUD ──────────────────────────────────────────
@@ -207,7 +178,7 @@ export default function AdminPage() {
   const deleteTopic = async (id) => {
     if (!window.confirm('Delete this topic?')) return;
     await deleteDoc(doc(db, 'researchTopics', id));
-    showToast('🗑️ Topic deleted');
+    showToast('🗑️ Deleted');
   };
 
   const toggleAdminUser = async (userId, current) => {
@@ -216,39 +187,33 @@ export default function AdminPage() {
     showToast(!current ? '✅ Admin granted' : '✅ Admin removed');
   };
 
-  const filtered = filterStatus === 'all'
-    ? requests
-    : requests.filter(r => r.status === filterStatus);
+  const filtered = filterStatus === 'all' ? requests : requests.filter(r => r.status === filterStatus);
 
+  // ── Shared styles ───────────────────────────────────────
   const s = {
-    page:     { minHeight: '100vh', background: 'var(--bg-primary)', paddingBottom: 60 },
-    header:   { background: 'linear-gradient(135deg,var(--blue-deep),var(--teal-dark))', padding: '32px 24px', color: '#fff' },
-    inner:    { maxWidth: 1200, margin: '0 auto', padding: '0 20px' },
-    tabs:     { display: 'flex', gap: 4, padding: '16px 20px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', overflowX: 'auto' },
-    tab:      (a) => ({ padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.2s', background: a ? 'var(--teal)' : 'transparent', color: a ? '#fff' : 'var(--text-secondary)' }),
-    card:     { background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, padding: 20, marginBottom: 12 },
-    badge:    (st) => ({ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, background: STATUS_COLORS[st]?.bg || '#eee', color: STATUS_COLORS[st]?.color || '#333' }),
-    btn:      (bg, color='#fff') => ({ background: bg, color, border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all 0.2s' }),
-    input:    { width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box' },
-    label:    { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
-    grid2:    { display: 'grid', gridTemplateColumns: '300px 1fr', gap: 20, height: 'calc(100vh - 260px)' },
-    pane:     { background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)', overflow: 'hidden', display: 'flex', flexDirection: 'column' },
-    chatArea: { background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column' },
+    page:   { minHeight: '100vh', background: 'var(--bg-primary)', paddingBottom: 60 },
+    header: { background: 'linear-gradient(135deg,var(--blue-deep),var(--teal-dark))', padding: '32px 24px' },
+    inner:  { maxWidth: 1200, margin: '0 auto', padding: '0 20px' },
+    tabs:   { display: 'flex', gap: 4, padding: '16px 20px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', overflowX: 'auto' },
+    tab:    (a) => ({ padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.2s', background: a ? 'var(--teal)' : 'transparent', color: a ? '#fff' : 'var(--text-secondary)' }),
+    card:   { background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, padding: 20, marginBottom: 12 },
+    badge:  (st) => ({ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, background: STATUS_COLORS[st]?.bg || '#eee', color: STATUS_COLORS[st]?.color || '#333' }),
+    btn:    (bg, color='#fff') => ({ background: bg, color, border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all 0.2s' }),
+    input:  { width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', marginBottom: 12, boxSizing: 'border-box' },
+    lbl:    { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   };
 
   return (
     <div style={s.page}>
+      {/* Header */}
       <div style={s.header}>
         <div style={s.inner}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: '#fff', marginBottom: 4 }}>
-            🛡️ Admin Control Panel
-          </h1>
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>
-            Manage requests, topics, users and communications
-          </p>
+          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: '#fff', marginBottom: 4 }}>🛡️ Admin Control Panel</h1>
+          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>Manage requests, topics, users and communications</p>
         </div>
       </div>
 
+      {/* Tabs */}
       <div style={s.tabs}>
         {TABS.map(t => (
           <button key={t.key} style={s.tab(tab === t.key)} onClick={() => setTab(t.key)}>
@@ -264,10 +229,11 @@ export default function AdminPage() {
 
       <div style={{ ...s.inner, paddingTop: 24 }}>
 
-        {/* ── SERVICE REQUESTS ── */}
+        {/* ══════════════ SERVICE REQUESTS ══════════════ */}
         {tab === 'requests' && (
           <div style={{ display: 'grid', gridTemplateColumns: selectedRequest ? '1fr 1fr' : '1fr', gap: 20 }}>
             <div>
+              {/* Filter bar */}
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap', marginBottom: 16 }}>
                 {['all', ...STATUS_OPTIONS].map(st => (
                   <button key={st} onClick={() => setFilterStatus(st)}
@@ -277,9 +243,7 @@ export default function AdminPage() {
                 ))}
               </div>
 
-              {filtered.length === 0 && (
-                <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No requests found</div>
-              )}
+              {filtered.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No requests found</div>}
 
               {filtered.map(req => (
                 <div key={req.id} style={{ ...s.card, cursor: 'pointer', border: selectedRequest?.id === req.id ? '2px solid var(--teal)' : '1px solid var(--border-card)' }}
@@ -294,13 +258,12 @@ export default function AdminPage() {
                   <div style={{ fontSize: 13, color: 'var(--text-secondary)', marginBottom: 8, lineHeight: 1.5 }}>
                     {req.description?.slice(0, 100)}{req.description?.length > 100 ? '...' : ''}
                   </div>
-                  <div style={{ fontSize: 11, color: 'var(--text-hint)' }}>
-                    {req.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now'}
-                  </div>
+                  <div style={{ fontSize: 11, color: 'var(--text-hint)' }}>{req.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now'}</div>
                 </div>
               ))}
             </div>
 
+            {/* Detail panel */}
             {selectedRequest && (
               <div style={{ ...s.card, position: 'sticky', top: 80, maxHeight: 'calc(100vh - 120px)', overflowY: 'auto' }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -310,14 +273,14 @@ export default function AdminPage() {
 
                 {[['Service', selectedRequest.serviceTitle],['Client', selectedRequest.name],['Email', selectedRequest.email],['Phone', selectedRequest.phone],['Description', selectedRequest.description],['Deadline', selectedRequest.deadline]].map(([label, val]) => val ? (
                   <div key={label} style={{ marginBottom: 12 }}>
-                    <div style={s.label}>{label}</div>
+                    <div style={s.lbl}>{label}</div>
                     <div style={{ fontSize: 14, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: 8 }}>{val}</div>
                   </div>
                 ) : null)}
 
                 {selectedRequest.extraData && Object.entries(selectedRequest.extraData).map(([k, v]) => (
                   <div key={k} style={{ marginBottom: 10 }}>
-                    <div style={s.label}>{k.replace(/([A-Z])/g, ' $1')}</div>
+                    <div style={s.lbl}>{k.replace(/([A-Z])/g, ' $1')}</div>
                     <div style={{ fontSize: 13, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '7px 10px', borderRadius: 6 }}>{v}</div>
                   </div>
                 ))}
@@ -325,16 +288,15 @@ export default function AdminPage() {
                 <div style={{ height: 1, background: 'var(--border)', margin: '20px 0' }} />
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={s.label}>Update Status</label>
+                  <label style={s.lbl}>Update Status</label>
                   <select defaultValue={selectedRequest.status}
-                    onChange={e => setSelectedRequest(r => ({ ...r, status: e.target.value }))}
-                    style={s.input}>
+                    onChange={e => setSelectedRequest(r => ({ ...r, status: e.target.value }))} style={s.input}>
                     {STATUS_OPTIONS.map(st => <option key={st} value={st}>{st.replace('_', ' ')}</option>)}
                   </select>
                 </div>
 
                 <div style={{ marginBottom: 12 }}>
-                  <label style={s.label}>Agreed Price (₦)</label>
+                  <label style={s.lbl}>Agreed Price (₦)</label>
                   <input type="number" placeholder="e.g. 15000"
                     defaultValue={selectedRequest.agreedPrice || ''}
                     onChange={e => setSelectedRequest(r => ({ ...r, agreedPrice: e.target.value }))}
@@ -342,8 +304,8 @@ export default function AdminPage() {
                 </div>
 
                 <div style={{ marginBottom: 16 }}>
-                  <label style={s.label}>Note to Client</label>
-                  <textarea rows={3} placeholder="Write a note visible to the client..."
+                  <label style={s.lbl}>Note to Client</label>
+                  <textarea rows={3} placeholder="Note visible to client..."
                     defaultValue={selectedRequest.adminNote || ''}
                     onChange={e => setSelectedRequest(r => ({ ...r, adminNote: e.target.value }))}
                     style={{ ...s.input, resize: 'vertical' }} />
@@ -360,7 +322,8 @@ export default function AdminPage() {
                   </button>
                   <button style={s.btn('var(--blue-deep)')}
                     onClick={() => {
-                      setSelectedOrder({ id: selectedRequest.id, userId: selectedRequest.userId, title: selectedRequest.serviceTitle, name: selectedRequest.name });
+                      const u = users.find(u => u.id === selectedRequest.userId) || { id: selectedRequest.userId, name: selectedRequest.name, email: selectedRequest.email };
+                      setSelectedUser(u);
                       setTab('messages');
                     }}>
                     💬 Message
@@ -371,7 +334,7 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ── RESEARCH TOPICS ── */}
+        {/* ══════════════ RESEARCH TOPICS ══════════════ */}
         {tab === 'topics' && (
           <div>
             <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
@@ -388,32 +351,24 @@ export default function AdminPage() {
                   {topicForm.id ? '✏️ Edit Topic' : '➕ Add New Topic'}
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {[
-                    { key: 'title', label: 'Title', placeholder: 'e.g. Effect of hypertension in elderly patients' },
-                    { key: 'price', label: 'Price (₦)', placeholder: 'e.g. ₦5,000' },
-                    { key: 'pages', label: 'Pages', placeholder: 'e.g. 65 pages' },
-                  ].map(f => (
+                  {[{ key: 'title', label: 'Title', placeholder: 'Topic title' },{ key: 'price', label: 'Price (₦)', placeholder: 'e.g. ₦5,000' },{ key: 'pages', label: 'Pages', placeholder: 'e.g. 65 pages' }].map(f => (
                     <div key={f.key} style={f.key === 'title' ? { gridColumn: '1/-1' } : {}}>
-                      <label style={s.label}>{f.label}</label>
-                      <input type="text" placeholder={f.placeholder}
-                        value={topicForm[f.key] || ''}
-                        onChange={e => setTopicForm(p => ({ ...p, [f.key]: e.target.value }))}
-                        style={s.input} />
+                      <label style={s.lbl}>{f.label}</label>
+                      <input type="text" placeholder={f.placeholder} value={topicForm[f.key] || ''}
+                        onChange={e => setTopicForm(p => ({ ...p, [f.key]: e.target.value }))} style={s.input} />
                     </div>
                   ))}
                   <div>
-                    <label style={s.label}>Category</label>
+                    <label style={s.lbl}>Category</label>
                     <select value={topicForm.category || 'Nursing'}
-                      onChange={e => setTopicForm(p => ({ ...p, category: e.target.value }))}
-                      style={s.input}>
+                      onChange={e => setTopicForm(p => ({ ...p, category: e.target.value }))} style={s.input}>
                       {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                     </select>
                   </div>
                   <div>
-                    <label style={s.label}>Badge</label>
+                    <label style={s.lbl}>Badge</label>
                     <select value={topicForm.badge || ''}
-                      onChange={e => setTopicForm(p => ({ ...p, badge: e.target.value }))}
-                      style={s.input}>
+                      onChange={e => setTopicForm(p => ({ ...p, badge: e.target.value }))} style={s.input}>
                       <option value="">None</option>
                       <option value="Popular">🔥 Popular</option>
                       <option value="New">✨ New</option>
@@ -421,17 +376,15 @@ export default function AdminPage() {
                     </select>
                   </div>
                   <div style={{ gridColumn: '1/-1' }}>
-                    <label style={s.label}>Description</label>
-                    <textarea rows={3} placeholder="Brief description..."
-                      value={topicForm.description || ''}
+                    <label style={s.lbl}>Description</label>
+                    <textarea rows={3} placeholder="Brief description..." value={topicForm.description || ''}
                       onChange={e => setTopicForm(p => ({ ...p, description: e.target.value }))}
                       style={{ ...s.input, resize: 'vertical' }} />
                   </div>
                 </div>
                 <div style={{ display: 'flex', gap: 10, marginTop: 8 }}>
-                  <button style={{ ...s.btn('var(--teal)'), flex: 1 }} disabled={saving}
-                    onClick={() => saveTopic(topicForm)}>
-                    {saving ? 'Saving...' : topicForm.id ? '💾 Update Topic' : '➕ Add Topic'}
+                  <button style={{ ...s.btn('var(--teal)'), flex: 1 }} disabled={saving} onClick={() => saveTopic(topicForm)}>
+                    {saving ? 'Saving...' : topicForm.id ? '💾 Update' : '➕ Add Topic'}
                   </button>
                   <button style={s.btn('#94A3B8')} onClick={() => setTopicForm(null)}>Cancel</button>
                 </div>
@@ -465,70 +418,83 @@ export default function AdminPage() {
                   ))}
                 </tbody>
               </table>
-              {topics.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No topics yet. Add your first one!</div>}
+              {topics.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No topics yet.</div>}
             </div>
           </div>
         )}
 
-        {/* ── MESSAGES ── */}
+        {/* ══════════════ MESSAGES ══════════════ */}
         {tab === 'messages' && (
-          <div style={s.grid2}>
-            {/* Request list (threads) */}
-            <div style={s.pane}>
+          <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, height: 'calc(100vh - 260px)' }}>
+            {/* Client list */}
+            <div style={{ background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               <div style={{ padding: '14px 16px', borderBottom: '1px solid var(--border)', fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', flexShrink: 0 }}>
-                💬 Request Threads
+                👥 Clients
               </div>
               <div style={{ overflowY: 'auto', flex: 1 }}>
-                {requests.length === 0 && (
-                  <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No requests yet</div>
-                )}
-                {requests.map(req => (
-                  <div key={req.id}
-                    onClick={() => setSelectedOrder({ id: req.id, userId: req.userId, title: req.serviceTitle || req.serviceKey, name: req.name, email: req.email })}
-                    style={{ padding: '13px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', background: selectedOrder?.id === req.id ? 'var(--teal-glow)' : 'transparent', transition: 'all 0.15s' }}>
-                    <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', marginBottom: 2 }}>{req.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--teal)', marginBottom: 3, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.serviceTitle || req.serviceKey}</div>
-                    <span style={s.badge(req.status)}>{req.status?.replace('_', ' ')}</span>
+                {users.length === 0 && <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No clients yet</div>}
+                {users.filter(u => !u.isAdmin).map(u => (
+                  <div key={u.id} onClick={() => setSelectedUser(u)}
+                    style={{ padding: '13px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', background: selectedUser?.id === u.id ? 'var(--teal-glow)' : 'transparent', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 10 }}>
+                    <div style={{ width: 36, height: 36, borderRadius: '50%', background: 'linear-gradient(135deg,var(--teal),var(--blue-deep))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
+                      {(u.name || u.displayName || u.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div style={{ minWidth: 0 }}>
+                      <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.name || u.displayName || 'Client'}</div>
+                      <div style={{ fontSize: 11, color: 'var(--text-muted)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{u.email}</div>
+                    </div>
                   </div>
                 ))}
               </div>
             </div>
 
             {/* Chat window */}
-            <div style={s.chatArea}>
-              {!selectedOrder ? (
-                <div style={{ flex: 1, display: 'flex', alignItems: 'center', justifyContent: 'center', flexDirection: 'column', gap: 12, color: 'var(--text-muted)' }}>
-                  <span style={{ fontSize: '3rem' }}>💬</span>
-                  <p>Select a request to open the chat</p>
+            <div style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+              {!selectedUser ? (
+                <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: 12 }}>
+                  <span style={{ fontSize: '3.5rem' }}>💬</span>
+                  <p style={{ fontSize: 14 }}>Select a client to start chatting</p>
                 </div>
               ) : (
                 <>
-                  <div style={{ padding: '13px 18px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)', borderRadius: '12px 12px 0 0', flexShrink: 0 }}>
-                    <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 }}>{selectedOrder.name}</div>
-                    <div style={{ fontSize: 12, color: 'var(--teal)' }}>{selectedOrder.title}</div>
+                  {/* Chat header */}
+                  <div style={{ padding: '13px 18px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
+                    <div style={{ width: 38, height: 38, borderRadius: '50%', background: 'linear-gradient(135deg,var(--teal),var(--blue-deep))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 16 }}>
+                      {(selectedUser.name || selectedUser.email || '?')[0].toUpperCase()}
+                    </div>
+                    <div>
+                      <div style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 }}>{selectedUser.name || selectedUser.displayName || 'Client'}</div>
+                      <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedUser.email}</div>
+                    </div>
                   </div>
 
-                  <div style={{ flex: 1, overflowY: 'auto', padding: 14, display: 'flex', flexDirection: 'column', gap: 10 }}>
+                  {/* Messages */}
+                  <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
                     {messages.length === 0 && (
-                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 40, fontSize: 13 }}>No messages yet. Start the conversation!</div>
+                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 60, fontSize: 13 }}>
+                        No messages yet. Say hello! 👋
+                      </div>
                     )}
                     {messages.map(msg => {
-                      const isAdmin = msg.senderRole === 'admin' || msg.senderId === 'admin';
+                      const isAdmin = msg.sender === 'admin';
                       return (
                         <div key={msg.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
                           <div style={{
-                            maxWidth: '70%', padding: '10px 14px', borderRadius: 14, fontSize: 14, lineHeight: 1.5,
+                            maxWidth: '70%', padding: '10px 14px', borderRadius: 16, fontSize: 14, lineHeight: 1.55,
                             background: isAdmin ? 'var(--teal)' : 'var(--bg-tertiary)',
                             color: isAdmin ? '#fff' : 'var(--text-primary)',
                             border: !isAdmin ? '1px solid var(--border)' : 'none',
-                            borderBottomRightRadius: isAdmin ? 4 : 14,
-                            borderBottomLeftRadius: !isAdmin ? 4 : 14,
+                            borderBottomRightRadius: isAdmin ? 4 : 16,
+                            borderBottomLeftRadius: !isAdmin ? 4 : 16,
                           }}>
-                            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 4, fontWeight: 600 }}>{isAdmin ? 'Admin' : (msg.senderName || 'Client')}</div>
+                            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 5, fontWeight: 700, letterSpacing: 0.3 }}>
+                              {isAdmin ? '🛡️ Admin' : (msg.senderName || '👤 Client')}
+                            </div>
                             {msg.type === 'audio'
-                              ? <audio controls src={msg.audioData} style={{ maxWidth: 200, height: 36 }} />
-                              : msg.text}
-                            <div style={{ fontSize: 10, opacity: 0.5, marginTop: 4, textAlign: 'right' }}>
+                              ? <audio controls src={msg.audioData} style={{ maxWidth: 220, height: 36, display: 'block' }} />
+                              : <span style={{ wordBreak: 'break-word' }}>{msg.text}</span>
+                            }
+                            <div style={{ fontSize: 10, opacity: 0.5, marginTop: 5, textAlign: 'right' }}>
                               {msg.createdAt?.toDate?.()?.toLocaleTimeString?.('en', { hour: '2-digit', minute: '2-digit' }) || ''}
                             </div>
                           </div>
@@ -538,16 +504,18 @@ export default function AdminPage() {
                     <div ref={messagesEnd} />
                   </div>
 
+                  {/* Audio preview */}
                   {audioBlob && (
-                    <div style={{ padding: '8px 16px', background: 'var(--bg-secondary)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                    <div style={{ padding: '8px 14px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
                       <audio controls src={URL.createObjectURL(audioBlob)} style={{ height: 36, flex: 1 }} />
-                      <button onClick={() => setAudioBlob(null)} style={s.btn('#EF4444')}>✕</button>
-                      <button onClick={sendMessage} style={s.btn('var(--teal)')}>Send 🎙️</button>
+                      <button onClick={() => setAudioBlob(null)} style={{ ...s.btn('#EF4444'), padding: '6px 12px' }}>✕</button>
+                      <button onClick={sendMessage} style={{ ...s.btn('var(--teal)'), padding: '6px 14px' }}>Send 🎙️</button>
                     </div>
                   )}
 
+                  {/* Input bar */}
                   {!audioBlob && (
-                    <div style={{ padding: 12, borderTop: '1px solid var(--border)', display: 'flex', gap: 8, background: 'var(--bg-card)', borderRadius: '0 0 12px 12px', flexShrink: 0 }}>
+                    <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, background: 'var(--bg-card)', flexShrink: 0 }}>
                       <input
                         value={newMessage}
                         onChange={e => setNewMessage(e.target.value)}
@@ -555,14 +523,18 @@ export default function AdminPage() {
                         placeholder="Type a message..."
                         style={{ ...s.input, marginBottom: 0, flex: 1 }}
                       />
+                      {/* Hold to record */}
                       <button
                         onMouseDown={startRecording} onMouseUp={stopRecording}
-                        onTouchStart={startRecording} onTouchEnd={stopRecording}
-                        style={{ ...s.btn(recording ? '#EF4444' : 'var(--bg-secondary)', recording ? '#fff' : 'var(--text-secondary)'), padding: '10px 14px', fontSize: 18, border: '1px solid var(--border)' }}
-                        title="Hold to record voice">
+                        onTouchStart={e => { e.preventDefault(); startRecording(); }} onTouchEnd={stopRecording}
+                        title="Hold to record voice note"
+                        style={{ ...s.btn(recording ? '#EF4444' : 'var(--bg-secondary)', recording ? '#fff' : 'var(--text-secondary)'), padding: '10px 14px', fontSize: 18, border: '1px solid var(--border)', flexShrink: 0 }}>
                         {recording ? '⏹' : '🎙️'}
                       </button>
-                      <button onClick={sendMessage} style={{ ...s.btn('var(--teal)'), padding: '10px 16px' }}>➤</button>
+                      <button onClick={sendMessage} disabled={!newMessage.trim()}
+                        style={{ ...s.btn('var(--teal)'), padding: '10px 18px', flexShrink: 0, opacity: newMessage.trim() ? 1 : 0.5 }}>
+                        ➤
+                      </button>
                     </div>
                   )}
                 </>
@@ -571,16 +543,14 @@ export default function AdminPage() {
           </div>
         )}
 
-        {/* ── USERS ── */}
+        {/* ══════════════ USERS ══════════════ */}
         {tab === 'users' && (
           <div>
-            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginBottom: 20 }}>
-              Registered Users ({users.length})
-            </h2>
+            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginBottom: 20 }}>Registered Users ({users.length})</h2>
             <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
               <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
                 <thead style={{ background: 'var(--bg-secondary)' }}>
-                  <tr>{['Name','Email','Joined','Admin','Actions'].map(h => (
+                  <tr>{['Name','Email','Joined','Role','Actions'].map(h => (
                     <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
                   ))}</tr>
                 </thead>
@@ -589,17 +559,19 @@ export default function AdminPage() {
                     <tr key={u.id}>
                       <td style={{ padding: '13px 16px', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{u.name || u.displayName || '—'}</td>
                       <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{u.email}</td>
-                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 12 }}>
-                        {u.createdAt?.toDate?.()?.toLocaleDateString?.() || '—'}
-                      </td>
+                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 12 }}>{u.createdAt?.toDate?.()?.toLocaleDateString?.() || '—'}</td>
                       <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
-                        {u.isAdmin ? <span style={s.badge('accepted')}>✅ Admin</span> : <span style={s.badge('pending')}>User</span>}
+                        {u.isAdmin ? <span style={s.badge('accepted')}>✅ Admin</span> : <span style={s.badge('pending')}>Client</span>}
                       </td>
                       <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
                         <div style={{ display: 'flex', gap: 6 }}>
                           <button style={{ ...s.btn(u.isAdmin ? '#EF4444' : 'var(--blue-deep)'), padding: '5px 12px', fontSize: 12 }}
                             onClick={() => toggleAdminUser(u.id, u.isAdmin)}>
                             {u.isAdmin ? '🚫 Remove Admin' : '🛡️ Make Admin'}
+                          </button>
+                          <button style={{ ...s.btn('var(--teal)'), padding: '5px 12px', fontSize: 12 }}
+                            onClick={() => { setSelectedUser(u); setTab('messages'); }}>
+                            💬 Chat
                           </button>
                         </div>
                       </td>
@@ -613,6 +585,7 @@ export default function AdminPage() {
         )}
       </div>
 
+      {/* Toast */}
       {toast && (
         <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', color: '#fff', padding: '12px 24px', borderRadius: 24, fontSize: 14, fontWeight: 600, zIndex: 9999, backdropFilter: 'blur(10px)', border: '1px solid rgba(13,148,136,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', whiteSpace: 'nowrap', fontFamily: 'var(--font-body)' }}>
           {toast}
