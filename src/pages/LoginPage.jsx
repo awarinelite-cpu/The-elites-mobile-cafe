@@ -18,7 +18,7 @@ export default function LoginPage() {
       const user = await loginUser(data);
       const profile = await getUserProfile(user.uid);
       toast.success(`Welcome back, ${user.displayName?.split(' ')[0] || 'there'}!`);
-      navigate(profile?.role === 'admin' ? '/admin' : '/dashboard');
+      navigate(profile?.isAdmin ? '/admin' : '/dashboard');
     } catch (err) {
       const msg = err.code === 'auth/invalid-credential'
         ? 'Invalid email or password.'
