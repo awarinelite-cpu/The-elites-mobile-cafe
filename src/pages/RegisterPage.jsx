@@ -16,14 +16,15 @@ const PERKS = [
 export default function RegisterPage() {
   const { register, handleSubmit, watch, formState: { errors, isSubmitting } } = useForm();
   const [showPass, setShowPass] = useState(false);
+  const [role, setRole] = useState('client');
   const navigate = useNavigate();
   const password = watch('password', '');
 
   const onSubmit = async (data) => {
     try {
-      await registerUser({ name: data.name, email: data.email, password: data.password });
+      await registerUser({ name: data.name, email: data.email, password: data.password, role });
       toast.success('Account created! Welcome to The Elites Mobile Cafe.');
-      navigate('/dashboard');
+      navigate(role === 'writer' ? '/writer' : '/dashboard');
     } catch (err) {
       const msg = err.code === 'auth/email-already-in-use'
         ? 'This email is already registered. Try signing in.'
@@ -142,6 +143,28 @@ export default function RegisterPage() {
                 onBlur={e => e.target.style.borderColor = errors.confirm ? 'var(--red)' : 'var(--border)'}
               />
             </Field>
+
+            {/* Role selector */}
+            <div>
+              <label style={{ color: 'var(--text-secondary)', fontSize: 12, letterSpacing: 0.5, display: 'block', marginBottom: 10 }}>I am joining as a</label>
+              <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10 }}>
+                {[
+                  { value: 'client', emoji: '🎓', label: 'Client', desc: 'I need research work done' },
+                  { value: 'writer', emoji: '✍️', label: 'Writer', desc: 'I want to write & earn' },
+                ].map(opt => (
+                  <div key={opt.value} onClick={() => setRole(opt.value)} style={{
+                    border: `2px solid ${role === opt.value ? 'var(--gold)' : 'var(--border)'}`,
+                    borderRadius: 10, padding: '14px 12px', cursor: 'pointer',
+                    background: role === opt.value ? 'var(--gold-glow)' : 'var(--dark-elevated)',
+                    transition: 'all 0.2s', textAlign: 'center',
+                  }}>
+                    <div style={{ fontSize: '1.6rem', marginBottom: 4 }}>{opt.emoji}</div>
+                    <div style={{ fontWeight: 700, fontSize: 13, color: role === opt.value ? 'var(--gold)' : 'var(--text-primary)' }}>{opt.label}</div>
+                    <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{opt.desc}</div>
+                  </div>
+                ))}
+              </div>
+            </div>
 
             <p style={{ color: 'var(--text-muted)', fontSize: 11, lineHeight: 1.6, marginTop: -6 }}>
               By creating an account you agree to our{' '}
