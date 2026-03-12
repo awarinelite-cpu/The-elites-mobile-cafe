@@ -488,7 +488,112 @@ function MessagesTab({ user, profile }) {
     </div>
   );
 }
+// ── Price Negotiation Response ────────────────────────────────
+function ClientPriceResponse({ order, user, profile }) {
+  const [response, setResponse]         = useState('');      // 'accept' | 'counter'
+  const [message, setMessage]           = useState('');
+  const [counterPrice, setCounterPrice] = useState('');
+  const [submitting, setSubmitting]     = useState(false);
+  const [done, setDone]                 = useState(false);
 
+  const handleSubmit = async () => {
+    if (!response) return;
+    if (response === 'counter' && !counterPrice) return;
+    setSubmitting(true);
+    try {
+      const entry = {
+        from:         'client',
+        response,
+        message:      message.trim() || (response === 'accept' ? 'I accept the price.' : ''),
+        counterPrice: response === 'counter' ? Number(counterPrice) : null,
+        createdAt:    new Date().toISOString(),
+      };
+      await updateDoc(doc(db, 'serviceRequests', order.id), {
+        clientPriceResponse: response,
+        priceNegotiation:    [...(order.priceNegotiation || []), entry],
+        updatedAt:           ts(),
+      });
+      await addDoc(collection(db, 'notifications'), {
+        userId:    'admin',
+        title:     response === 'accept' ? '✅ Client accepted the price' : '🔄 Client sent a counter offer',
+        body:      response === 'accept'
+          ? `${profile?.name || 'Client'} accepted ₦${Number(order.agreedPrice).toLocaleString()} for "${order.serviceTitle || order.topicTitle}".`
+          : `${profile?.name || 'Client'} countered with ₦${Number(counterPrice).toLocaleString()} for "${order.serviceTitle || order.topicTitle}". Message: ${message}`,
+        type:      'negotiation',
+        orderId:   order.id,
+        read:      false,
+        createdAt: ts(),
+      });
+      setDone(true);
+    } catch (e) { console.error(e); }
+    setSubmitting(false);
+  };
+
+  if (done) return (
+    <div style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>
+      ✅ Response sent. Waiting for admin to confirm.
+    </div>
+  );
+
+  return (
+    <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
+      <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>
+        Is this price okay for you?
+      </div>
+
+      {/* Accept / Negotiate buttons */}
+      <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
+        <button onClick={() => setResponse('accept')} style={{
+          flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13,
+          border: `2px solid ${response === 'accept' ? '#16A34A' : 'var(--border)'}`,
+          background: response === 'accept' ? 'rgba(22,163,74,0.1)' : 'transparent',
+          color: response === 'accept' ? '#16A34A' : 'var(--text-secondary)',
+        }}>
+          ✅ Accept Price
+        </button>
+        <button onClick={() => setResponse('counter')} style={{
+          flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13,
+          border: `2px solid ${response === 'counter' ? 'var(--gold)' : 'var(--border)'}`,
+          background: response === 'counter' ? 'rgba(201,168,76,0.08)' : 'transparent',
+          color: response === 'counter' ? 'var(--gold)' : 'var(--text-secondary)',
+        }}>
+          🔄 Negotiate
+        </button>
+      </div>
+
+      {/* Counter price input — only when negotiating */}
+      {response === 'counter' && (
+        <input type="number" placeholder="Your counter price (₦)"
+          value={counterPrice} onChange={e => setCounterPrice(e.target.value)}
+          style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 14, marginBottom: 10, boxSizing: 'border-box', outline: 'none' }}
+        />
+      )}
+
+      {/* Optional message */}
+      {response && (
+        <textarea rows={2}
+          placeholder={response === 'accept' ? 'Any message for admin? (optional)' : 'Explain your counter offer...'}
+          value={message} onChange={e => setMessage(e.target.value)}
+          style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, resize: 'none', marginBottom: 10, boxSizing: 'border-box', outline: 'none', fontFamily: 'var(--font-body)' }}
+        />
+      )}
+
+      {/* Submit */}
+      {response && (
+        <button onClick={handleSubmit}
+          disabled={submitting || (response === 'counter' && !counterPrice)}
+          style={{
+            width: '100%', padding: '11px', borderRadius: 8, border: 'none', fontWeight: 700, fontSize: 14, cursor: 'pointer',
+            background: response === 'accept' ? '#16A34A' : 'var(--gold)',
+            color: response === 'accept' ? '#fff' : '#000',
+            opacity: submitting ? 0.6 : 1,
+          }}>
+          {submitting ? 'Sending...' : response === 'accept' ? '✅ Confirm Acceptance' : '📤 Send Counter Offer'}
+        </button>
+      )}
+    </div>
+  );
+}
 // ── Payments ──────────────────────────────────────────────────
 function PaymentsTab({ orders, stats }) {
   const paid = orders.filter(o => o.status === 'paid');
