@@ -1,495 +1,704 @@
 // src/pages/AdminPage.jsx
 import { useState, useEffect, useRef } from 'react';
-import { BarChart2, FileText, MessageSquare, BookOpen, Users, Upload, Send, ChevronRight, CheckCircle, X, Eye } from 'lucide-react';
-import { useAuth } from '../context/AuthContext';
-import { subscribeToAllOrders, sendQuote, updateOrder, subscribeToMessages, sendMessage, createTopic, subscribeToTopics, updateTopic } from '../firebase/orderService';
-import { uploadDraft, uploadFinal } from '../firebase/storageService';
-import { StatusBadge, EmptyState, Spinner, Card, Btn, Field, inputStyle, textareaStyle, Modal } from '../components/shared/UI';
+import {
+  collection, addDoc, updateDoc, deleteDoc, doc,
+  onSnapshot, serverTimestamp, orderBy, query, getDocs
+} from 'firebase/firestore';
+import { ref, uploadBytes, getDownloadURL } from 'firebase/storage';
+import { db, storage } from '../firebase/config';
 import toast from 'react-hot-toast';
-import { useForm } from 'react-hook-form';
 
-const NAV = [
-  { id: 'overview', icon: BarChart2,    label: 'Overview' },
-  { id: 'orders',   icon: FileText,     label: 'All Orders' },
-  { id: 'messages', icon: MessageSquare,label: 'Messages' },
-  { id: 'topics',   icon: BookOpen,     label: 'Manage Topics' },
+/* ── Tab config ─────────────────────────────────────────────── */
+const TABS = [
+  { key: 'requests',  label: '📋 Service Requests' },
+  { key: 'topics',    label: '📚 Research Topics' },
+  { key: 'messages',  label: '💬 Messages' },
 ];
 
+const STATUS_OPTIONS = ['pending', 'reviewing', 'accepted', 'in_progress', 'completed', 'rejected'];
+const STATUS_COLORS  = {
+  pending:     { bg: '#FEF9C3', color: '#92400E' },
+  reviewing:   { bg: '#DBEAFE', color: '#1E3A8A' },
+  accepted:    { bg: '#CCFBF1', color: '#0F766E' },
+  in_progress: { bg: '#EDE9FE', color: '#6D28D9' },
+  completed:   { bg: '#DCFCE7', color: '#15803D' },
+  rejected:    { bg: '#FEE2E2', color: '#DC2626' },
+};
+
+const CATEGORIES = [
+  'Nursing Science', 'Public Health', 'Technology', 'Business',
+  'Economics', 'Psychology', 'Sociology', 'Environmental Science', 'Other'
+];
+
+/* ════════════════════════════════════════════════════════════ */
 export default function AdminPage() {
-  const { user, profile } = useAuth();
-  const [tab, setTab] = useState('overview');
-  const [orders, setOrders] = useState([]);
-  const [loading, setLoading] = useState(true);
+  const [tab, setTab] = useState('requests');
+
+  return (
+    <div style={{ minHeight: '100vh', background: '#F1F5F9', fontFamily: "'Times New Roman', Georgia, serif" }}>
+
+      {/* Header */}
+      <div style={{ background: '#172554', borderBottom: '3px solid #0D9488', padding: '20px 24px' }}>
+        <h1 style={{ color: '#FFFFFF', fontSize: 24, fontWeight: 700, margin: 0 }}>⚙️ Admin Dashboard</h1>
+        <p style={{ color: 'rgba(255,255,255,0.60)', fontSize: 13, margin: '4px 0 0' }}>Elite Mobile Cafe — Full Control Panel</p>
+      </div>
+
+      {/* Tabs */}
+      <div style={{ background: '#FFFFFF', borderBottom: '1px solid #E2E8F0', padding: '0 24px', display: 'flex', gap: 4 }}>
+        {TABS.map(t => (
+          <button key={t.key} onClick={() => setTab(t.key)} style={{
+            background: 'none', border: 'none', cursor: 'pointer',
+            padding: '16px 20px', fontSize: 14, fontWeight: 700,
+            fontFamily: "'Times New Roman', serif",
+            color: tab === t.key ? '#0D9488' : '#6B7280',
+            borderBottom: tab === t.key ? '3px solid #0D9488' : '3px solid transparent',
+            transition: 'color 0.2s',
+          }}>{t.label}</button>
+        ))}
+      </div>
+
+      {/* Content */}
+      <div style={{ padding: '28px 24px', maxWidth: 1100, margin: '0 auto' }}>
+        {tab === 'requests' && <RequestsTab />}
+        {tab === 'topics'   && <TopicsTab />}
+        {tab === 'messages' && <MessagesTab />}
+      </div>
+    </div>
+  );
+}
+
+/* ════════════════════════════════════════════════════════════
+   TAB 1 — SERVICE REQUESTS
+════════════════════════════════════════════════════════════ */
+function RequestsTab() {
+  const [requests, setRequests]     = useState([]);
+  const [loading, setLoading]       = useState(true);
+  const [selected, setSelected]     = useState(null);
+  const [adminNote, setAdminNote]   = useState('');
+  const [agreedPrice, setAgreedPrice] = useState('');
+  const [saving, setSaving]         = useState(false);
+  const [filterStatus, setFilterStatus] = useState('all');
 
   useEffect(() => {
-    const unsub = subscribeToAllOrders(data => { setOrders(data); setLoading(false); });
+    const q = query(collection(db, 'serviceRequests'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, snap => {
+      setRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
     return unsub;
   }, []);
 
-  const stats = {
-    total: orders.length,
-    pending: orders.filter(o => o.status === 'pending').length,
-    active: orders.filter(o => ['advance_paid','in_progress','preview_ready'].includes(o.status)).length,
-    complete: orders.filter(o => o.status === 'final_paid').length,
-    revenue: orders.filter(o => o.paymentStatus !== 'unpaid').reduce((s, o) => s + (o.advanceAmount || 0) + (o.status === 'final_paid' ? (o.finalAmount || 0) : 0), 0),
+  const openRequest = (r) => {
+    setSelected(r);
+    setAdminNote(r.adminNote || '');
+    setAgreedPrice(r.agreedPrice || '');
   };
 
+  const saveChanges = async (newStatus) => {
+    if (!selected) return;
+    setSaving(true);
+    try {
+      await updateDoc(doc(db, 'serviceRequests', selected.id), {
+        status: newStatus || selected.status,
+        adminNote,
+        agreedPrice,
+        updatedAt: serverTimestamp(),
+      });
+      toast.success('Request updated!');
+      setSelected(s => ({ ...s, status: newStatus || s.status, adminNote, agreedPrice }));
+    } catch (e) {
+      toast.error('Failed to save.');
+    } finally {
+      setSaving(false);
+    }
+  };
+
+  const filtered = filterStatus === 'all' ? requests : requests.filter(r => r.status === filterStatus);
+
+  if (loading) return <Loader />;
+
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--dark)', display: 'flex', paddingTop: 70 }}>
-      {/* Sidebar */}
-      <aside style={{ width: 220, background: 'var(--dark-card)', borderRight: '1px solid var(--border)', padding: '24px 0', flexShrink: 0, position: 'sticky', top: 70, height: 'calc(100vh - 70px)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '0 20px 20px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Admin Panel</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600 }}>{profile?.name?.split(' ')[0]}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>Site Owner</div>
+    <div style={{ display: 'grid', gridTemplateColumns: selected ? '1fr 1fr' : '1fr', gap: 20 }}>
+
+      {/* List */}
+      <div>
+        {/* Filter bar */}
+        <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', marginBottom: 16 }}>
+          {['all', ...STATUS_OPTIONS].map(s => (
+            <button key={s} onClick={() => setFilterStatus(s)} style={{
+              padding: '5px 14px', borderRadius: 20, fontSize: 12, fontWeight: 700,
+              border: '1px solid', cursor: 'pointer', fontFamily: "'Times New Roman', serif",
+              background: filterStatus === s ? '#0D9488' : '#FFFFFF',
+              color: filterStatus === s ? '#FFFFFF' : '#6B7280',
+              borderColor: filterStatus === s ? '#0D9488' : '#E2E8F0',
+            }}>{s === 'all' ? 'All' : s.replace('_', ' ')}</button>
+          ))}
         </div>
-        <nav style={{ padding: '14px 10px', flex: 1 }}>
-          {NAV.map(n => {
-            const Icon = n.icon;
-            const active = tab === n.id;
+
+        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
+          {filtered.length === 0 && <Empty text="No requests found." />}
+          {filtered.map(r => {
+            const sc = STATUS_COLORS[r.status] || STATUS_COLORS.pending;
             return (
-              <button key={n.id} onClick={() => setTab(n.id)} style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 9, padding: '9px 12px', borderRadius: 'var(--radius)', background: active ? 'var(--gold-glow)' : 'transparent', border: `1px solid ${active ? 'var(--border-gold)' : 'transparent'}`, color: active ? 'var(--gold)' : 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginBottom: 3, textAlign: 'left', transition: 'var(--transition)' }}>
-                <Icon size={14} /> {n.label}
-                {n.id === 'orders' && stats.pending > 0 && <span style={{ marginLeft: 'auto', background: 'var(--red)', color: '#fff', borderRadius: '50%', width: 18, height: 18, fontSize: 10, display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 700 }}>{stats.pending}</span>}
-              </button>
+              <div key={r.id} onClick={() => openRequest(r)} style={{
+                background: selected?.id === r.id ? '#F0FDFA' : '#FFFFFF',
+                border: `1px solid ${selected?.id === r.id ? '#0D9488' : '#E2E8F0'}`,
+                borderRadius: 10, padding: '14px 18px', cursor: 'pointer',
+                transition: 'border-color 0.2s',
+              }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8 }}>
+                  <div>
+                    <div style={{ fontWeight: 700, fontSize: 14, color: '#1E3A8A' }}>{r.serviceTitle}</div>
+                    <div style={{ fontSize: 12, color: '#6B7280', marginTop: 2 }}>{r.fullName} · {r.phone}</div>
+                    <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>
+                      {r.createdAt?.toDate?.()?.toLocaleDateString?.() || 'Just now'}
+                    </div>
+                  </div>
+                  <span style={{
+                    background: sc.bg, color: sc.color,
+                    fontSize: 10, fontWeight: 700, padding: '3px 10px',
+                    borderRadius: 20, textTransform: 'uppercase', whiteSpace: 'nowrap',
+                  }}>{r.status?.replace('_', ' ')}</span>
+                </div>
+              </div>
             );
           })}
-        </nav>
-      </aside>
-
-      <main style={{ flex: 1, padding: '28px clamp(14px,3vw,36px)', overflowY: 'auto', minWidth: 0 }}>
-        {tab === 'overview' && <AdminOverview stats={stats} orders={orders} loading={loading} onGoto={setTab} />}
-        {tab === 'orders'   && <AdminOrders orders={orders} loading={loading} user={user} profile={profile} />}
-        {tab === 'messages' && <AdminMessages orders={orders} user={user} profile={profile} />}
-        {tab === 'topics'   && <AdminTopics />}
-      </main>
-    </div>
-  );
-}
-
-// ── OVERVIEW ─────────────────────────────────────────────
-function AdminOverview({ stats, orders, loading, onGoto }) {
-  const actionable = orders.filter(o => ['pending','quoted','advance_paid','in_progress','preview_ready'].includes(o.status));
-  return (
-    <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, marginBottom: 6 }}>Dashboard</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 28 }}>Platform overview and pending actions.</p>
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 32 }}>
-        {[['Total Orders', stats.total, 'var(--gold)'],['Needs Attention', stats.pending, 'var(--red)'],['Active Jobs', stats.active, 'var(--blue)'],['Completed', stats.complete, 'var(--green)'],['Revenue', `₦${stats.revenue.toLocaleString()}`, 'var(--gold)']].map(([l,v,c]) => (
-          <Card key={l} hover={false}><div style={{ color: 'var(--text-muted)', fontSize: 10, letterSpacing: 1, textTransform: 'uppercase', marginBottom: 6 }}>{l}</div><div style={{ fontFamily: 'var(--font-display)', fontSize: 24, color: c, fontWeight: 600 }}>{v}</div></Card>
-        ))}
+        </div>
       </div>
 
-      <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 14 }}>Needs Action</h3>
-      {loading ? <Spinner /> : actionable.length === 0 ? (
-        <Card hover={false} style={{ textAlign: 'center', padding: '32px', color: 'var(--green)' }}>
-          <CheckCircle size={28} style={{ margin: '0 auto 10px' }} />
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18 }}>All caught up!</div>
-        </Card>
-      ) : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
-          {actionable.slice(0,6).map(o => (
-            <Card key={o.id} onClick={() => onGoto('orders')} style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 12, padding: '14px 18px', flexWrap: 'wrap' }}>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ fontSize: 13, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{o.topicTitle}</div>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginTop: 2 }}>{o.clientName} • {o.createdAt?.toDate?.()?.toLocaleDateString()}</div>
-              </div>
-              <StatusBadge status={o.status} />
-            </Card>
-          ))}
-        </div>
-      )}
-    </div>
-  );
-}
+      {/* Detail panel */}
+      {selected && (
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, padding: 24, position: 'sticky', top: 20, alignSelf: 'start' }}>
+          <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 16 }}>
+            <h3 style={{ fontSize: 17, fontWeight: 700, color: '#1E3A8A', margin: 0 }}>{selected.serviceTitle}</h3>
+            <button onClick={() => setSelected(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 18, color: '#9CA3AF' }}>✕</button>
+          </div>
 
-// ── ALL ORDERS ────────────────────────────────────────────
-function AdminOrders({ orders, loading, user, profile }) {
-  const [detail, setDetail] = useState(null);
-  const [filter, setFilter] = useState('all');
+          {/* Client info */}
+          <div style={{ background: '#F8FAFC', borderRadius: 8, padding: '12px 16px', marginBottom: 16 }}>
+            <Row label="Name"     value={selected.fullName} />
+            <Row label="Email"    value={selected.email} />
+            <Row label="Phone"    value={selected.phone} />
+            {selected.deadline && <Row label="Deadline" value={selected.deadline} />}
+          </div>
 
-  const FILTERS = ['all','pending','quoted','advance_paid','in_progress','preview_ready','final_paid'];
-  const filtered = filter === 'all' ? orders : orders.filter(o => o.status === filter);
+          {/* Extra fields */}
+          {Object.entries(selected)
+            .filter(([k]) => !['id','serviceKey','serviceTitle','fullName','email','phone','details','deadline','status','userId','createdAt','updatedAt','adminNote','agreedPrice','paymentStatus'].includes(k))
+            .map(([k, v]) => v && <Row key={k} label={k} value={String(v)} />)
+          }
 
-  if (detail) return <AdminOrderDetail order={detail} onBack={() => setDetail(null)} user={user} profile={profile} />;
+          {/* Details */}
+          <div style={{ marginBottom: 16 }}>
+            <div style={{ fontSize: 12, fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', marginBottom: 6 }}>Project Details</div>
+            <div style={{ background: '#F8FAFC', borderRadius: 8, padding: '10px 14px', fontSize: 14, color: '#374151', lineHeight: 1.7 }}>{selected.details}</div>
+          </div>
 
-  return (
-    <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, marginBottom: 20 }}>All Orders</h2>
-      <div style={{ display: 'flex', gap: 7, flexWrap: 'wrap', marginBottom: 20, overflowX: 'auto' }}>
-        {FILTERS.map(f => (
-          <button key={f} onClick={() => setFilter(f)} style={{ background: filter === f ? 'var(--gold)' : 'var(--dark-card)', color: filter === f ? 'var(--dark)' : 'var(--text-secondary)', border: `1px solid ${filter === f ? 'var(--gold)' : 'var(--border)'}`, borderRadius: 20, padding: '5px 14px', fontSize: 11, fontFamily: 'var(--font-body)', cursor: 'pointer', transition: 'var(--transition)', whiteSpace: 'nowrap', textTransform: 'capitalize' }}>
-            {f === 'all' ? 'All' : f.replace('_', ' ')} {f !== 'all' && `(${orders.filter(o => o.status === f).length})`}
+          {/* Status changer */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Update Status</label>
+            <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+              {STATUS_OPTIONS.map(s => {
+                const sc = STATUS_COLORS[s];
+                return (
+                  <button key={s} onClick={() => saveChanges(s)} style={{
+                    padding: '5px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700,
+                    cursor: 'pointer', border: '1px solid',
+                    background: selected.status === s ? sc.color : sc.bg,
+                    color: selected.status === s ? '#FFFFFF' : sc.color,
+                    borderColor: sc.color,
+                    fontFamily: "'Times New Roman', serif",
+                  }}>{s.replace('_', ' ')}</button>
+                );
+              })}
+            </div>
+          </div>
+
+          {/* Agreed price */}
+          <div style={{ marginBottom: 14 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Agreed Price (₦)</label>
+            <input value={agreedPrice} onChange={e => setAgreedPrice(e.target.value)}
+              placeholder="e.g. 15000"
+              style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}
+              onFocus={e => e.target.style.borderColor = '#0D9488'}
+              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+            />
+          </div>
+
+          {/* Admin note */}
+          <div style={{ marginBottom: 16 }}>
+            <label style={{ fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', display: 'block', marginBottom: 6 }}>Admin Note to Client</label>
+            <textarea value={adminNote} onChange={e => setAdminNote(e.target.value)}
+              placeholder="Write a note that the client will see..."
+              rows={3}
+              style={{ width: '100%', padding: '9px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none', resize: 'vertical' }}
+              onFocus={e => e.target.style.borderColor = '#0D9488'}
+              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+            />
+          </div>
+
+          <button onClick={() => saveChanges()} disabled={saving} style={{
+            width: '100%', background: '#0D9488', color: '#FFFFFF',
+            border: 'none', borderRadius: 8, padding: '12px',
+            fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer',
+            fontFamily: "'Times New Roman', serif", opacity: saving ? 0.7 : 1,
+          }}>
+            {saving ? 'Saving...' : '💾 Save Changes'}
           </button>
-        ))}
-      </div>
-
-      {loading ? <div style={{ padding: 60, textAlign: 'center' }}><Spinner size={36} /></div> :
-       filtered.length === 0 ? <EmptyState title="No orders" desc={`No orders with status "${filter}"`} /> : (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 9 }}>
-          {filtered.map(o => (
-            <Card key={o.id} onClick={() => setDetail(o)} style={{ display: 'grid', gridTemplateColumns: '1fr auto', gap: 14, alignItems: 'center', padding: '14px 18px' }}>
-              <div>
-                <div style={{ fontWeight: 500, fontSize: 13, marginBottom: 4 }}>{o.topicTitle}</div>
-                <div style={{ display: 'flex', gap: 10, flexWrap: 'wrap' }}>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{o.clientName}</span>
-                  <span style={{ color: 'var(--text-muted)', fontSize: 11 }}>{o.createdAt?.toDate?.()?.toLocaleDateString()}</span>
-                  {o.totalAmount && <span style={{ color: 'var(--gold)', fontSize: 11 }}>₦{Number(o.totalAmount).toLocaleString()}</span>}
-                </div>
-              </div>
-              <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}><StatusBadge status={o.status} /><ChevronRight size={13} color="var(--text-muted)" /></div>
-            </Card>
-          ))}
         </div>
       )}
     </div>
   );
 }
 
-// ── ADMIN ORDER DETAIL ────────────────────────────────────
-function AdminOrderDetail({ order: init, onBack, user, profile }) {
-  const [order, setOrder] = useState(init);
-  const [quoteModal, setQuoteModal] = useState(false);
-  const [uploading, setUploading] = useState(false);
-  const [uploadProgress, setUploadProgress] = useState(0);
-  const draftRef = useRef(null);
-  const finalRef = useRef(null);
+/* ════════════════════════════════════════════════════════════
+   TAB 2 — RESEARCH TOPICS
+════════════════════════════════════════════════════════════ */
+function TopicsTab() {
+  const [topics, setTopics]     = useState([]);
+  const [loading, setLoading]   = useState(true);
+  const [showForm, setShowForm] = useState(false);
+  const [editing, setEditing]   = useState(null);
+  const [saving, setSaving]     = useState(false);
+
+  const blank = { title: '', category: '', pages: '', price: '', badge: '', description: '' };
+  const [form, setForm] = useState(blank);
 
   useEffect(() => {
-    const unsubPromise = import('../firebase/orderService').then(m => m.subscribeToOrder(init.id, setOrder));
-    return () => { unsubPromise.then(unsub => unsub()); };
-  }, [init.id]);
+    const q = query(collection(db, 'topics'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, snap => {
+      setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setLoading(false);
+    });
+    return unsub;
+  }, []);
 
-  const handleStatusChange = async (newStatus) => {
-    await updateOrder(order.id, { status: newStatus });
-    toast.success(`Status updated to: ${newStatus.replace('_', ' ')}`);
-  };
+  const openNew = () => { setEditing(null); setForm(blank); setShowForm(true); };
+  const openEdit = (t) => { setEditing(t); setForm({ title: t.title, category: t.category, pages: t.pages, price: t.price, badge: t.badge || '', description: t.description || '' }); setShowForm(true); };
 
-  const handleUpload = async (type) => {
-    const file = type === 'draft' ? draftRef.current?.files?.[0] : finalRef.current?.files?.[0];
-    if (!file) return;
-    setUploading(true);
+  const save = async () => {
+    if (!form.title || !form.category || !form.price) { toast.error('Title, category and price are required.'); return; }
+    setSaving(true);
     try {
-      const uploadFn = type === 'draft' ? (await import('../firebase/storageService')).uploadDraft : (await import('../firebase/storageService')).uploadFinal;
-      const url = await uploadFn(order.id, file, setUploadProgress);
-      const field = type === 'draft' ? { draftFileUrl: url, status: 'preview_ready' } : { finalFileUrl: url };
-      await updateOrder(order.id, field);
-      toast.success(`${type === 'draft' ? 'Draft' : 'Final file'} uploaded successfully!`);
-    } catch (e) {
-      toast.error('Upload failed: ' + e.message);
-    } finally { setUploading(false); setUploadProgress(0); }
+      const data = { ...form, updatedAt: serverTimestamp() };
+      if (editing) {
+        await updateDoc(doc(db, 'topics', editing.id), data);
+        toast.success('Topic updated!');
+      } else {
+        await addDoc(collection(db, 'topics'), { ...data, createdAt: serverTimestamp() });
+        toast.success('Topic added!');
+      }
+      setShowForm(false);
+    } catch (e) { toast.error('Failed to save topic.'); }
+    finally { setSaving(false); }
   };
 
-  const NEXT_STATUSES = {
-    pending: ['quoted'],
-    quoted: ['advance_paid', 'cancelled'],
-    advance_paid: ['in_progress'],
-    in_progress: ['preview_ready'],
-    preview_ready: ['final_paid'],
+  const deleteTopic = async (id) => {
+    if (!window.confirm('Delete this topic?')) return;
+    try { await deleteDoc(doc(db, 'topics', id)); toast.success('Topic deleted.'); }
+    catch (e) { toast.error('Failed to delete.'); }
   };
-  const next = NEXT_STATUSES[order.status] || [];
+
+  const setBadge = async (id, badge) => {
+    await updateDoc(doc(db, 'topics', id), { badge, updatedAt: serverTimestamp() });
+    toast.success('Badge updated!');
+  };
+
+  const BADGE_OPTIONS = ['', 'Popular', 'New', 'Hidden'];
+
+  if (loading) return <Loader />;
 
   return (
     <div>
-      <button onClick={onBack} style={{ background: 'none', border: 'none', color: 'var(--gold)', fontSize: 13, cursor: 'pointer', marginBottom: 20, display: 'flex', alignItems: 'center', gap: 5, fontFamily: 'var(--font-body)' }}>← Back to Orders</button>
+      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20 }}>
+        <h2 style={{ fontSize: 18, fontWeight: 700, color: '#1E3A8A', margin: 0 }}>Research Topics ({topics.length})</h2>
+        <button onClick={openNew} style={{
+          background: '#0D9488', color: '#FFFFFF', border: 'none',
+          borderRadius: 8, padding: '10px 22px', fontSize: 14, fontWeight: 700,
+          cursor: 'pointer', fontFamily: "'Times New Roman', serif",
+        }}>+ Add New Topic</button>
+      </div>
 
-      <div style={{ display: 'grid', gridTemplateColumns: '1fr 300px', gap: 16, alignItems: 'start' }}>
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-
-          {/* Order info */}
-          <Card hover={false}>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 14 }}>
-              <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, lineHeight: 1.3, marginBottom: 6 }}>{order.topicTitle}</div>
-                <StatusBadge status={order.status} />
-              </div>
+      {/* Form modal */}
+      {showForm && (
+        <div style={{
+          position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.5)',
+          display: 'flex', alignItems: 'center', justifyContent: 'center',
+          zIndex: 1000, padding: 16,
+        }}>
+          <div style={{ background: '#FFFFFF', borderRadius: 14, padding: 32, width: '100%', maxWidth: 520, maxHeight: '90vh', overflowY: 'auto' }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 20 }}>
+              <h3 style={{ fontSize: 18, fontWeight: 700, color: '#1E3A8A', margin: 0 }}>{editing ? 'Edit Topic' : 'Add New Topic'}</h3>
+              <button onClick={() => setShowForm(false)} style={{ background: 'none', border: 'none', cursor: 'pointer', fontSize: 20, color: '#9CA3AF' }}>✕</button>
             </div>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 10, marginTop: 14 }}>
-              {[['Client', order.clientName],['Email', order.clientEmail],['Pages', order.pages || '—'],['Deadline', order.deadline || 'Flexible'],['Category', order.category || '—'],['Ordered', order.createdAt?.toDate?.()?.toLocaleDateString() || '—']].map(([k,v]) => (
-                <div key={k}><div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 2 }}>{k}</div><div style={{ fontSize: 13, overflow: 'hidden', textOverflow: 'ellipsis' }}>{v}</div></div>
+
+            {[
+              { name: 'title',       label: 'Topic Title *',    placeholder: 'e.g. Effect of malaria in Lagos' },
+              { name: 'pages',       label: 'Page Range',       placeholder: 'e.g. 15–20' },
+              { name: 'price',       label: 'Price *',          placeholder: 'e.g. ₦12,000' },
+              { name: 'description', label: 'Short Description',placeholder: 'Brief summary of the topic...' },
+            ].map(f => (
+              <div key={f.name} style={{ marginBottom: 14 }}>
+                <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', marginBottom: 5 }}>{f.label}</label>
+                <input value={form[f.name]} onChange={e => setForm(p => ({ ...p, [f.name]: e.target.value }))}
+                  placeholder={f.placeholder}
+                  style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}
+                  onFocus={e => e.target.style.borderColor = '#0D9488'}
+                  onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+                />
+              </div>
+            ))}
+
+            <div style={{ marginBottom: 14 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', marginBottom: 5 }}>Category *</label>
+              <select value={form.category} onChange={e => setForm(p => ({ ...p, category: e.target.value }))}
+                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}>
+                <option value="">-- Select Category --</option>
+                {CATEGORIES.map(c => <option key={c} value={c}>{c}</option>)}
+              </select>
+            </div>
+
+            <div style={{ marginBottom: 20 }}>
+              <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: '#1E3A8A', textTransform: 'uppercase', marginBottom: 5 }}>Badge</label>
+              <select value={form.badge} onChange={e => setForm(p => ({ ...p, badge: e.target.value }))}
+                style={{ width: '100%', padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none' }}>
+                {BADGE_OPTIONS.map(b => <option key={b} value={b}>{b || 'None'}</option>)}
+              </select>
+            </div>
+
+            <div style={{ display: 'flex', gap: 10 }}>
+              <button onClick={() => setShowForm(false)} style={{ flex: 1, background: '#F1F5F9', color: '#6B7280', border: 'none', borderRadius: 8, padding: '12px', fontSize: 14, fontWeight: 700, cursor: 'pointer', fontFamily: "'Times New Roman', serif" }}>Cancel</button>
+              <button onClick={save} disabled={saving} style={{ flex: 2, background: '#0D9488', color: '#FFFFFF', border: 'none', borderRadius: 8, padding: '12px', fontSize: 14, fontWeight: 700, cursor: saving ? 'not-allowed' : 'pointer', fontFamily: "'Times New Roman', serif", opacity: saving ? 0.7 : 1 }}>
+                {saving ? 'Saving...' : editing ? '💾 Update Topic' : '➕ Add Topic'}
+              </button>
+            </div>
+          </div>
+        </div>
+      )}
+
+      {/* Topics list */}
+      {topics.length === 0 && <Empty text="No topics yet. Add your first topic!" />}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(300px, 1fr))', gap: 16 }}>
+        {topics.filter(t => t.badge !== 'Hidden').concat(topics.filter(t => t.badge === 'Hidden')).map(t => (
+          <div key={t.id} style={{
+            background: t.badge === 'Hidden' ? '#F9FAFB' : '#FFFFFF',
+            border: '1px solid #E2E8F0', borderTop: '4px solid #0D9488',
+            borderRadius: 10, padding: '18px 20px',
+            opacity: t.badge === 'Hidden' ? 0.6 : 1,
+          }}>
+            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 8 }}>
+              <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5 }}>{t.category}</div>
+              {t.badge && (
+                <span style={{
+                  fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20,
+                  background: t.badge === 'Popular' ? '#FEF3C7' : t.badge === 'New' ? '#DCFCE7' : '#F3F4F6',
+                  color: t.badge === 'Popular' ? '#92400E' : t.badge === 'New' ? '#15803D' : '#6B7280',
+                }}>{t.badge}</span>
+              )}
+            </div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: '#1F2937', lineHeight: 1.4, marginBottom: 6 }}>{t.title}</div>
+            <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 14 }}>
+              <span style={{ color: '#9CA3AF' }}>{t.pages} pages</span>
+              <span style={{ color: '#0D9488', fontWeight: 700 }}>{t.price}</span>
+            </div>
+
+            {/* Badge quick set */}
+            <div style={{ display: 'flex', gap: 4, marginBottom: 12, flexWrap: 'wrap' }}>
+              {BADGE_OPTIONS.map(b => (
+                <button key={b} onClick={() => setBadge(t.id, b)} style={{
+                  padding: '3px 9px', borderRadius: 20, fontSize: 10, fontWeight: 700,
+                  border: '1px solid', cursor: 'pointer', fontFamily: "'Times New Roman', serif",
+                  background: t.badge === b ? '#0D9488' : '#F8FAFC',
+                  color: t.badge === b ? '#FFFFFF' : '#6B7280',
+                  borderColor: t.badge === b ? '#0D9488' : '#E2E8F0',
+                }}>{b || 'None'}</button>
               ))}
             </div>
-            {order.details && <div style={{ marginTop: 14, paddingTop: 14, borderTop: '1px solid var(--border)' }}><div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 4 }}>Client Details</div><p style={{ fontSize: 13, color: 'var(--text-secondary)', lineHeight: 1.6 }}>{order.details}</p></div>}
-          </Card>
 
-          {/* Actions */}
-          <Card hover={false}>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600, marginBottom: 16 }}>Admin Actions</div>
-
-            {/* Send Quote */}
-            {order.status === 'pending' && (
-              <div style={{ marginBottom: 16 }}>
-                <Btn onClick={() => setQuoteModal(true)} style={{ width: '100%', justifyContent: 'center' }}>
-                  <Send size={13} /> Send Price Quote to Client
-                </Btn>
-              </div>
-            )}
-
-            {/* Status updates */}
-            {next.length > 0 && (
-              <div style={{ marginBottom: 16 }}>
-                <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 8 }}>Update Status</div>
-                <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                  {next.map(s => (
-                    <Btn key={s} variant="outline" size="sm" onClick={() => handleStatusChange(s)}>
-                      Mark as {s.replace(/_/g, ' ')}
-                    </Btn>
-                  ))}
-                </div>
-              </div>
-            )}
-
-            {/* File uploads */}
-            {['advance_paid','in_progress','preview_ready','final_paid'].includes(order.status) && (
-              <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 8 }}>Upload Draft (Watermarked Preview)</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="file" ref={draftRef} accept=".pdf,.doc,.docx" style={{ flex: 1, background: 'var(--dark-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px', color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-body)' }} />
-                    <Btn onClick={() => handleUpload('draft')} loading={uploading} size="sm">
-                      <Upload size={12} /> Upload
-                    </Btn>
-                  </div>
-                  {order.draftFileUrl && <a href={order.draftFileUrl} target="_blank" rel="noreferrer" style={{ color: 'var(--green)', fontSize: 11, display: 'flex', alignItems: 'center', gap: 4, marginTop: 4, textDecoration: 'none' }}><Eye size={11} /> Draft uploaded ✓</a>}
-                </div>
-
-                <div>
-                  <div style={{ color: 'var(--text-muted)', fontSize: 11, marginBottom: 8 }}>Upload Final File (Unlocked after payment)</div>
-                  <div style={{ display: 'flex', gap: 8 }}>
-                    <input type="file" ref={finalRef} accept=".pdf,.doc,.docx" style={{ flex: 1, background: 'var(--dark-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 10px', color: 'var(--text-secondary)', fontSize: 12, fontFamily: 'var(--font-body)' }} />
-                    <Btn onClick={() => handleUpload('final')} loading={uploading} size="sm" variant="outline">
-                      <Upload size={12} /> Upload
-                    </Btn>
-                  </div>
-                  {order.finalFileUrl && <span style={{ color: 'var(--green)', fontSize: 11, marginTop: 4, display: 'block' }}>Final file uploaded ✓ {order.status !== 'final_paid' ? '(locked until payment)' : '(unlocked ✅)'}</span>}
-                  {uploading && <div style={{ marginTop: 6, background: 'var(--dark-elevated)', borderRadius: 4, height: 6, overflow: 'hidden' }}><div style={{ height: '100%', background: 'var(--gold)', width: `${uploadProgress}%`, transition: 'width 0.3s' }} /></div>}
-                </div>
-              </div>
-            )}
-
-            {/* Payment info */}
-            {order.totalAmount && (
-              <div style={{ marginTop: 16, paddingTop: 16, borderTop: '1px solid var(--border)' }}>
-                <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 10 }}>
-                  {[['Advance', order.advanceAmount, order.paymentStatus !== 'unpaid'],['Final', order.finalAmount, order.status === 'final_paid'],['Total', order.totalAmount, order.status === 'final_paid']].map(([l,v,paid]) => (
-                    <div key={l} style={{ background: 'var(--dark-elevated)', borderRadius: 'var(--radius)', padding: '10px 12px' }}>
-                      <div style={{ color: 'var(--text-muted)', fontSize: 10, marginBottom: 3 }}>{l} {paid ? '✓' : ''}</div>
-                      <div style={{ color: paid ? 'var(--green)' : 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 600 }}>₦{Number(v || 0).toLocaleString()}</div>
-                    </div>
-                  ))}
-                </div>
-              </div>
-            )}
-          </Card>
-        </div>
-
-        {/* Messages */}
-        <AdminMessagePanel orderId={order.id} user={user} profile={profile} />
+            <div style={{ display: 'flex', gap: 8 }}>
+              <button onClick={() => openEdit(t)} style={{ flex: 1, background: '#EFF6FF', color: '#1E3A8A', border: 'none', borderRadius: 6, padding: '8px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Times New Roman', serif" }}>✏️ Edit</button>
+              <button onClick={() => deleteTopic(t.id)} style={{ flex: 1, background: '#FEE2E2', color: '#DC2626', border: 'none', borderRadius: 6, padding: '8px', fontSize: 13, fontWeight: 700, cursor: 'pointer', fontFamily: "'Times New Roman', serif" }}>🗑️ Delete</button>
+            </div>
+          </div>
+        ))}
       </div>
-
-      {/* Quote Modal */}
-      <QuoteModal open={quoteModal} onClose={() => setQuoteModal(false)} order={order} onSent={() => setQuoteModal(false)} />
     </div>
   );
 }
 
-// ── QUOTE MODAL ───────────────────────────────────────────
-function QuoteModal({ open, onClose, order, onSent }) {
-  const { register, handleSubmit, watch, formState: { isSubmitting } } = useForm();
-  const advance = watch('advanceAmount', '');
-  const final   = watch('finalAmount', '');
-  const total   = (Number(advance) || 0) + (Number(final) || 0);
-
-  const onSubmit = async (data) => {
-    try {
-      await sendQuote({ orderId: order.id, clientId: order.clientId, advanceAmount: Number(data.advanceAmount), finalAmount: Number(data.finalAmount), totalAmount: Number(data.advanceAmount) + Number(data.finalAmount), note: data.note });
-      toast.success('Quote sent to client!');
-      onSent();
-    } catch (e) { toast.error('Failed to send quote'); }
-  };
-
-  return (
-    <Modal open={open} onClose={onClose} title="Send Price Quote">
-      <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-        <div style={{ background: 'var(--dark-elevated)', borderRadius: 'var(--radius)', padding: '12px 14px', fontSize: 13, color: 'var(--text-secondary)' }}>
-          <strong style={{ color: 'var(--text-primary)' }}>{order.topicTitle}</strong><br />
-          <span style={{ fontSize: 11 }}>Client: {order.clientName} • {order.pages} pages</span>
-        </div>
-        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 14 }}>
-          <Field label="Advance Amount (₦) *">
-            <input {...register('advanceAmount', { required: true, min: 1 })} type="number" placeholder="e.g. 5000" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-          <Field label="Final Amount (₦) *">
-            <input {...register('finalAmount', { required: true, min: 1 })} type="number" placeholder="e.g. 5000" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-          </Field>
-        </div>
-        {total > 0 && <div style={{ background: 'var(--gold-glow)', border: '1px solid var(--border-gold)', borderRadius: 'var(--radius)', padding: '10px 14px', fontSize: 13 }}>Total: <span style={{ color: 'var(--gold)', fontWeight: 600 }}>₦{total.toLocaleString()}</span></div>}
-        <Field label="Note to Client (optional)">
-          <textarea {...register('note')} placeholder="Any message to accompany the quote…" style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-        </Field>
-        <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-          <Btn variant="ghost" onClick={onClose} type="button">Cancel</Btn>
-          <Btn type="submit" loading={isSubmitting}><Send size={13} /> Send Quote</Btn>
-        </div>
-      </form>
-    </Modal>
-  );
-}
-
-// ── ADMIN MESSAGE PANEL ───────────────────────────────────
-function AdminMessagePanel({ orderId, user, profile }) {
-  const [messages, setMessages] = useState([]);
-  const [text, setText] = useState('');
-  const [sending, setSending] = useState(false);
+/* ════════════════════════════════════════════════════════════
+   TAB 3 — MESSAGES
+════════════════════════════════════════════════════════════ */
+function MessagesTab() {
+  const [clients, setClients]     = useState([]);
+  const [selected, setSelected]   = useState(null);
+  const [messages, setMessages]   = useState([]);
+  const [text, setText]           = useState('');
+  const [sending, setSending]     = useState(false);
+  const [recording, setRecording] = useState(false);
+  const [mediaRec, setMediaRec]   = useState(null);
+  const [audioChunks, setAudioChunks] = useState([]);
   const bottomRef = useRef(null);
 
-  useEffect(() => { const unsub = subscribeToMessages(orderId, setMessages); return unsub; }, [orderId]);
-  useEffect(() => { bottomRef.current?.scrollIntoView({ behavior: 'smooth' }); }, [messages]);
+  // Load all users who have submitted requests
+  useEffect(() => {
+    const q = query(collection(db, 'serviceRequests'), orderBy('createdAt', 'desc'));
+    const unsub = onSnapshot(q, snap => {
+      const seen = new Set();
+      const list = [];
+      snap.docs.forEach(d => {
+        const data = d.data();
+        const key = data.userId || data.email;
+        if (!seen.has(key)) {
+          seen.add(key);
+          list.push({ userId: data.userId, email: data.email, fullName: data.fullName, phone: data.phone });
+        }
+      });
+      setClients(list);
+    });
+    return unsub;
+  }, []);
 
-  const handleSend = async () => {
-    if (!text.trim()) return;
+  // Load messages for selected client
+  useEffect(() => {
+    if (!selected) return;
+    const threadId = selected.userId || selected.email.replace(/[^a-zA-Z0-9]/g, '_');
+    const q = query(collection(db, 'adminMessages', threadId, 'messages'), orderBy('createdAt', 'asc'));
+    const unsub = onSnapshot(q, snap => {
+      setMessages(snap.docs.map(d => ({ id: d.id, ...d.data() })));
+      setTimeout(() => bottomRef.current?.scrollIntoView({ behavior: 'smooth' }), 100);
+    });
+    return unsub;
+  }, [selected]);
+
+  const getThreadId = () => selected.userId || selected.email.replace(/[^a-zA-Z0-9]/g, '_');
+
+  const sendText = async () => {
+    if (!text.trim() || !selected) return;
     setSending(true);
     try {
-      await sendMessage({ orderId, senderId: user.uid, senderName: profile?.name || 'Admin', senderRole: 'admin', text: text.trim() });
+      const threadId = getThreadId();
+      await addDoc(collection(db, 'adminMessages', threadId, 'messages'), {
+        type: 'text', content: text.trim(),
+        from: 'admin', createdAt: serverTimestamp(),
+      });
+      // Also write to client's notification
+      await addDoc(collection(db, 'notifications'), {
+        userId: selected.userId || null,
+        email: selected.email,
+        message: text.trim(),
+        from: 'admin',
+        read: false,
+        createdAt: serverTimestamp(),
+      });
       setText('');
-    } finally { setSending(false); }
+    } catch (e) { toast.error('Failed to send.'); }
+    finally { setSending(false); }
   };
 
-  return (
-    <Card hover={false} style={{ padding: 0, overflow: 'hidden', display: 'flex', flexDirection: 'column', height: 480 }}>
-      <div style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600 }}>Client Messages</div>
-      <div style={{ flex: 1, overflowY: 'auto', padding: '12px', display: 'flex', flexDirection: 'column', gap: 8 }}>
-        {messages.length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 12, textAlign: 'center', margin: 'auto', padding: 20 }}>No messages yet.</p>}
-        {messages.map(m => {
-          const isAdmin = m.senderRole === 'admin';
-          return (
-            <div key={m.id} style={{ display: 'flex', flexDirection: 'column', alignItems: isAdmin ? 'flex-end' : 'flex-start' }}>
-              <div style={{ background: isAdmin ? 'rgba(201,168,76,0.12)' : 'var(--dark-elevated)', border: `1px solid ${isAdmin ? 'var(--border-gold)' : 'var(--border)'}`, borderRadius: 10, padding: '7px 10px', maxWidth: '88%' }}>
-                <div style={{ fontSize: 10, color: isAdmin ? 'var(--gold)' : '#4A90D9', marginBottom: 2, fontWeight: 600 }}>{isAdmin ? 'You (Admin)' : m.senderName}</div>
-                <div style={{ fontSize: 13, lineHeight: 1.5 }}>{m.text}</div>
-              </div>
-            </div>
-          );
-        })}
-        <div ref={bottomRef} />
-      </div>
-      <div style={{ padding: '8px 10px', borderTop: '1px solid var(--border)', display: 'flex', gap: 7 }}>
-        <input value={text} onChange={e => setText(e.target.value)} onKeyDown={e => e.key === 'Enter' && handleSend()} placeholder="Reply to client…" style={{ flex: 1, background: 'var(--dark-elevated)', border: '1px solid var(--border)', borderRadius: 'var(--radius)', padding: '8px 11px', color: 'var(--text-primary)', fontSize: 13, fontFamily: 'var(--font-body)', outline: 'none' }} />
-        <button onClick={handleSend} disabled={sending || !text.trim()} style={{ background: 'var(--gold)', border: 'none', borderRadius: 'var(--radius)', width: 34, display: 'flex', alignItems: 'center', justifyContent: 'center', cursor: 'pointer' }}><Send size={13} color="var(--dark)" /></button>
-      </div>
-    </Card>
-  );
-}
-
-// ── ADMIN MESSAGES TAB ────────────────────────────────────
-function AdminMessages({ orders, user, profile }) {
-  const [sel, setSel] = useState(orders[0] || null);
-  return (
-    <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600, marginBottom: 22 }}>All Conversations</h2>
-      {orders.length === 0 ? <EmptyState title="No orders yet" desc="Conversations will appear here." /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: '240px 1fr', gap: 14 }}>
-          <div style={{ display: 'flex', flexDirection: 'column', gap: 7, maxHeight: '70vh', overflowY: 'auto' }}>
-            {orders.map(o => (
-              <button key={o.id} onClick={() => setSel(o)} style={{ background: sel?.id === o.id ? 'var(--gold-glow)' : 'var(--dark-card)', border: `1px solid ${sel?.id === o.id ? 'var(--border-gold)' : 'var(--border)'}`, borderRadius: 'var(--radius)', padding: '10px 12px', textAlign: 'left', cursor: 'pointer', width: '100%', transition: 'var(--transition)' }}>
-                <div style={{ fontSize: 12, fontWeight: 500, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap', marginBottom: 3 }}>{o.topicTitle}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>{o.clientName}</div>
-                <StatusBadge status={o.status} />
-              </button>
-            ))}
-          </div>
-          {sel && <AdminMessagePanel orderId={sel.id} user={user} profile={profile} />}
-        </div>
-      )}
-    </div>
-  );
-}
-
-// ── MANAGE TOPICS ─────────────────────────────────────────
-function AdminTopics() {
-  const [topics, setTopics] = useState([]);
-  const [loading, setLoading] = useState(true);
-  const [showForm, setShowForm] = useState(false);
-  const { register, handleSubmit, reset, formState: { isSubmitting, errors } } = useForm();
-
-  useEffect(() => { const unsub = subscribeToTopics(data => { setTopics(data); setLoading(false); }); return unsub; }, []);
-
-  const onSubmit = async (data) => {
+  const startRecording = async () => {
     try {
-      await createTopic({ title: data.title, description: data.description, category: data.category, pages: data.pages, price: Number(data.price), available: true });
-      toast.success('Topic created!');
-      reset();
-      setShowForm(false);
-    } catch (e) { toast.error('Failed to create topic'); }
+      const stream = await navigator.mediaDevices.getUserMedia({ audio: true });
+      const mr = new MediaRecorder(stream);
+      const chunks = [];
+      mr.ondataavailable = e => chunks.push(e.data);
+      mr.onstop = async () => {
+        const blob = new Blob(chunks, { type: 'audio/webm' });
+        await sendAudio(blob);
+        stream.getTracks().forEach(t => t.stop());
+      };
+      mr.start();
+      setMediaRec(mr);
+      setAudioChunks(chunks);
+      setRecording(true);
+    } catch (e) {
+      toast.error('Microphone access denied.');
+    }
   };
 
-  const toggleAvailable = async (id, current) => {
-    await updateTopic(id, { available: !current });
-    toast.success(`Topic ${!current ? 'enabled' : 'disabled'}`);
+  const stopRecording = () => {
+    mediaRec?.stop();
+    setRecording(false);
+    setMediaRec(null);
   };
 
-  const CATS = ['Technology','Business','Economics','Sociology','Psychology','Environmental Science','Health','Education','Law','Other'];
+  const sendAudio = async (blob) => {
+    if (!selected) return;
+    setSending(true);
+    try {
+      const threadId = getThreadId();
+      const storageRef = ref(storage, `adminAudio/${threadId}/${Date.now()}.webm`);
+      await uploadBytes(storageRef, blob);
+      const url = await getDownloadURL(storageRef);
+      await addDoc(collection(db, 'adminMessages', threadId, 'messages'), {
+        type: 'audio', content: url,
+        from: 'admin', createdAt: serverTimestamp(),
+      });
+      await addDoc(collection(db, 'notifications'), {
+        userId: selected.userId || null,
+        email: selected.email,
+        message: '🎙️ Admin sent you a voice message',
+        from: 'admin',
+        read: false,
+        createdAt: serverTimestamp(),
+      });
+      toast.success('Voice message sent!');
+    } catch (e) { toast.error('Failed to send audio.'); }
+    finally { setSending(false); }
+  };
 
   return (
-    <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 22 }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 600 }}>Manage Topics</h2>
-        <Btn onClick={() => setShowForm(!showForm)}>+ Add Topic</Btn>
-      </div>
+    <div style={{ display: 'grid', gridTemplateColumns: '280px 1fr', gap: 20, height: '70vh' }}>
 
-      {showForm && (
-        <Card hover={false} style={{ marginBottom: 20, border: '1px solid var(--border-gold)' }}>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600, marginBottom: 16 }}>New Topic</div>
-          <form onSubmit={handleSubmit(onSubmit)} style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
-            <Field label="Title *" error={errors.title?.message}>
-              <input {...register('title', { required: true })} placeholder="Research topic title" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </Field>
-            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 12 }}>
-              <Field label="Category *">
-                <select {...register('category', { required: true })} style={{ ...inputStyle, appearance: 'none' }}>
-                  <option value="">Select…</option>
-                  {CATS.map(c => <option key={c} value={c}>{c}</option>)}
-                </select>
-              </Field>
-              <Field label="Pages">
-                <input {...register('pages')} placeholder="e.g. 10–15" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-              </Field>
-              <Field label="Price (₦) *">
-                <input {...register('price', { required: true, min: 1 })} type="number" placeholder="e.g. 10000" style={inputStyle} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-              </Field>
+      {/* Client list */}
+      <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, overflow: 'hidden', display: 'flex', flexDirection: 'column' }}>
+        <div style={{ padding: '14px 16px', borderBottom: '1px solid #E2E8F0', fontWeight: 700, fontSize: 13, color: '#1E3A8A', textTransform: 'uppercase', letterSpacing: 0.5 }}>
+          Clients ({clients.length})
+        </div>
+        <div style={{ overflowY: 'auto', flex: 1 }}>
+          {clients.length === 0 && <Empty text="No clients yet." />}
+          {clients.map((c, i) => (
+            <div key={i} onClick={() => setSelected(c)} style={{
+              padding: '12px 16px', cursor: 'pointer', borderBottom: '1px solid #F1F5F9',
+              background: selected?.email === c.email ? '#F0FDFA' : '#FFFFFF',
+              borderLeft: selected?.email === c.email ? '3px solid #0D9488' : '3px solid transparent',
+              transition: 'background 0.15s',
+            }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: '#1F2937' }}>{c.fullName}</div>
+              <div style={{ fontSize: 12, color: '#9CA3AF', marginTop: 2 }}>{c.email}</div>
+              <div style={{ fontSize: 12, color: '#9CA3AF' }}>{c.phone}</div>
             </div>
-            <Field label="Description">
-              <textarea {...register('description')} placeholder="Brief description of the topic…" style={{ ...inputStyle, minHeight: 80, resize: 'vertical' }} onFocus={e => e.target.style.borderColor = 'var(--gold)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-            </Field>
-            <div style={{ display: 'flex', gap: 10, justifyContent: 'flex-end' }}>
-              <Btn variant="ghost" type="button" onClick={() => setShowForm(false)}>Cancel</Btn>
-              <Btn type="submit" loading={isSubmitting}>Create Topic</Btn>
-            </div>
-          </form>
-        </Card>
-      )}
-
-      {loading ? <div style={{ textAlign: 'center', padding: 60 }}><Spinner size={32} /></div> :
-       topics.length === 0 ? <EmptyState title="No topics yet" desc="Add your first topic above." /> : (
-        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill,minmax(280px,1fr))', gap: 14 }}>
-          {topics.map(t => (
-            <Card key={t.id} hover={false} style={{ opacity: t.available === false ? 0.6 : 1 }}>
-              <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', marginBottom: 8 }}>
-                <span style={{ fontSize: 10, color: 'var(--gold)', letterSpacing: 1, textTransform: 'uppercase' }}>{t.category}</span>
-                <button onClick={() => toggleAvailable(t.id, t.available !== false)} style={{ fontSize: 10, background: t.available !== false ? 'rgba(46,204,113,0.1)' : 'rgba(231,76,60,0.1)', color: t.available !== false ? 'var(--green)' : 'var(--red)', border: `1px solid ${t.available !== false ? 'rgba(46,204,113,0.3)' : 'rgba(231,76,60,0.3)'}`, borderRadius: 10, padding: '2px 8px', cursor: 'pointer', fontFamily: 'var(--font-body)' }}>
-                  {t.available !== false ? 'Active' : 'Disabled'}
-                </button>
-              </div>
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 15, fontWeight: 600, lineHeight: 1.3, marginBottom: 8 }}>{t.title}</div>
-              {t.description && <p style={{ color: 'var(--text-muted)', fontSize: 12, lineHeight: 1.5, marginBottom: 8 }}>{t.description}</p>}
-              <div style={{ display: 'flex', justifyContent: 'space-between' }}>
-                <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>{t.pages || '—'} pages</span>
-                <span style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 600 }}>₦{Number(t.price || 0).toLocaleString()}</span>
-              </div>
-            </Card>
           ))}
         </div>
+      </div>
+
+      {/* Chat panel */}
+      {!selected ? (
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, display: 'flex', alignItems: 'center', justifyContent: 'center' }}>
+          <div style={{ textAlign: 'center', color: '#9CA3AF' }}>
+            <div style={{ fontSize: 40, marginBottom: 12 }}>💬</div>
+            <div style={{ fontSize: 15, fontWeight: 600 }}>Select a client to start messaging</div>
+          </div>
+        </div>
+      ) : (
+        <div style={{ background: '#FFFFFF', border: '1px solid #E2E8F0', borderRadius: 12, display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
+
+          {/* Chat header */}
+          <div style={{ padding: '14px 20px', borderBottom: '1px solid #E2E8F0', background: '#F8FAFC', display: 'flex', alignItems: 'center', gap: 12 }}>
+            <div style={{ width: 38, height: 38, borderRadius: '50%', background: '#0D9488', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#FFFFFF', fontWeight: 700, fontSize: 16 }}>
+              {selected.fullName?.[0]?.toUpperCase()}
+            </div>
+            <div>
+              <div style={{ fontWeight: 700, fontSize: 15, color: '#1F2937' }}>{selected.fullName}</div>
+              <div style={{ fontSize: 12, color: '#9CA3AF' }}>{selected.email}</div>
+            </div>
+          </div>
+
+          {/* Messages */}
+          <div style={{ flex: 1, overflowY: 'auto', padding: '16px 20px', display: 'flex', flexDirection: 'column', gap: 10 }}>
+            {messages.length === 0 && (
+              <div style={{ textAlign: 'center', color: '#D1D5DB', marginTop: 40, fontSize: 14 }}>No messages yet. Say hello! 👋</div>
+            )}
+            {messages.map(m => (
+              <div key={m.id} style={{
+                alignSelf: m.from === 'admin' ? 'flex-end' : 'flex-start',
+                maxWidth: '72%',
+              }}>
+                {m.type === 'text' ? (
+                  <div style={{
+                    background: m.from === 'admin' ? '#0D9488' : '#F1F5F9',
+                    color: m.from === 'admin' ? '#FFFFFF' : '#1F2937',
+                    padding: '10px 14px', borderRadius: m.from === 'admin' ? '12px 12px 2px 12px' : '12px 12px 12px 2px',
+                    fontSize: 14, lineHeight: 1.6,
+                  }}>{m.content}</div>
+                ) : (
+                  <div style={{ background: m.from === 'admin' ? '#CCFBF1' : '#F1F5F9', padding: '10px 14px', borderRadius: 12 }}>
+                    <div style={{ fontSize: 11, color: '#0D9488', fontWeight: 700, marginBottom: 4 }}>🎙️ Voice Message</div>
+                    <audio controls src={m.content} style={{ width: '100%', height: 36 }} />
+                  </div>
+                )}
+                <div style={{ fontSize: 10, color: '#9CA3AF', marginTop: 3, textAlign: m.from === 'admin' ? 'right' : 'left' }}>
+                  {m.from === 'admin' ? 'You (Admin)' : selected.fullName} · {m.createdAt?.toDate?.()?.toLocaleTimeString?.() || ''}
+                </div>
+              </div>
+            ))}
+            <div ref={bottomRef} />
+          </div>
+
+          {/* Input bar */}
+          <div style={{ padding: '12px 16px', borderTop: '1px solid #E2E8F0', display: 'flex', gap: 8, alignItems: 'flex-end' }}>
+            <textarea
+              value={text}
+              onChange={e => setText(e.target.value)}
+              onKeyDown={e => { if (e.key === 'Enter' && !e.shiftKey) { e.preventDefault(); sendText(); } }}
+              placeholder="Type a message... (Enter to send)"
+              rows={2}
+              style={{ flex: 1, padding: '10px 12px', border: '1.5px solid #E2E8F0', borderRadius: 8, fontSize: 14, fontFamily: "'Times New Roman', serif", outline: 'none', resize: 'none' }}
+              onFocus={e => e.target.style.borderColor = '#0D9488'}
+              onBlur={e => e.target.style.borderColor = '#E2E8F0'}
+            />
+
+            {/* Send text */}
+            <button onClick={sendText} disabled={sending || !text.trim()} style={{
+              background: '#0D9488', color: '#FFFFFF', border: 'none',
+              borderRadius: 8, padding: '10px 18px', fontSize: 14, fontWeight: 700,
+              cursor: 'pointer', fontFamily: "'Times New Roman', serif",
+              opacity: !text.trim() ? 0.5 : 1,
+            }}>Send</button>
+
+            {/* Voice message */}
+            <button
+              onClick={recording ? stopRecording : startRecording}
+              disabled={sending}
+              title={recording ? 'Stop recording' : 'Record voice message'}
+              style={{
+                background: recording ? '#DC2626' : '#172554',
+                color: '#FFFFFF', border: 'none',
+                borderRadius: 8, padding: '10px 14px', fontSize: 18,
+                cursor: 'pointer',
+                animation: recording ? 'pulse-rec 1s infinite' : 'none',
+              }}
+            >{recording ? '⏹' : '🎙️'}</button>
+          </div>
+
+          {recording && (
+            <div style={{ padding: '6px 16px 10px', background: '#FEF2F2', textAlign: 'center', fontSize: 12, color: '#DC2626', fontWeight: 700 }}>
+              🔴 Recording... tap ⏹ to stop and send
+            </div>
+          )}
+        </div>
       )}
+
+      <style>{`
+        @keyframes pulse-rec {
+          0%, 100% { opacity: 1; }
+          50% { opacity: 0.6; }
+        }
+      `}</style>
     </div>
   );
+}
+
+/* ── Small helpers ───────────────────────────────────────── */
+function Row({ label, value }) {
+  return (
+    <div style={{ display: 'flex', gap: 8, marginBottom: 4, fontSize: 13 }}>
+      <span style={{ color: '#9CA3AF', minWidth: 70, textTransform: 'capitalize' }}>{label}:</span>
+      <span style={{ color: '#1F2937', fontWeight: 600, wordBreak: 'break-word' }}>{value}</span>
+    </div>
+  );
+}
+
+function Loader() {
+  return (
+    <div style={{ textAlign: 'center', padding: '60px 0', color: '#9CA3AF' }}>
+      <div style={{ width: 32, height: 32, border: '3px solid #E2E8F0', borderTopColor: '#0D9488', borderRadius: '50%', animation: 'spin 0.7s linear infinite', display: 'inline-block' }} />
+      <div style={{ marginTop: 12, fontSize: 14 }}>Loading...</div>
+      <style>{`@keyframes spin { to { transform: rotate(360deg); } }`}</style>
+    </div>
+  );
+}
+
+function Empty({ text }) {
+  return <div style={{ textAlign: 'center', padding: '40px 0', color: '#D1D5DB', fontSize: 14 }}>{text}</div>;
 }
