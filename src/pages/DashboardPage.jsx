@@ -421,7 +421,7 @@ function MessagesTab({ user, profile }) {
         senderName: profile?.name || user.displayName || 'Client',
         type: 'text',
         text: txt,
-        createdAt: serverTimestamp(),
+        createdAt: ts(),
       });
     } catch (e) { console.error(e); }
     setSending(false);
@@ -464,7 +464,7 @@ function MessagesTab({ user, profile }) {
           senderName: profile?.name || user.displayName || 'Client',
           type: 'audio',
           audioData: reader.result,
-          createdAt: serverTimestamp(),
+          createdAt: ts(),
         });
         setAudioBlob(null);
       } catch (e) { console.error(e); }
