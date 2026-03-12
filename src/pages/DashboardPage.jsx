@@ -142,7 +142,7 @@ export default function DashboardPage() {
           await addDoc(collection(db, 'notifications'), {
             userId:    'admin',
             title:     '✅ Payment Confirmed',
-            body:      \`₦\${total.toLocaleString()} received for "\${order.serviceTitle || order.topicTitle || 'order'}" — Ref: \${response.reference}\`,
+            body:      '₦\${total.toLocaleString()} received for "\${order.serviceTitle || order.topicTitle || 'order'}" — Ref: \${response.reference}\`,
             type:      'payment',
             read:      false,
             createdAt: ts(),
