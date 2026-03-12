@@ -10,17 +10,18 @@ import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './config';
 
 // ── Admin emails ────────────────────────────────────────────
-const ADMIN_EMAILS = ['awarinelite@gmail.com'];
+const ADMIN_EMAILS = ['awarinelite@gmail.com', 'admin@elitesmobilecafe.com'];
 
 export const registerUser = async ({ name, email, password }) => {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName: name });
+  const isAdmin = ADMIN_EMAILS.includes(email);
   await setDoc(doc(db, 'users', credential.user.uid), {
-    uid: credential.user.uid,
+    uid:       credential.user.uid,
     name,
     email,
-    role: ADMIN_EMAILS.includes(email) ? 'Admin' : 'client',
-    isAdmin: ADMIN_EMAILS.includes(email),
+    role:      isAdmin ? 'Admin' : 'client',
+    isAdmin,
     createdAt: serverTimestamp(),
   });
   return credential.user;
@@ -39,9 +40,6 @@ export const getUserProfile = async (uid) => {
   const snap = await getDoc(doc(db, 'users', uid));
   if (!snap.exists()) return null;
   const data = snap.data();
-  // Always grant admin to admin emails regardless of Firestore value
-  if (ADMIN_EMAILS.includes(data.email)) {
-    return { ...data, isAdmin: true, role: 'Admin' };
-  }
-  return data;
+  const isAdmin = ADMIN_EMAILS.includes(data.email) || data.isAdmin === true || data.role === 'Admin';
+  return { ...data, isAdmin, role: isAdmin ? 'Admin' : 'client' };
 };
