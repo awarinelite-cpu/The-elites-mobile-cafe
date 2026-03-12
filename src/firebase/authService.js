@@ -9,19 +9,20 @@ import {
 import { doc, setDoc, getDoc, serverTimestamp } from 'firebase/firestore';
 import { auth, db } from './config';
 
-// ── Admin emails ────────────────────────────────────────────
 const ADMIN_EMAILS = ['awarinelite@gmail.com', 'admin@elitesmobilecafe.com'];
 
-export const registerUser = async ({ name, email, password }) => {
+export const registerUser = async ({ name, email, password, role = 'client' }) => {
   const credential = await createUserWithEmailAndPassword(auth, email, password);
   await updateProfile(credential.user, { displayName: name });
-  const isAdmin = ADMIN_EMAILS.includes(email);
+  const isAdmin  = ADMIN_EMAILS.includes(email);
+  const userRole = isAdmin ? 'Admin' : role; // client | writer | Admin
   await setDoc(doc(db, 'users', credential.user.uid), {
-    uid:       credential.user.uid,
+    uid:      credential.user.uid,
     name,
     email,
-    role:      isAdmin ? 'Admin' : 'client',
+    role:     userRole,
     isAdmin,
+    isWriter: userRole === 'writer',
     createdAt: serverTimestamp(),
   });
   return credential.user;
@@ -41,5 +42,5 @@ export const getUserProfile = async (uid) => {
   if (!snap.exists()) return null;
   const data = snap.data();
   const isAdmin = ADMIN_EMAILS.includes(data.email) || data.isAdmin === true || data.role === 'Admin';
-  return { ...data, isAdmin, role: isAdmin ? 'Admin' : 'client' };
+  return { ...data, isAdmin, role: isAdmin ? 'Admin' : (data.role || 'client') };
 };
