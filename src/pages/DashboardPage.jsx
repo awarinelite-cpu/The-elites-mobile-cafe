@@ -131,7 +131,7 @@ export default function DashboardPage() {
             await addDoc(collection(db, 'notifications'), {
               userId:    writerId,
               title:     '💰 Payment Received',
-              body:      \`Client has paid for "\${order.serviceTitle || order.topicTitle || 'order'}". You can start working now.\`,
+              body: `Client has paid for "${order.serviceTitle || order.topicTitle || 'order'}". You can start working now.`,
               type:      'payment',
               read:      false,
               createdAt: ts(),
