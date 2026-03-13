@@ -45,6 +45,13 @@ export default function RequestPage() {
 
   return (
     <div style={{ minHeight: '100vh', background: 'var(--dark)', paddingTop: 80 }}>
+      {/* Back button */}
+      <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 clamp(16px,4vw,40px)', paddingTop: 16 }}>
+        <button onClick={() => navigate(-1)}
+          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
+          ← Back
+        </button>
+      </div>
       <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px clamp(16px,4vw,40px) 80px' }}>
 
         {/* Header */}
