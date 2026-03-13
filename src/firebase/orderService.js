@@ -161,3 +161,22 @@ export const sendQuote = async ({
     quoteNote: note || '',
   });
 };
+
+// ── ORDER CHAT (per-order back-and-forth) ────────────────────
+// Collection: orderChats/{orderId}/messages
+// Used by DashboardPage (client) and AdminPage (admin/writer)
+export const sendOrderChatMessage = async ({ orderId, sender, senderName, text }) => {
+  await addDoc(collection(db, 'orderChats', orderId, 'messages'), {
+    sender, senderName, text, createdAt: serverTimestamp(),
+  });
+};
+
+export const subscribeToOrderChat = (orderId, callback) => {
+  const q = query(
+    collection(db, 'orderChats', orderId, 'messages'),
+    orderBy('createdAt', 'asc')
+  );
+  return onSnapshot(q, snap =>
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  );
+};
