@@ -39,12 +39,15 @@ export default function ServiceRequestPage({
         serviceKey,
         serviceTitle,
         ...form,
-        status: 'pending',
-        userId: user?.uid || null,
-        referredBy: profile?.referredBy || null,
-        createdAt: serverTimestamp(),
-        updatedAt: serverTimestamp(),
-        adminNote: '',
+        status:      'pending',
+        userId:      user?.uid || null,   // queried by subscribeToClientOrders
+        clientId:    user?.uid || null,   // also saved as clientId for compatibility
+        name:        form.fullName || profile?.name || '',
+        description: form.details || '',
+        referredBy:  profile?.referredBy || null,
+        createdAt:   serverTimestamp(),
+        updatedAt:   serverTimestamp(),
+        adminNote:   '',
         agreedPrice: null,
         paymentStatus: 'not_set',
       });
