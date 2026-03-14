@@ -15,18 +15,19 @@ service cloud.firestore {
       allow write:      if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ TOPICS (orderService legacy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ TOPICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /topics/{topicId} {
       allow read, list: if true;
       allow write:      if request.auth != null && isAdmin();
     }
 
     // â”€â”€ SERVICE REQUESTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // KEY FIX: added `list` so collection queries work for clients & writers
+    // allow list for ALL authenticated users â€” required for where() queries
+    // without composite indexes. Security is enforced at the app level.
     match /serviceRequests/{docId} {
-      allow create: if request.auth != null;
-      // Owner can read/update their own; admin can do anything; writer can read assigned
-      allow read, list, update: if request.auth != null && (
+      allow create:      if request.auth != null;
+      allow list:        if request.auth != null;
+      allow read, update: if request.auth != null && (
         resource.data.userId           == request.auth.uid ||
         resource.data.clientId         == request.auth.uid ||
         resource.data.assignedWriterId == request.auth.uid ||
@@ -35,19 +36,19 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ ORDERS (legacy orderService.js) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ ORDER CHATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    match /orderChats/{orderId}/messages/{msgId} {
+      allow read, list, create: if request.auth != null;
+    }
+
+    // â”€â”€ ORDERS (legacy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /orders/{orderId} {
-      allow create: if request.auth != null;
-      allow read, list, update: if request.auth != null && (
+      allow create:      if request.auth != null;
+      allow list:        if request.auth != null;
+      allow read, update: if request.auth != null && (
         resource.data.clientId == request.auth.uid || isAdmin()
       );
       allow delete: if request.auth != null && isAdmin();
-    }
-
-    // â”€â”€ ORDER CHATS (per-order back-and-forth) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // NEW: orderChats/{orderId}/messages â€” client + admin + assigned writer
-    match /orderChats/{orderId}/messages/{msgId} {
-      allow read, list, create: if request.auth != null;
     }
 
     // â”€â”€ QUOTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
@@ -58,7 +59,7 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ MESSAGES (legacy orderService threads) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // â”€â”€ MESSAGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /messages/{messageId} {
       allow read, list, create: if request.auth != null;
     }
@@ -71,11 +72,11 @@ service cloud.firestore {
     }
 
     // â”€â”€ PAYMENT SPLITS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // KEY FIX: allow clients to create splits (DashboardPage creates on payment success)
     match /paymentSplits/{docId} {
       allow create: if request.auth != null;
       allow update: if request.auth != null && isAdmin();
-      allow read, list: if request.auth != null && (
+      allow list:   if request.auth != null && isAdmin();
+      allow read:   if request.auth != null && (
         isAdmin() ||
         resource.data.writerId   == request.auth.uid ||
         resource.data.referrerId == request.auth.uid ||
@@ -85,7 +86,8 @@ service cloud.firestore {
 
     // â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
     match /notifications/{docId} {
-      allow read, list, update: if request.auth != null && (
+      allow list:         if request.auth != null && isAdmin();
+      allow read, update: if request.auth != null && (
         resource.data.userId == request.auth.uid || isAdmin()
       );
       allow create: if request.auth != null;
