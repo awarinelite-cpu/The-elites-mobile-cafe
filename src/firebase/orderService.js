@@ -1,7 +1,7 @@
 // src/firebase/orderService.js
 import {
   collection, doc, addDoc, getDoc, getDocs, updateDoc,
-  query, where, orderBy, serverTimestamp, onSnapshot
+  query, where, orderBy, limit, serverTimestamp, onSnapshot
 } from 'firebase/firestore';
 import { db } from './config';
 
@@ -78,46 +78,38 @@ export const subscribeToOrder = (orderId, callback) =>
     snap => callback({ id: snap.id, ...snap.data() })
   );
 
-// Queries both 'clientId' AND 'userId' fields and merges results.
-// Documents from RequestPage use 'clientId'; ServiceRequestPage uses 'userId'.
+// NO composite index needed — queries only by clientId (no orderBy in query).
+// Sorting is done client-side. Falls back to userId if clientId query empty.
 export const subscribeToClientOrders = (clientId, callback) => {
-  let resultsByClientId = [];
-  let resultsByUserId   = [];
+  let byClientId = [];
+  let byUserId   = [];
+  let unsub2 = () => {};
 
-  const merge = () => {
-    // Merge and deduplicate by doc id
-    const all = [...resultsByClientId, ...resultsByUserId];
+  const deliver = () => {
+    const all  = [...byClientId, ...byUserId];
     const seen = new Set();
-    const unique = all.filter(o => { if (seen.has(o.id)) return false; seen.add(o.id); return true; });
-    // Sort by createdAt descending
-    unique.sort((a, b) => {
-      const ta = a.createdAt?.toMillis?.() || 0;
-      const tb = b.createdAt?.toMillis?.() || 0;
-      return tb - ta;
+    const unique = all.filter(o => {
+      if (seen.has(o.id)) return false;
+      seen.add(o.id);
+      return true;
     });
+    unique.sort((a, b) => (b.createdAt?.toMillis?.() || 0) - (a.createdAt?.toMillis?.() || 0));
     callback(unique);
   };
 
-  const q1 = query(
-    collection(db, 'serviceRequests'),
-    where('clientId', '==', clientId),
-    orderBy('createdAt', 'desc')
-  );
-  const q2 = query(
-    collection(db, 'serviceRequests'),
-    where('userId', '==', clientId),
-    orderBy('createdAt', 'desc')
+  // Query 1: by clientId — no orderBy so no composite index required
+  const q1 = query(collection(db, 'serviceRequests'), where('clientId', '==', clientId));
+  const unsub1 = onSnapshot(q1,
+    snap => { byClientId = snap.docs.map(d => ({ id: d.id, ...d.data() })); deliver(); },
+    _err => { byClientId = []; deliver(); }
   );
 
-  const unsub1 = onSnapshot(q1, snap => {
-    resultsByClientId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    merge();
-  }, () => { /* index not ready, skip */ });
-
-  const unsub2 = onSnapshot(q2, snap => {
-    resultsByUserId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
-    merge();
-  }, () => { /* index not ready, skip */ });
+  // Query 2: by userId — no orderBy so no composite index required
+  const q2 = query(collection(db, 'serviceRequests'), where('userId', '==', clientId));
+  unsub2 = onSnapshot(q2,
+    snap => { byUserId = snap.docs.map(d => ({ id: d.id, ...d.data() })); deliver(); },
+    _err => { byUserId = []; deliver(); }
+  );
 
   return () => { unsub1(); unsub2(); };
 };
