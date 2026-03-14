@@ -1,5 +1,6 @@
 // src/pages/WriterPage.jsx
 import { useState, useEffect } from 'react';
+import AIResearchWriterPage from './AIResearchWriterPage';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import {
@@ -11,6 +12,7 @@ import { db } from '../firebase/config';
 const NAV = [
   { id: 'overview',  label: '🏠 Overview'    },
   { id: 'projects',  label: '📋 My Projects' },
+  { id: 'ai_writer', label: '🤖 AI Writer'   },
   { id: 'earnings',  label: '💰 Earnings'    },
   { id: 'referral',  label: '🔗 Referral'    },
   { id: 'settings',  label: '⚙️ Settings'    },
@@ -160,6 +162,7 @@ export default function WriterPage() {
         {tab === 'projects'  && <ProjectsTab projects={projects} user={user} allWriters={allWriters} s={s} />}
         {tab === 'earnings'  && <EarningsTab earnings={earnings} stats={{ totalEarned, pendingPay }} s={s} />}
         {tab === 'referral'  && <ReferralTab referralLink={referralLink} user={user} projects={projects} s={s} />}
+        {tab === 'ai_writer' && <AIResearchWriterPage />}
         {tab === 'settings'  && <SettingsTab user={user} writerProfile={writerProfile} setWriterProfile={setWriterProfile} s={s} />}
       </main>
 
