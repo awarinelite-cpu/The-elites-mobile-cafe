@@ -105,6 +105,12 @@ self.addEventListener('fetch', e => {
       },
     ],
 
+    // ── Expose Anthropic key to the frontend bundle ─────────
+    define: {
+      'import.meta.env.VITE_ANTHROPIC_API_KEY':
+        JSON.stringify(env.VITE_ANTHROPIC_API_KEY || ''),
+    },
+
     build: {
       rollupOptions: {
         output: {
@@ -118,6 +124,19 @@ self.addEventListener('fetch', e => {
 
     server: {
       headers: { 'Service-Worker-Allowed': '/' },
+      // ── Dev proxy: forwards /api/anthropic → api.anthropic.com ──
+      // Avoids CORS errors when running locally with `npm run dev`
+      proxy: {
+        '/api/anthropic': {
+          target: 'https://api.anthropic.com',
+          changeOrigin: true,
+          rewrite: (path) => path.replace(/^\/api\/anthropic/, ''),
+          headers: {
+            'anthropic-version': '2023-06-01',
+            'x-api-key': env.VITE_ANTHROPIC_API_KEY || '',
+          },
+        },
+      },
     },
   };
 });
