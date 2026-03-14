@@ -78,17 +78,48 @@ export const subscribeToOrder = (orderId, callback) =>
     snap => callback({ id: snap.id, ...snap.data() })
   );
 
-// ── KEY FIX: was querying 'orders' with 'clientId' field.
-//    ServiceRequestPage writes to 'serviceRequests' with field 'userId'.
+// Queries both 'clientId' AND 'userId' fields and merges results.
+// Documents from RequestPage use 'clientId'; ServiceRequestPage uses 'userId'.
 export const subscribeToClientOrders = (clientId, callback) => {
-  const q = query(
+  let resultsByClientId = [];
+  let resultsByUserId   = [];
+
+  const merge = () => {
+    // Merge and deduplicate by doc id
+    const all = [...resultsByClientId, ...resultsByUserId];
+    const seen = new Set();
+    const unique = all.filter(o => { if (seen.has(o.id)) return false; seen.add(o.id); return true; });
+    // Sort by createdAt descending
+    unique.sort((a, b) => {
+      const ta = a.createdAt?.toMillis?.() || 0;
+      const tb = b.createdAt?.toMillis?.() || 0;
+      return tb - ta;
+    });
+    callback(unique);
+  };
+
+  const q1 = query(
+    collection(db, 'serviceRequests'),
+    where('clientId', '==', clientId),
+    orderBy('createdAt', 'desc')
+  );
+  const q2 = query(
     collection(db, 'serviceRequests'),
     where('userId', '==', clientId),
     orderBy('createdAt', 'desc')
   );
-  return onSnapshot(q, snap =>
-    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
-  );
+
+  const unsub1 = onSnapshot(q1, snap => {
+    resultsByClientId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    merge();
+  }, () => { /* index not ready, skip */ });
+
+  const unsub2 = onSnapshot(q2, snap => {
+    resultsByUserId = snap.docs.map(d => ({ id: d.id, ...d.data() }));
+    merge();
+  }, () => { /* index not ready, skip */ });
+
+  return () => { unsub1(); unsub2(); };
 };
 
 export const subscribeToAllOrders = (callback) => {
