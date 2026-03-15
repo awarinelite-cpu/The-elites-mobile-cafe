@@ -37,21 +37,25 @@ const CATEGORIES = [
   'Law','English Language','History','Philosophy','Religious Studies','Linguistics',
   'Other',
 ];
-const TABS = [
-  { key: 'requests',  label: '📋 Service Requests' },
-  { key: 'topics',    label: '📚 Research Topics'  },
-  { key: 'messages',  label: '💬 Messages'          },
-  { key: 'users',     label: '👥 Users'             },
-  { key: 'payments',  label: '💰 Payments'          },
-  { key: 'ai_writer', label: '🤖 AI Writer'         },
+const NAV = [
+  { key: 'dashboard',  label: '🏠 Dashboard',        group: 'main'    },
+  { key: 'requests',   label: '📋 Service Requests',  group: 'main'    },
+  { key: 'topics',     label: '📚 Research Topics',   group: 'main'    },
+  { key: 'messages',   label: '💬 Messages',           group: 'comms'   },
+  { key: 'withdrawals',label: '💸 Withdrawals',        group: 'finance' },
+  { key: 'payments',   label: '💰 Payment Splits',     group: 'finance' },
+  { key: 'users',      label: '👥 Users',              group: 'manage'  },
+  { key: 'ai_writer',  label: '🤖 AI Writer',          group: 'tools'   },
 ];
 
 export default function AdminPage() {
-  const [tab, setTab]                         = useState('requests');
+  const [tab, setTab]                         = useState('dashboard');
+  const [sidebarOpen, setSidebarOpen]         = useState(true);
   const [requests, setRequests]               = useState([]);
   const [topics, setTopics]                   = useState([]);
   const [users, setUsers]                     = useState([]);
   const [paymentSplits, setPaymentSplits]     = useState([]);
+  const [withdrawalRequests, setWithdrawalRequests] = useState([]);
   const [selectedRequest, setSelectedRequest] = useState(null);
   const [selectedUser, setSelectedUser]       = useState(null);
   const [messages, setMessages]               = useState([]);
@@ -63,7 +67,7 @@ export default function AdminPage() {
   const [bulkParsed, setBulkParsed]           = useState([]);
   const [bulkUploading, setBulkUploading]     = useState(false);
   const [filterStatus, setFilterStatus]       = useState('all');
-  const [msgFilter, setMsgFilter]             = useState('all'); // 'all' | 'writers' | 'clients'
+  const [msgFilter, setMsgFilter]             = useState('all');
   const [broadcastMode, setBroadcastMode]     = useState(false);
   const [broadcastText, setBroadcastText]     = useState('');
   const [broadcasting, setBroadcasting]       = useState(false);
@@ -99,6 +103,14 @@ export default function AdminPage() {
   useEffect(() => {
     const unsub = onSnapshot(query(collection(db, 'paymentSplits'), orderBy('createdAt', 'desc')),
       snap => setPaymentSplits(snap.docs.map(d => ({ id: d.id, ...d.data() }))));
+    return unsub;
+  }, []);
+
+  useEffect(() => {
+    const unsub = onSnapshot(
+      query(collection(db, 'withdrawalRequests'), orderBy('createdAt', 'desc')),
+      snap => setWithdrawalRequests(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+    );
     return unsub;
   }, []);
 
@@ -484,11 +496,6 @@ export default function AdminPage() {
 
   // ── Shared styles ───────────────────────────────────────
   const s = {
-    page:   { minHeight: '100vh', background: 'var(--bg-primary)', paddingBottom: 60 },
-    header: { background: 'linear-gradient(135deg,var(--blue-deep),var(--teal-dark))', padding: '32px 24px' },
-    inner:  { maxWidth: 1200, margin: '0 auto', padding: '0 20px' },
-    tabs:   { display: 'flex', gap: 4, padding: '16px 20px', background: 'var(--bg-secondary)', borderBottom: '1px solid var(--border)', overflowX: 'auto' },
-    tab:    (a) => ({ padding: '9px 18px', borderRadius: 8, border: 'none', cursor: 'pointer', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, whiteSpace: 'nowrap', transition: 'all 0.2s', background: a ? 'var(--teal)' : 'transparent', color: a ? '#fff' : 'var(--text-secondary)' }),
     card:   { background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, padding: 20, marginBottom: 12 },
     badge:  (st) => ({ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.5, background: STATUS_COLORS[st]?.bg || '#eee', color: STATUS_COLORS[st]?.color || '#333' }),
     btn:    (bg, color='#fff') => ({ background: bg, color, border: 'none', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)', transition: 'all 0.2s' }),
@@ -496,31 +503,119 @@ export default function AdminPage() {
     lbl:    { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
   };
 
+  const pendingCount     = requests.filter(r => r.status === 'pending').length;
+  const pendingWithdrawals = withdrawalRequests.filter(w => w.status === 'pending').length;
+  const totalRevenue     = paymentSplits.reduce((s, p) => s + (p.totalAmount || 0), 0);
+  const totalPendingPay  = paymentSplits.filter(p => p.status !== 'paid').reduce((s, p) => s + (p.writerAmount || 0), 0);
+
+  const navGroups = [
+    { label: 'Main',    keys: ['dashboard','requests','topics'] },
+    { label: 'Comms',   keys: ['messages'] },
+    { label: 'Finance', keys: ['withdrawals','payments'] },
+    { label: 'Manage',  keys: ['users'] },
+    { label: 'Tools',   keys: ['ai_writer'] },
+  ];
+
+  const navBadge = (key) => {
+    if (key === 'requests')    return pendingCount > 0 ? pendingCount : null;
+    if (key === 'withdrawals') return pendingWithdrawals > 0 ? pendingWithdrawals : null;
+    return null;
+  };
+
+  const handleNav = (key) => { setTab(key); setSidebarOpen(false); };
+
   return (
-    <div style={s.page}>
-      {/* Header */}
-      <div style={s.header}>
-        <div style={s.inner}>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: '2rem', color: '#fff', marginBottom: 4 }}>🛡️ Admin Control Panel</h1>
-          <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 14 }}>Manage requests, topics, users and communications</p>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', paddingTop: 64, position: 'relative' }}>
+      <style>{`
+        @keyframes spin{to{transform:rotate(360deg)}}
+        @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
+        .admin-sidebar { transition: transform 0.28s cubic-bezier(.4,0,.2,1); }
+        @media (max-width: 900px) {
+          .admin-sidebar { position: fixed !important; top: 64px !important; left: 0 !important; height: calc(100vh - 64px) !important; z-index: 300 !important; }
+          .admin-sidebar.closed { transform: translateX(-110%) !important; }
+          .admin-menu-btn { display: flex !important; }
+          .admin-main { padding: 16px !important; }
+        }
+        @media (min-width: 901px) {
+          .admin-sidebar { position: sticky !important; top: 64px !important; transform: none !important; height: calc(100vh - 64px) !important; }
+          .admin-menu-btn { display: none !important; }
+        }
+        .admin-menu-btn { display: none; }
+        .admin-nav-btn:hover { background: rgba(13,148,136,0.09) !important; }
+      `}</style>
+
+      {/* ── Sidebar ─────────────────────────────────── */}
+      <aside className={`admin-sidebar${sidebarOpen ? '' : ' closed'}`}
+        style={{ width: 236, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflowY: 'auto', flexShrink: 0 }}>
+
+        {/* Brand */}
+        <div style={{ padding: '20px 18px 16px', borderBottom: '1px solid var(--border)', background: 'linear-gradient(135deg,var(--blue-deep),var(--teal-dark))' }}>
+          <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.6)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 3 }}>Admin Control</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#fff' }}>🛡️ Elite Cafe</div>
+          <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.6)', marginTop: 4 }}>Management Portal</div>
+          <div style={{ marginTop: 10, display: 'flex', gap: 6, flexWrap: 'wrap' }}>
+            {pendingCount > 0 && <span style={{ background: 'rgba(239,68,68,0.85)', color: '#fff', borderRadius: 20, padding: '2px 9px', fontSize: 11, fontWeight: 700 }}>{pendingCount} pending</span>}
+            {pendingWithdrawals > 0 && <span style={{ background: 'rgba(245,158,11,0.85)', color: '#fff', borderRadius: 20, padding: '2px 9px', fontSize: 11, fontWeight: 700 }}>{pendingWithdrawals} payouts</span>}
+          </div>
         </div>
-      </div>
 
-      {/* Tabs */}
-      <div style={s.tabs}>
-        {TABS.map(t => (
-          <button key={t.key} style={s.tab(tab === t.key)} onClick={() => setTab(t.key)}>
-            {t.label}
-            {t.key === 'requests' && requests.filter(r => r.status === 'pending').length > 0 && (
-              <span style={{ marginLeft: 6, background: '#EF4444', color: '#fff', borderRadius: 10, padding: '1px 7px', fontSize: 11 }}>
-                {requests.filter(r => r.status === 'pending').length}
-              </span>
-            )}
-          </button>
-        ))}
-      </div>
+        {/* Nav groups */}
+        <nav style={{ padding: '12px 8px', flex: 1 }}>
+          {navGroups.map(grp => {
+            const items = NAV.filter(n => grp.keys.includes(n.key));
+            if (!items.length) return null;
+            return (
+              <div key={grp.label} style={{ marginBottom: 18 }}>
+                <div style={{ fontSize: 9, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1.5, padding: '0 8px', marginBottom: 4 }}>{grp.label}</div>
+                {items.map(n => {
+                  const active = tab === n.key;
+                  const badge  = navBadge(n.key);
+                  return (
+                    <button key={n.key} className="admin-nav-btn" onClick={() => handleNav(n.key)}
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 8, background: active ? 'rgba(13,148,136,0.15)' : 'transparent', border: `1px solid ${active ? 'var(--teal)' : 'transparent'}`, color: active ? 'var(--teal)' : 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginBottom: 2, textAlign: 'left', transition: 'all 0.18s', fontWeight: active ? 700 : 400 }}>
+                      <span>{n.label}</span>
+                      {badge && <span style={{ background: active ? 'var(--teal)' : '#EF4444', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>{badge}</span>}
+                    </button>
+                  );
+                })}
+              </div>
+            );
+          })}
+        </nav>
 
-      <div style={{ ...s.inner, paddingTop: 24 }}>
+        {/* Stats footer */}
+        <div style={{ padding: '12px 14px', borderTop: '1px solid var(--border)', fontSize: 12 }}>
+          <div style={{ color: 'var(--text-muted)', marginBottom: 4 }}>Total Revenue</div>
+          <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#16A34A' }}>₦{totalRevenue.toLocaleString()}</div>
+        </div>
+      </aside>
+
+      {/* Sidebar backdrop on mobile */}
+      {sidebarOpen && (
+        <div className="admin-menu-btn" onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, top: 64, background: 'rgba(0,0,0,0.45)', zIndex: 299, display: 'block' }} />
+      )}
+
+      {/* ── Main content ────────────────────────────────── */}
+      <main className="admin-main" style={{ flex: 1, padding: 'clamp(18px,3vw,32px)', overflowY: 'auto', minWidth: 0, animation: 'fadeIn 0.25s ease' }}>
+
+        {/* Mobile top bar */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+          <button className="admin-menu-btn" onClick={() => setSidebarOpen(o => !o)}
+            style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 13px', cursor: 'pointer', fontSize: 18, color: 'var(--text-primary)', alignItems: 'center', justifyContent: 'center' }}>☰</button>
+          <span className="admin-menu-btn" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
+            {NAV.find(n => n.key === tab)?.label || ''}
+          </span>
+        </div>
+
+        {/* ══════════════ DASHBOARD ══════════════ */}
+        {tab === 'dashboard' && (
+          <AdminDashboard
+            requests={requests} topics={topics} users={users}
+            paymentSplits={paymentSplits} withdrawalRequests={withdrawalRequests}
+            s={s} onNav={handleNav}
+          />
+        )}
 
         {/* ══════════════ SERVICE REQUESTS ══════════════ */}
         {tab === 'requests' && (
@@ -591,7 +686,6 @@ export default function AdminPage() {
                 {selectedRequest.nmcnType ? (
                   <NMCNAdminView request={selectedRequest} />
                 ) : (
-                  /* Generic extraData display */
                   selectedRequest.extraData && Object.entries(selectedRequest.extraData)
                     .filter(([k, v]) => v && typeof v === 'string' && k !== 'passport')
                     .map(([k, v]) => (
@@ -659,7 +753,7 @@ export default function AdminPage() {
                     onClick={() => {
                       const u = users.find(u => u.id === selectedRequest.userId) || { id: selectedRequest.userId, name: selectedRequest.name, email: selectedRequest.email };
                       setSelectedUser(u);
-                      setTab('messages');
+                      handleNav('messages');
                     }}>
                     💬 Message
                   </button>
@@ -680,7 +774,7 @@ export default function AdminPage() {
                   📂 Bulk Upload
                 </button>
                 <button style={s.btn('var(--teal)')}
-                  onClick={() => { setTopicForm({ title: '', category: 'Nursing', pages: '', price: '', description: '', badge: '' }); setBulkMode(false); }}>
+                  onClick={() => { setTopicForm({ title: '', category: 'Nursing Science', pages: '', price: '', description: '', badge: '' }); setBulkMode(false); }}>
                   ＋ Add New Topic
                 </button>
               </div>
@@ -698,16 +792,12 @@ export default function AdminPage() {
                   <strong style={{ color: 'var(--text-secondary)' }}>Supported formats:</strong><br />
                   • <strong>.csv / .txt</strong> — columns: <code>Title, Category, Pages, Price, Description, Badge</code><br />
                   • <strong>.xlsx / .xls</strong> — same columns as headers (order doesn't matter)<br />
-                  • <strong>Plain .txt</strong> — one topic title per line (you can fill details after)<br />
+                  • <strong>Plain .txt</strong> — one topic title per line (fill details in preview table below)<br />
                   • Word docs (.docx) — save as .txt or .csv first
                 </div>
 
                 {/* Drop zone */}
-                <label style={{
-                  display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-                  border: '2px dashed var(--border)', borderRadius: 10, padding: '32px 20px',
-                  cursor: 'pointer', marginBottom: 16, background: 'var(--bg-secondary)', gap: 8,
-                }}>
+                <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border)', borderRadius: 10, padding: '32px 20px', cursor: 'pointer', marginBottom: 16, background: 'var(--bg-secondary)', gap: 8 }}>
                   <span style={{ fontSize: '2.5rem' }}>📁</span>
                   <span style={{ color: 'var(--text-secondary)', fontWeight: 600, fontSize: 14 }}>Click to choose file or drag & drop</span>
                   <span style={{ color: 'var(--text-muted)', fontSize: 12 }}>.csv, .txt, .xlsx, .xls</span>
@@ -715,56 +805,73 @@ export default function AdminPage() {
                     onChange={e => { if (e.target.files[0]) parseBulkFile(e.target.files[0]); e.target.value = ''; }} />
                 </label>
 
-                {/* Parsed preview */}
+                {/* Parsed preview — editable table with ALL fields from screenshot */}
                 {bulkParsed.length > 0 && (
                   <div>
                     <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 10 }}>
-                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 }}>
-                        {bulkParsed.length} topics ready to upload
-                      </span>
-                      <button style={{ ...s.btn('#EF4444'), padding: '5px 12px', fontSize: 12 }} onClick={() => setBulkParsed([])}>
-                        Clear
-                      </button>
+                      <span style={{ fontWeight: 700, color: 'var(--text-primary)', fontSize: 14 }}>{bulkParsed.length} topics ready to upload</span>
+                      <button style={{ ...s.btn('#EF4444'), padding: '5px 12px', fontSize: 12 }} onClick={() => setBulkParsed([])}>Clear</button>
                     </div>
-                    <div style={{ maxHeight: 280, overflowY: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
-                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                    <div style={{ maxHeight: 360, overflowY: 'auto', overflowX: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
+                      <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 860 }}>
                         <thead style={{ background: 'var(--bg-secondary)', position: 'sticky', top: 0 }}>
                           <tr>
-                            {['#','Title','Category','Pages','Price','Badge'].map(h => (
-                              <th key={h} style={{ padding: '8px 12px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                            {['#','Title','Category','Pages','Price (₦)','Description','Badge','Del'].map(h => (
+                              <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
                         </thead>
                         <tbody>
                           {bulkParsed.map((t, i) => (
-                            <tr key={i}>
-                              <td style={{ padding: '7px 12px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 11 }}>{i + 1}</td>
-                              <td style={{ padding: '7px 12px', color: 'var(--text-primary)', fontWeight: 600, borderBottom: '1px solid var(--border)', maxWidth: 200 }}>
-                                <input value={t.title} onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, title: e.target.value} : r))}
-                                  style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontWeight: 600, width: '100%', fontFamily: 'var(--font-body)', fontSize: 13, outline: 'none' }} />
+                            <tr key={i} style={{ background: i % 2 === 0 ? 'var(--bg-card)' : 'var(--bg-secondary)' }}>
+                              <td style={{ padding: '6px 10px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 11, width: 28 }}>{i + 1}</td>
+                              {/* Title */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', minWidth: 200 }}>
+                                <input value={t.title}
+                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, title: e.target.value} : r))}
+                                  style={{ background: 'transparent', border: 'none', color: 'var(--text-primary)', fontWeight: 600, width: '100%', fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
                               </td>
-                              <td style={{ padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
-                                <select value={t.category} onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, category: e.target.value} : r))}
-                                  style={{ background: 'var(--bg-tertiary)', border: 'none', color: 'var(--text-secondary)', fontSize: 12, borderRadius: 4, padding: '2px 6px', fontFamily: 'var(--font-body)' }}>
+                              {/* Category */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', minWidth: 140 }}>
+                                <select value={t.category}
+                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, category: e.target.value} : r))}
+                                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 11, borderRadius: 4, padding: '3px 6px', fontFamily: 'var(--font-body)', width: '100%' }}>
                                   {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                                 </select>
                               </td>
-                              <td style={{ padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
-                                <input value={t.pages} onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, pages: e.target.value} : r))}
-                                  placeholder="e.g. 65" style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', width: 60, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
+                              {/* Pages */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', width: 70 }}>
+                                <input value={t.pages}
+                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, pages: e.target.value} : r))}
+                                  placeholder="65" style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', width: 50, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
                               </td>
-                              <td style={{ padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
-                                <input value={t.price} onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, price: e.target.value} : r))}
-                                  placeholder="₦5,000" style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontWeight: 700, width: 80, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
+                              {/* Price */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', width: 90 }}>
+                                <input value={t.price}
+                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, price: e.target.value} : r))}
+                                  placeholder="₦5,000" style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontWeight: 700, width: 75, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
                               </td>
-                              <td style={{ padding: '7px 12px', borderBottom: '1px solid var(--border)' }}>
-                                <select value={t.badge} onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, badge: e.target.value} : r))}
-                                  style={{ background: 'var(--bg-tertiary)', border: 'none', color: 'var(--text-secondary)', fontSize: 12, borderRadius: 4, padding: '2px 6px', fontFamily: 'var(--font-body)' }}>
+                              {/* Description */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', minWidth: 180 }}>
+                                <input value={t.description}
+                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, description: e.target.value} : r))}
+                                  placeholder="Brief description..." style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', width: '100%', fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
+                              </td>
+                              {/* Badge */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', width: 110 }}>
+                                <select value={t.badge}
+                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, badge: e.target.value} : r))}
+                                  style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', color: 'var(--text-secondary)', fontSize: 11, borderRadius: 4, padding: '3px 6px', fontFamily: 'var(--font-body)' }}>
                                   <option value="">None</option>
                                   <option value="Popular">🔥 Popular</option>
                                   <option value="New">✨ New</option>
                                   <option value="Hidden">🚫 Hidden</option>
                                 </select>
+                              </td>
+                              {/* Delete row */}
+                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', width: 36 }}>
+                                <button onClick={() => setBulkParsed(p => p.filter((_,j) => j !== i))}
+                                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: '#EF4444', fontSize: 14, padding: '2px 4px' }}>🗑️</button>
                               </td>
                             </tr>
                           ))}
@@ -772,7 +879,7 @@ export default function AdminPage() {
                       </table>
                     </div>
                     <button onClick={uploadBulkTopics} disabled={bulkUploading}
-                      style={{ ...s.btn('var(--teal)'), width: '100%', marginTop: 14, padding: '12px', fontSize: 14, justifyContent: 'center', display: 'flex', alignItems: 'center', gap: 8 }}>
+                      style={{ ...s.btn('var(--teal)'), width: '100%', marginTop: 14, padding: '12px', fontSize: 14, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                       {bulkUploading ? `Uploading... (${bulkParsed.length} topics)` : `🚀 Upload All ${bulkParsed.length} Topics`}
                     </button>
                   </div>
@@ -795,7 +902,7 @@ export default function AdminPage() {
                   ))}
                   <div>
                     <label style={s.lbl}>Category</label>
-                    <select value={topicForm.category || 'Nursing'}
+                    <select value={topicForm.category || 'Nursing Science'}
                       onChange={e => setTopicForm(p => ({ ...p, category: e.target.value }))} style={s.input}>
                       {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                     </select>
@@ -860,23 +967,12 @@ export default function AdminPage() {
 
         {/* ══════════════ MESSAGES ══════════════ */}
         {tab === 'messages' && (
-          <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 260px)', overflow: 'hidden', position: 'relative' }}>
+          <div style={{ display: 'flex', gap: 20, height: 'calc(100vh - 160px)', overflow: 'hidden', position: 'relative' }}>
             <style>{`
               @media (max-width: 768px) {
-                .msg-sidebar {
-                  position: absolute !important;
-                  left: 0; top: 0; bottom: 0;
-                  width: 100% !important;
-                  z-index: 2;
-                  transition: transform 0.3s ease;
-                }
+                .msg-sidebar { position: absolute !important; left: 0; top: 0; bottom: 0; width: 100% !important; z-index: 2; transition: transform 0.3s ease; }
                 .msg-sidebar.hidden { transform: translateX(-110%); }
-                .msg-chat {
-                  position: absolute !important;
-                  left: 0; top: 0; right: 0; bottom: 0;
-                  width: 100% !important;
-                  z-index: 1;
-                }
+                .msg-chat { position: absolute !important; left: 0; top: 0; right: 0; bottom: 0; width: 100% !important; z-index: 1; }
               }
               @media (min-width: 769px) {
                 .msg-sidebar { width: 280px; flex-shrink: 0; }
@@ -884,66 +980,45 @@ export default function AdminPage() {
                 .msg-chat { flex: 1; min-width: 0; }
               }
             `}</style>
-            {/* Sidebar */}
             <div className={`msg-sidebar${selectedUser ? ' hidden' : ''}`} style={{ background: 'var(--bg-secondary)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
-
-              {/* Filter tabs */}
               <div style={{ padding: '10px 10px 0', borderBottom: '1px solid var(--border)', flexShrink: 0 }}>
                 <div style={{ display: 'flex', gap: 4, marginBottom: 10 }}>
                   {[['all','👥 All'],['writers','✍️ Writers'],['clients','🎓 Clients']].map(([val, label]) => (
                     <button key={val} onClick={() => setMsgFilter(val)}
-                      style={{ flex: 1, padding: '6px 4px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-body)', transition: 'all 0.2s',
-                        background: msgFilter === val ? 'var(--teal)' : 'var(--bg-tertiary)',
-                        color: msgFilter === val ? '#fff' : 'var(--text-muted)' }}>
+                      style={{ flex: 1, padding: '6px 4px', borderRadius: 6, border: 'none', cursor: 'pointer', fontSize: 11, fontWeight: 700, fontFamily: 'var(--font-body)', transition: 'all 0.2s', background: msgFilter === val ? 'var(--teal)' : 'var(--bg-tertiary)', color: msgFilter === val ? '#fff' : 'var(--text-muted)' }}>
                       {label}
                     </button>
                   ))}
                 </div>
-                {/* Broadcast button — only shown on writers filter */}
                 {(msgFilter === 'writers' || msgFilter === 'all') && (
                   <button onClick={() => setBroadcastMode(m => !m)}
-                    style={{ ...s.btn(broadcastMode ? '#7C3AED' : 'var(--bg-tertiary)', broadcastMode ? '#fff' : 'var(--text-secondary)'),
-                      width: '100%', marginBottom: 10, fontSize: 12, border: '1px solid var(--border)' }}>
+                    style={{ ...s.btn(broadcastMode ? '#7C3AED' : 'var(--bg-tertiary)', broadcastMode ? '#fff' : 'var(--text-secondary)'), width: '100%', marginBottom: 10, fontSize: 12, border: '1px solid var(--border)' }}>
                     📢 Broadcast to all writers
                   </button>
                 )}
               </div>
-
-              {/* Broadcast compose panel */}
               {broadcastMode && (
                 <div style={{ padding: '10px 12px', borderBottom: '1px solid var(--border)', background: 'rgba(124,58,237,0.07)', flexShrink: 0 }}>
                   <div style={{ fontSize: 11, color: '#7C3AED', fontWeight: 700, marginBottom: 6 }}>
                     📢 Message all {users.filter(u => u.isWriter || u.role === 'writer').length} writers
                   </div>
-                  <textarea
-                    rows={3}
-                    value={broadcastText}
-                    onChange={e => setBroadcastText(e.target.value)}
-                    placeholder="Type your broadcast message..."
-                    style={{ ...s.input, marginBottom: 8, fontSize: 12, resize: 'none' }}
-                  />
+                  <textarea rows={3} value={broadcastText} onChange={e => setBroadcastText(e.target.value)} placeholder="Type your broadcast message..." style={{ ...s.input, marginBottom: 8, fontSize: 12, resize: 'none' }} />
                   <div style={{ display: 'flex', gap: 6 }}>
                     <button onClick={broadcastToWriters} disabled={broadcasting || !broadcastText.trim()}
                       style={{ ...s.btn('#7C3AED'), flex: 1, fontSize: 12, opacity: broadcastText.trim() ? 1 : 0.5 }}>
                       {broadcasting ? 'Sending...' : '📤 Send to All'}
                     </button>
-                    <button onClick={() => { setBroadcastMode(false); setBroadcastText(''); }}
-                      style={{ ...s.btn('#94A3B8'), fontSize: 12 }}>✕</button>
+                    <button onClick={() => { setBroadcastMode(false); setBroadcastText(''); }} style={{ ...s.btn('#94A3B8'), fontSize: 12 }}>✕</button>
                   </div>
                 </div>
               )}
-
-              {/* User list */}
               <div style={{ overflowY: 'auto', flex: 1 }}>
                 {users.length === 0 && <div style={{ padding: 24, textAlign: 'center', color: 'var(--text-muted)', fontSize: 13 }}>No users yet</div>}
-                {users
-                  .filter(u => !u.isAdmin)
-                  .filter(u => {
+                {users.filter(u => !u.isAdmin).filter(u => {
                     if (msgFilter === 'writers') return u.isWriter || u.role === 'writer';
                     if (msgFilter === 'clients') return !u.isWriter && u.role !== 'writer';
                     return true;
-                  })
-                  .map(u => (
+                  }).map(u => (
                     <div key={u.id} onClick={() => setSelectedUser(u)}
                       style={{ padding: '13px 16px', cursor: 'pointer', borderBottom: '1px solid var(--border)', background: selectedUser?.id === u.id ? 'var(--teal-glow)' : 'transparent', transition: 'all 0.15s', display: 'flex', alignItems: 'center', gap: 10 }}>
                       <div style={{ width: 36, height: 36, borderRadius: '50%', background: (u.isWriter || u.role === 'writer') ? 'linear-gradient(135deg,#7C3AED,#4F46E5)' : 'linear-gradient(135deg,var(--teal),var(--blue-deep))', display: 'flex', alignItems: 'center', justifyContent: 'center', color: '#fff', fontWeight: 700, fontSize: 15, flexShrink: 0 }}>
@@ -960,7 +1035,6 @@ export default function AdminPage() {
               </div>
             </div>
 
-            {/* Chat window */}
             <div className="msg-chat" style={{ background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
               {!selectedUser ? (
                 <div style={{ flex: 1, display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', color: 'var(--text-muted)', gap: 12 }}>
@@ -969,7 +1043,6 @@ export default function AdminPage() {
                 </div>
               ) : (
                 <>
-                  {/* Chat header */}
                   <div style={{ padding: '13px 18px', borderBottom: '1px solid var(--border)', background: 'var(--bg-secondary)', flexShrink: 0, display: 'flex', alignItems: 'center', gap: 12 }}>
                     <button onClick={() => setSelectedUser(null)} style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--teal)', fontSize: 22, padding: '0 4px', flexShrink: 0, display: 'none' }} className="msg-back-btn">‹</button>
                     <style>{`@media (max-width: 768px) { .msg-back-btn { display: block !important; } }`}</style>
@@ -981,23 +1054,176 @@ export default function AdminPage() {
                       <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{selectedUser.email}</div>
                     </div>
                   </div>
-
-                  {/* Messages */}
                   <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
-                    {messages.length === 0 && (
-                      <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 60, fontSize: 13 }}>
-                        No messages yet. Say hello! 👋
-                      </div>
-                    )}
+                    {messages.length === 0 && <div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 60, fontSize: 13 }}>No messages yet. Say hello! 👋</div>}
                     {messages.map(msg => {
-                      const isAdmin = msg.sender === 'admin';
+                      const isAdm = msg.sender === 'admin';
                       return (
-                        <div key={msg.id} style={{ display: 'flex', justifyContent: isAdmin ? 'flex-end' : 'flex-start' }}>
-                          <div style={{
-                            maxWidth: '70%', padding: '10px 14px', borderRadius: 16, fontSize: 14, lineHeight: 1.55,
-                            background: isAdmin ? 'var(--teal)' : 'var(--bg-tertiary)',
-                            color: isAdmin ? '#fff' : 'var(--text-primary)',
-                            border: !isAdmin ? '1px solid var(--border)' : 'none',
+                        <div key={msg.id} style={{ display: 'flex', justifyContent: isAdm ? 'flex-end' : 'flex-start' }}>
+                          <div style={{ maxWidth: '70%', padding: '10px 14px', borderRadius: 16, fontSize: 14, lineHeight: 1.55, background: isAdm ? 'var(--teal)' : 'var(--bg-tertiary)', color: isAdm ? '#fff' : 'var(--text-primary)', border: !isAdm ? '1px solid var(--border)' : 'none', borderBottomRightRadius: isAdm ? 4 : 16, borderBottomLeftRadius: !isAdm ? 4 : 16 }}>
+                            <div style={{ fontSize: 10, opacity: 0.7, marginBottom: 5, fontWeight: 700, letterSpacing: 0.3 }}>{isAdm ? '🛡️ Admin' : (msg.senderName || '👤 Client')}</div>
+                            {msg.type === 'audio' ? <audio controls src={msg.audioData} style={{ maxWidth: 220, height: 36, display: 'block' }} /> : <span style={{ wordBreak: 'break-word' }}>{msg.text}</span>}
+                            <div style={{ fontSize: 10, opacity: 0.5, marginTop: 5, textAlign: 'right' }}>{msg.createdAt?.toDate?.()?.toLocaleTimeString?.('en', { hour: '2-digit', minute: '2-digit' }) || ''}</div>
+                          </div>
+                        </div>
+                      );
+                    })}
+                    <div ref={messagesEnd} />
+                  </div>
+                  {audioBlob && (
+                    <div style={{ padding: '8px 14px', background: 'var(--bg-secondary)', borderTop: '1px solid var(--border)', display: 'flex', alignItems: 'center', gap: 10, flexShrink: 0 }}>
+                      <audio controls src={URL.createObjectURL(audioBlob)} style={{ height: 36, flex: 1 }} />
+                      <button onClick={() => setAudioBlob(null)} style={{ ...s.btn('#EF4444'), padding: '6px 12px' }}>✕</button>
+                      <button onClick={sendMessage} style={{ ...s.btn('var(--teal)'), padding: '6px 14px' }}>Send 🎙️</button>
+                    </div>
+                  )}
+                  {!audioBlob && (
+                    <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, background: 'var(--bg-card)', flexShrink: 0 }}>
+                      <input value={newMessage} onChange={e => setNewMessage(e.target.value)} onKeyDown={e => e.key === 'Enter' && !e.shiftKey && sendMessage()} placeholder="Type a message..." style={{ ...s.input, marginBottom: 0, flex: 1 }} />
+                      <button onMouseDown={startRecording} onMouseUp={stopRecording} onTouchStart={e => { e.preventDefault(); startRecording(); }} onTouchEnd={stopRecording}
+                        style={{ ...s.btn(recording ? '#EF4444' : 'var(--bg-secondary)', recording ? '#fff' : 'var(--text-secondary)'), padding: '10px 14px', fontSize: 18, border: '1px solid var(--border)', flexShrink: 0 }}>
+                        {recording ? '⏹' : '🎙️'}
+                      </button>
+                      <button onClick={sendMessage} disabled={!newMessage.trim()} style={{ ...s.btn('var(--teal)'), padding: '10px 18px', flexShrink: 0, opacity: newMessage.trim() ? 1 : 0.5 }}>➤</button>
+                    </div>
+                  )}
+                </>
+              )}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════ WITHDRAWALS ══════════════ */}
+        {tab === 'withdrawals' && (
+          <WithdrawalsTab withdrawalRequests={withdrawalRequests} users={users} s={s} showToast={showToast} />
+        )}
+
+        {/* ══════════════ PAYMENTS ══════════════ */}
+        {tab === 'payments' && (
+          <div>
+            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginBottom: 6 }}>Payment Splits</h2>
+            <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>All completed project payouts — pending and paid.</p>
+            <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 28 }}>
+              {[
+                ['Total Pending', `₦${paymentSplits.filter(p => p.status !== 'paid').reduce((s, p) => s + (p.writerAmount || 0), 0).toLocaleString()}`, '#D97706'],
+                ['Total Paid Out', `₦${paymentSplits.filter(p => p.status === 'paid').reduce((s, p) => s + (p.writerAmount || 0), 0).toLocaleString()}`, '#16A34A'],
+                ['Total Splits', paymentSplits.length, 'var(--teal)'],
+              ].map(([label, val, color]) => (
+                <div key={label} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 12, padding: 18 }}>
+                  <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 8 }}>{label}</div>
+                  <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color }}>{val}</div>
+                </div>
+              ))}
+            </div>
+            {paymentSplits.length === 0 ? (
+              <div style={{ textAlign: 'center', padding: 48, color: 'var(--text-muted)' }}>No payment splits yet.</div>
+            ) : (
+              <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 13 }}>
+                  <thead style={{ background: 'var(--bg-secondary)' }}>
+                    <tr>{['Date','Type','Recipient','Total','Their Cut','Status','Action'].map(h => (
+                      <th key={h} style={{ padding: '11px 14px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                    ))}</tr>
+                  </thead>
+                  <tbody>
+                    {paymentSplits.map(sp => {
+                      const recipientUser = users.find(u => (u.uid || u.id) === sp.writerId);
+                      return (
+                        <tr key={sp.id}>
+                          <td style={{ padding: '12px 14px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 12 }}>{sp.createdAt?.toDate?.()?.toLocaleDateString() || '—'}</td>
+                          <td style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+                            <span style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)' }}>{sp.splitType?.replace(/_/g, ' ')}</span>
+                          </td>
+                          <td style={{ padding: '12px 14px', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{recipientUser?.name || sp.writerId || 'Admin'}</td>
+                          <td style={{ padding: '12px 14px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>₦{sp.totalAmount?.toLocaleString()}</td>
+                          <td style={{ padding: '12px 14px', fontWeight: 700, color: '#16A34A', borderBottom: '1px solid var(--border)' }}>₦{sp.writerAmount?.toLocaleString()}</td>
+                          <td style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+                            <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: sp.status === 'paid' ? 'rgba(22,163,74,0.12)' : 'rgba(245,158,11,0.12)', color: sp.status === 'paid' ? '#16A34A' : '#D97706' }}>{sp.status === 'paid' ? 'Paid' : 'Pending'}</span>
+                          </td>
+                          <td style={{ padding: '12px 14px', borderBottom: '1px solid var(--border)' }}>
+                            {sp.status !== 'paid' && (
+                              <button onClick={async () => { await updateDoc(doc(db, 'paymentSplits', sp.id), { status: 'paid', paidAt: serverTimestamp() }); showToast('✅ Marked as paid'); }}
+                                style={{ ...s.btn('#16A34A'), padding: '5px 12px', fontSize: 12 }}>✅ Mark Paid</button>
+                            )}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+            )}
+          </div>
+        )}
+
+        {/* ══════════════ USERS ══════════════ */}
+        {tab === 'users' && (
+          <div>
+            <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
+              <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gold)', marginBottom: 6 }}>🔗 Your Admin Referral Link</div>
+              <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
+                Share this link. Clients who register through it will be assigned to you. You earn <strong style={{ color: 'var(--gold)' }}>85%</strong> if you write it, or <strong style={{ color: 'var(--gold)' }}>20%</strong> if you push to a writer.
+              </div>
+              <div style={{ display: 'flex', gap: 8, alignItems: 'center' }}>
+                <div style={{ flex: 1, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 8, padding: '9px 12px', fontSize: 12, color: 'var(--gold)', fontFamily: 'monospace', wordBreak: 'break-all' }}>{window.location.origin}/register?ref=admin</div>
+                <button onClick={() => { navigator.clipboard.writeText(`${window.location.origin}/register?ref=admin`); showToast('📋 Copied!'); }} style={{ ...s.btn('var(--gold)', '#000'), flexShrink: 0 }}>Copy</button>
+              </div>
+            </div>
+            <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)', marginBottom: 20 }}>Registered Users ({users.length})</h2>
+            <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
+              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
+                <thead style={{ background: 'var(--bg-secondary)' }}>
+                  <tr>{['Name','Email','Joined','Role','Referred By','Actions'].map(h => (
+                    <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+                  ))}</tr>
+                </thead>
+                <tbody>
+                  {users.map(u => {
+                    const referrerName = u.referredBy === 'admin' ? 'Admin' : u.referredBy ? users.find(w => (w.uid || w.id) === u.referredBy)?.name || 'Writer' : '—';
+                    return (
+                      <tr key={u.id}>
+                        <td style={{ padding: '13px 16px', fontWeight: 600, color: 'var(--text-primary)', borderBottom: '1px solid var(--border)' }}>{u.name || u.displayName || '—'}</td>
+                        <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{u.email}</td>
+                        <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', fontSize: 12 }}>{u.createdAt?.toDate?.()?.toLocaleDateString?.() || '—'}</td>
+                        <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                          {u.isAdmin ? <span style={s.badge('accepted')}>✅ Admin</span> : u.isWriter ? <span style={s.badge('in_progress')}>✍️ Writer</span> : <span style={s.badge('pending')}>Client</span>}
+                        </td>
+                        <td style={{ padding: '13px 16px', color: 'var(--gold)', fontSize: 12, borderBottom: '1px solid var(--border)' }}>{referrerName}</td>
+                        <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
+                          <div style={{ display: 'flex', gap: 6 }}>
+                            <button style={{ ...s.btn(u.isAdmin ? '#EF4444' : 'var(--blue-deep)'), padding: '5px 12px', fontSize: 12 }} onClick={() => toggleAdminUser(u.id, u.isAdmin)}>
+                              {u.isAdmin ? '🚫 Remove Admin' : '🛡️ Make Admin'}
+                            </button>
+                            <button style={{ ...s.btn('var(--teal)'), padding: '5px 12px', fontSize: 12 }} onClick={() => { setSelectedUser(u); handleNav('messages'); }}>💬 Chat</button>
+                          </div>
+                        </td>
+                      </tr>
+                    );
+                  })}
+                </tbody>
+              </table>
+              {users.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No users yet</div>}
+            </div>
+          </div>
+        )}
+
+        {/* ══════════════ AI WRITER ══════════════ */}
+        {tab === 'ai_writer' && (
+          <div style={{ margin: '0 -20px' }}>
+            <AIResearchWriterPage />
+          </div>
+        )}
+      </main>
+
+      {/* Toast */}
+      {toast && (
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', color: '#fff', padding: '12px 24px', borderRadius: 24, fontSize: 14, fontWeight: 600, zIndex: 9999, backdropFilter: 'blur(10px)', border: '1px solid rgba(13,148,136,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', whiteSpace: 'nowrap', fontFamily: 'var(--font-body)' }}>
+          {toast}
+        </div>
+      )}
+    </div>
+  );
+}
                             borderBottomRightRadius: isAdmin ? 4 : 16,
                             borderBottomLeftRadius: !isAdmin ? 4 : 16,
                           }}>
@@ -1224,6 +1450,271 @@ export default function AdminPage() {
     </div>
   );
 }
+// ── Admin Dashboard ───────────────────────────────────────────
+function AdminDashboard({ requests, topics, users, paymentSplits, withdrawalRequests, s, onNav }) {
+  const totalRequests   = requests.length;
+  const pendingReqs     = requests.filter(r => r.status === 'pending').length;
+  const inProgress      = requests.filter(r => r.status === 'in_progress').length;
+  const completed       = requests.filter(r => r.status === 'completed').length;
+  const totalClients    = users.filter(u => !u.isAdmin && !u.isWriter && u.role !== 'writer').length;
+  const totalWriters    = users.filter(u => u.isWriter || u.role === 'writer').length;
+  const totalRevenue    = paymentSplits.reduce((sum, p) => sum + (p.totalAmount || 0), 0);
+  const pendingPayouts  = paymentSplits.filter(p => p.status !== 'paid').reduce((sum, p) => sum + (p.writerAmount || 0), 0);
+  const pendingWithdraw = withdrawalRequests.filter(w => w.status === 'pending').length;
+
+  // Recent activity — last 5 requests
+  const recent = [...requests].slice(0, 5);
+
+  // Status breakdown for bar chart
+  const statusCounts = {};
+  requests.forEach(r => { statusCounts[r.status] = (statusCounts[r.status] || 0) + 1; });
+  const maxCount = Math.max(...Object.values(statusCounts), 1);
+
+  return (
+    <div>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>🏠 Dashboard</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 28 }}>Live overview of Elite Mobile Cafe operations.</p>
+
+      {/* KPI cards */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 28 }}>
+        {[
+          { label: 'Total Revenue',    value: `₦${totalRevenue.toLocaleString()}`,  color: '#16A34A', bg: 'rgba(22,163,74,0.07)',   icon: '💰', nav: 'payments' },
+          { label: 'Pending Payouts',  value: `₦${pendingPayouts.toLocaleString()}`,color: '#D97706', bg: 'rgba(217,119,6,0.07)',   icon: '⏳', nav: 'payments' },
+          { label: 'Pending Requests', value: pendingReqs,                           color: '#EF4444', bg: 'rgba(239,68,68,0.07)',   icon: '📋', nav: 'requests' },
+          { label: 'In Progress',      value: inProgress,                            color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', icon: '⚙️', nav: 'requests' },
+          { label: 'Completed',        value: completed,                             color: '#0D9488', bg: 'rgba(13,148,136,0.07)', icon: '✅', nav: 'requests' },
+          { label: 'Total Clients',    value: totalClients,                          color: '#2563EB', bg: 'rgba(37,99,235,0.07)',  icon: '🎓', nav: 'users'    },
+          { label: 'Writers',          value: totalWriters,                          color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', icon: '✍️', nav: 'users'    },
+          { label: 'Payout Requests',  value: pendingWithdraw,                      color: '#D97706', bg: 'rgba(217,119,6,0.07)',   icon: '💸', nav: 'withdrawals' },
+        ].map(kpi => (
+          <button key={kpi.label} onClick={() => onNav(kpi.nav)}
+            style={{ ...s.card, textAlign: 'left', cursor: 'pointer', background: kpi.bg, border: `1px solid ${kpi.color}22`, marginBottom: 0, transition: 'all 0.18s' }}
+            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = kpi.color+'55'; }}
+            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = kpi.color+'22'; }}>
+            <div style={{ fontSize: 22, marginBottom: 8 }}>{kpi.icon}</div>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 }}>{kpi.label}</div>
+          </button>
+        ))}
+      </div>
+
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(300px,1fr))', gap: 20, marginBottom: 24 }}>
+
+        {/* Status breakdown */}
+        <div style={{ ...s.card, marginBottom: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 16 }}>📊 Requests by Status</div>
+          {Object.entries(statusCounts).sort((a,b) => b[1]-a[1]).map(([status, count]) => {
+            const cfg = { pending: '#D97706', reviewing: '#2563EB', accepted: '#0D9488', in_progress: '#7C3AED', completed: '#16A34A', rejected: '#EF4444', priced: '#C9A84C' };
+            const color = cfg[status] || '#94A3B8';
+            return (
+              <div key={status} style={{ marginBottom: 10 }}>
+                <div style={{ display: 'flex', justifyContent: 'space-between', fontSize: 12, marginBottom: 4 }}>
+                  <span style={{ fontWeight: 600, color: 'var(--text-secondary)', textTransform: 'capitalize' }}>{status.replace('_',' ')}</span>
+                  <span style={{ fontWeight: 700, color }}>{count}</span>
+                </div>
+                <div style={{ background: 'var(--bg-tertiary)', borderRadius: 20, height: 7, overflow: 'hidden' }}>
+                  <div style={{ height: '100%', width: `${(count / maxCount) * 100}%`, background: color, borderRadius: 20, transition: 'width 0.6s ease' }} />
+                </div>
+              </div>
+            );
+          })}
+          {Object.keys(statusCounts).length === 0 && <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No requests yet.</p>}
+        </div>
+
+        {/* Quick actions */}
+        <div style={{ ...s.card, marginBottom: 0 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 14 }}>⚡ Quick Actions</div>
+          <div style={{ display: 'flex', flexDirection: 'column', gap: 8 }}>
+            {[
+              { label: '📋 View Pending Requests', nav: 'requests', color: '#EF4444', badge: pendingReqs > 0 ? pendingReqs : null },
+              { label: '💸 Process Withdrawals',   nav: 'withdrawals', color: '#D97706', badge: pendingWithdraw > 0 ? pendingWithdraw : null },
+              { label: '📚 Add Research Topic',    nav: 'topics',   color: '#0D9488' },
+              { label: '💬 Message a User',         nav: 'messages', color: '#7C3AED' },
+              { label: '👥 Manage Users',           nav: 'users',    color: '#2563EB' },
+              { label: '💰 Review Payments',        nav: 'payments', color: '#16A34A' },
+            ].map(a => (
+              <button key={a.nav} onClick={() => onNav(a.nav)}
+                style={{ display: 'flex', alignItems: 'center', justifyContent: 'space-between', padding: '10px 14px', borderRadius: 10, background: 'var(--bg-tertiary)', border: `1px solid ${a.color}22`, cursor: 'pointer', textAlign: 'left', transition: 'all 0.15s', fontFamily: 'var(--font-body)' }}
+                onMouseEnter={e => { e.currentTarget.style.background = `${a.color}11`; e.currentTarget.style.borderColor = `${a.color}44`; }}
+                onMouseLeave={e => { e.currentTarget.style.background = 'var(--bg-tertiary)'; e.currentTarget.style.borderColor = `${a.color}22`; }}>
+                <span style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)' }}>{a.label}</span>
+                {a.badge && <span style={{ background: '#EF4444', color: '#fff', borderRadius: 20, padding: '1px 8px', fontSize: 11, fontWeight: 700 }}>{a.badge}</span>}
+              </button>
+            ))}
+          </div>
+        </div>
+      </div>
+
+      {/* Recent requests */}
+      <div style={{ ...s.card, marginBottom: 0 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 14 }}>
+          <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>🕐 Recent Requests</div>
+          <button onClick={() => onNav('requests')} style={{ background: 'none', border: 'none', color: 'var(--teal)', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)' }}>View all →</button>
+        </div>
+        {recent.length === 0 ? (
+          <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No requests yet.</p>
+        ) : (
+          recent.map(req => {
+            const sc = { pending: '#D97706', reviewing: '#2563EB', accepted: '#0D9488', in_progress: '#7C3AED', completed: '#16A34A', rejected: '#EF4444' };
+            const col = sc[req.status] || '#94A3B8';
+            return (
+              <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>
+                <div style={{ flex: 1, minWidth: 0 }}>
+                  <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{req.serviceTitle || req.serviceKey || 'Request'}</div>
+                  <div style={{ fontSize: 11, color: 'var(--text-muted)' }}>{req.name} · {req.createdAt?.toDate?.()?.toLocaleDateString()}</div>
+                </div>
+                <div style={{ display: 'flex', alignItems: 'center', gap: 8, flexShrink: 0 }}>
+                  {req.agreedPrice && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>₦{Number(req.agreedPrice).toLocaleString()}</span>}
+                  <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 10, fontWeight: 700, textTransform: 'uppercase', background: col+'18', color: col }}>{req.status?.replace('_',' ')}</span>
+                </div>
+              </div>
+            );
+          })
+        )}
+      </div>
+    </div>
+  );
+}
+
+// ── Withdrawals Tab ───────────────────────────────────────────
+function WithdrawalsTab({ withdrawalRequests, users, s, showToast }) {
+  const pending   = withdrawalRequests.filter(w => w.status === 'pending');
+  const processed = withdrawalRequests.filter(w => w.status !== 'pending');
+  const totalPending = pending.reduce((sum, w) => sum + (w.amount || 0), 0);
+
+  const markPaid = async (id, writerId, amount) => {
+    await updateDoc(doc(db, 'withdrawalRequests', id), { status: 'paid', paidAt: serverTimestamp() });
+    // Notify the writer
+    if (writerId) {
+      await addDoc(collection(db, 'notifications'), {
+        userId: writerId,
+        title: '✅ Withdrawal Processed',
+        body: `Your withdrawal of ₦${Number(amount).toLocaleString()} has been paid to your account.`,
+        type: 'payment', read: false, createdAt: serverTimestamp(),
+      });
+    }
+    showToast('✅ Marked as paid — writer notified');
+  };
+
+  const reject = async (id, writerId, amount) => {
+    await updateDoc(doc(db, 'withdrawalRequests', id), { status: 'rejected', rejectedAt: serverTimestamp() });
+    if (writerId) {
+      await addDoc(collection(db, 'notifications'), {
+        userId: writerId,
+        title: '❌ Withdrawal Rejected',
+        body: `Your withdrawal request of ₦${Number(amount).toLocaleString()} was not processed. Contact admin for details.`,
+        type: 'payment', read: false, createdAt: serverTimestamp(),
+      });
+    }
+    showToast('✅ Request rejected — writer notified');
+  };
+
+  const Row = ({ w }) => {
+    const writerUser = users.find(u => (u.uid || u.id) === w.writerId);
+    return (
+      <div style={{ ...s.card, border: w.status === 'pending' ? '1px solid rgba(245,158,11,0.35)' : '1px solid var(--border-card)', marginBottom: 10 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', flexWrap: 'wrap', gap: 12, marginBottom: 12 }}>
+          <div>
+            <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 2 }}>
+              {w.writerName || writerUser?.name || 'Writer'}
+            </div>
+            <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>{w.writerEmail}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2 }}>{w.createdAt?.toDate?.()?.toLocaleString()}</div>
+          </div>
+          <div style={{ textAlign: 'right' }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: '#16A34A' }}>₦{Number(w.amount).toLocaleString()}</div>
+            <span style={{ display: 'inline-block', padding: '3px 12px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase',
+              background: w.status === 'paid' ? 'rgba(22,163,74,0.12)' : w.status === 'rejected' ? 'rgba(239,68,68,0.12)' : 'rgba(245,158,11,0.12)',
+              color: w.status === 'paid' ? '#16A34A' : w.status === 'rejected' ? '#EF4444' : '#D97706' }}>
+              {w.status}
+            </span>
+          </div>
+        </div>
+
+        {/* Bank details */}
+        <div style={{ background: 'var(--bg-tertiary)', borderRadius: 8, padding: '10px 14px', marginBottom: 12, display: 'flex', gap: 20, flexWrap: 'wrap' }}>
+          {[['Bank', w.bankName], ['Account Name', w.accountName], ['Account No.', w.bankAccount]].map(([label, val]) => val ? (
+            <div key={label}>
+              <div style={{ fontSize: 10, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 2 }}>{label}</div>
+              <div style={{ fontWeight: 600, fontSize: 13, color: 'var(--text-primary)', display: 'flex', alignItems: 'center', gap: 6 }}>
+                {val}
+                <button onClick={() => { navigator.clipboard.writeText(val); showToast('📋 Copied!'); }}
+                  style={{ background: 'none', border: 'none', cursor: 'pointer', color: 'var(--teal)', fontSize: 11, fontWeight: 700, padding: 0 }}>copy</button>
+              </div>
+            </div>
+          ) : null)}
+        </div>
+
+        {w.note && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 12, fontStyle: 'italic' }}>"{w.note}"</div>}
+
+        {w.status === 'pending' && (
+          <div style={{ display: 'flex', gap: 10 }}>
+            <button onClick={() => markPaid(w.id, w.writerId, w.amount)}
+              style={{ ...s.btn('#16A34A'), flex: 1, padding: '10px' }}>
+              ✅ Mark as Paid
+            </button>
+            <button onClick={() => reject(w.id, w.writerId, w.amount)}
+              style={{ ...s.btn('#EF4444'), padding: '10px 20px' }}>
+              ❌ Reject
+            </button>
+          </div>
+        )}
+        {w.status === 'paid' && <div style={{ fontSize: 12, color: '#16A34A', fontWeight: 600 }}>✅ Paid on {w.paidAt?.toDate?.()?.toLocaleDateString()}</div>}
+        {w.status === 'rejected' && <div style={{ fontSize: 12, color: '#EF4444', fontWeight: 600 }}>❌ Rejected</div>}
+      </div>
+    );
+  };
+
+  return (
+    <div>
+      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 6 }}>💸 Withdrawal Requests</h2>
+      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>Process writer payout requests. Bank details included for direct transfer.</p>
+
+      {/* Summary */}
+      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 28 }}>
+        {[
+          { label: 'Pending Requests', value: pending.length, color: '#D97706', bg: 'rgba(217,119,6,0.08)' },
+          { label: 'Amount Due',       value: `₦${totalPending.toLocaleString()}`, color: '#EF4444', bg: 'rgba(239,68,68,0.08)' },
+          { label: 'Processed',        value: processed.length, color: '#16A34A', bg: 'rgba(22,163,74,0.08)' },
+        ].map(c => (
+          <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.color}30`, borderRadius: 14, padding: 18 }}>
+            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: c.color }}>{c.value}</div>
+            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 }}>{c.label}</div>
+          </div>
+        ))}
+      </div>
+
+      {/* Pending */}
+      {pending.length > 0 && (
+        <div style={{ marginBottom: 28 }}>
+          <div style={{ fontWeight: 700, fontSize: 13, color: '#D97706', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>
+            🟡 Pending ({pending.length})
+          </div>
+          {pending.map(w => <Row key={w.id} w={w} />)}
+        </div>
+      )}
+
+      {/* Processed */}
+      {processed.length > 0 && (
+        <div>
+          <div style={{ fontWeight: 700, fontSize: 13, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 12 }}>
+            History ({processed.length})
+          </div>
+          {processed.map(w => <Row key={w.id} w={w} />)}
+        </div>
+      )}
+
+      {withdrawalRequests.length === 0 && (
+        <div style={{ textAlign: 'center', padding: '60px 24px', color: 'var(--text-muted)' }}>
+          <div style={{ fontSize: '3rem', marginBottom: 12 }}>💸</div>
+          <div style={{ fontWeight: 600, fontSize: 15 }}>No withdrawal requests yet</div>
+          <div style={{ fontSize: 13, marginTop: 6 }}>Writers will submit requests from their Wallet tab.</div>
+        </div>
+      )}
+    </div>
+  );
+}
+
 // ── NMCN Admin View ───────────────────────────────────────────
 function NMCNAdminView({ request }) {
   const d = request.extraData || {};
