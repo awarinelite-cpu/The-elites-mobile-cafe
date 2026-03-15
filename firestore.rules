@@ -2,31 +2,31 @@ rules_version = '2';
 service cloud.firestore {
   match /databases/{database}/documents {
 
-    // â”€â”€ USERS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── USERS ────────────────────────────────────────────────────────────
     match /users/{uid} {
       allow read, write: if request.auth != null && request.auth.uid == uid;
       allow read, list:  if request.auth != null && isAdmin();
       allow update:      if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ RESEARCH TOPICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── RESEARCH TOPICS ──────────────────────────────────────────────────
     match /researchTopics/{topicId} {
       allow read, list: if true;
       allow write:      if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ TOPICS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── TOPICS ───────────────────────────────────────────────────────────
     match /topics/{topicId} {
       allow read, list: if true;
       allow write:      if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ SERVICE REQUESTS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
-    // allow list for ALL authenticated users â€” required for where() queries
+    // ── SERVICE REQUESTS ─────────────────────────────────────────────────
+    // allow list for ALL authenticated users – required for where() queries
     // without composite indexes. Security is enforced at the app level.
     match /serviceRequests/{docId} {
-      allow create:      if request.auth != null;
-      allow list:        if request.auth != null;
+      allow create:       if request.auth != null;
+      allow list:         if request.auth != null;
       allow read, update: if request.auth != null && (
         resource.data.userId           == request.auth.uid ||
         resource.data.clientId         == request.auth.uid ||
@@ -36,22 +36,73 @@ service cloud.firestore {
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ ORDER CHATS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── PROJECT CHATS ────────────────────────────────────────────────────
+    // Writer ↔ Client direct messaging per project.
+    // Parent doc: projectChats/{projectId}
+    // Only the assigned writer, the client who owns the request, or admin
+    // may read/write messages on a project thread.
+    match /projectChats/{projectId} {
+      allow read, write: if request.auth != null && (
+        isAdmin() ||
+        isAssignedToProject(projectId) ||
+        isClientOfProject(projectId)
+      );
+
+      match /messages/{msgId} {
+        allow read, list: if request.auth != null && (
+          isAdmin() ||
+          isAssignedToProject(projectId) ||
+          isClientOfProject(projectId)
+        );
+        allow create: if request.auth != null && (
+          isAdmin() ||
+          isAssignedToProject(projectId) ||
+          isClientOfProject(projectId)
+        );
+        // Only the sender or admin can update (e.g. mark readByWriter / readByClient)
+        allow update: if request.auth != null && (
+          isAdmin() ||
+          resource.data.senderId == request.auth.uid ||
+          isAssignedToProject(projectId) ||
+          isClientOfProject(projectId)
+        );
+        allow delete: if request.auth != null && isAdmin();
+      }
+    }
+
+    // ── WITHDRAWAL REQUESTS ──────────────────────────────────────────────
+    // Writers create their own withdrawal requests; only admin can approve/pay.
+    match /withdrawalRequests/{docId} {
+      allow create: if request.auth != null && isWriter();
+      allow read:   if request.auth != null && (
+        isAdmin() ||
+        resource.data.writerId == request.auth.uid
+      );
+      allow list:   if request.auth != null && (
+        isAdmin() ||
+        // writer can list their own – enforced by where('writerId','==',uid) in app
+        isWriter()
+      );
+      allow update: if request.auth != null && isAdmin();
+      allow delete: if request.auth != null && isAdmin();
+    }
+
+    // ── ORDER CHATS ──────────────────────────────────────────────────────
     match /orderChats/{orderId}/messages/{msgId} {
       allow read, list, create: if request.auth != null;
     }
 
-    // â”€â”€ ORDERS (legacy) â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── ORDERS (legacy) ──────────────────────────────────────────────────
     match /orders/{orderId} {
-      allow create:      if request.auth != null;
-      allow list:        if request.auth != null;
+      allow create:       if request.auth != null;
+      allow list:         if request.auth != null;
       allow read, update: if request.auth != null && (
         resource.data.clientId == request.auth.uid || isAdmin()
       );
       allow delete: if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ QUOTES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── QUOTES ───────────────────────────────────────────────────────────
     match /quotes/{quoteId} {
       allow read: if request.auth != null && (
         resource.data.clientId == request.auth.uid || isAdmin()
@@ -59,19 +110,19 @@ service cloud.firestore {
       allow write: if request.auth != null && isAdmin();
     }
 
-    // â”€â”€ MESSAGES â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── MESSAGES ─────────────────────────────────────────────────────────
     match /messages/{messageId} {
       allow read, list, create: if request.auth != null;
     }
 
-    // â”€â”€ ADMIN DM THREADS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── ADMIN DM THREADS ─────────────────────────────────────────────────
     match /adminMessages/{userId}/messages/{msgId} {
       allow read, list, write: if request.auth != null && (
         request.auth.uid == userId || isAdmin()
       );
     }
 
-    // â”€â”€ PAYMENT SPLITS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── PAYMENT SPLITS ───────────────────────────────────────────────────
     match /paymentSplits/{docId} {
       allow create: if request.auth != null;
       allow update: if request.auth != null && isAdmin();
@@ -84,7 +135,7 @@ service cloud.firestore {
       );
     }
 
-    // â”€â”€ NOTIFICATIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── NOTIFICATIONS ────────────────────────────────────────────────────
     match /notifications/{docId} {
       allow list:         if request.auth != null && isAdmin();
       allow read, update: if request.auth != null && (
@@ -95,7 +146,7 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
 
-    // â”€â”€ HELPER FUNCTIONS â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€â”€
+    // ── HELPER FUNCTIONS ─────────────────────────────────────────────────
     function isAdmin() {
       let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return data.isAdmin == true || data.role == 'Admin' || data.role == 'admin';
@@ -104,6 +155,18 @@ service cloud.firestore {
     function isWriter() {
       let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
       return data.isWriter == true || data.role == 'writer';
+    }
+
+    // Check if the requesting user is the writer assigned to this project
+    function isAssignedToProject(projectId) {
+      let req = get(/databases/$(database)/documents/serviceRequests/$(projectId)).data;
+      return req.assignedWriterId == request.auth.uid;
+    }
+
+    // Check if the requesting user is the client who owns this project
+    function isClientOfProject(projectId) {
+      let req = get(/databases/$(database)/documents/serviceRequests/$(projectId)).data;
+      return req.userId == request.auth.uid || req.clientId == request.auth.uid;
     }
   }
 }
