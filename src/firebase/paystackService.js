@@ -1,29 +1,71 @@
 // src/firebase/paystackService.js
-// Paystack inline payment integration
+// ── Now powered by Monnify for instant settlement ──
+// All existing imports of loadPaystack / initiatePayment work unchanged
 
-const PAYSTACK_KEY = import.meta.env.VITE_PAYSTACK_PUBLIC_KEY;
+const MONNIFY_API_KEY  = import.meta.env.VITE_MONNIFY_API_KEY;   // MK_PROD_XXXXXXXXXX
+const MONNIFY_CONTRACT = import.meta.env.VITE_MONNIFY_CONTRACT;  // your contract code
+const IS_TEST          = import.meta.env.VITE_MONNIFY_TEST === 'true';
 
+// ── Load Monnify SDK (exported as loadPaystack so no imports break) ──────
 export const loadPaystack = () => {
-  return new Promise((resolve) => {
-    if (window.PaystackPop) { resolve(); return; }
-    const script = document.createElement('script');
-    script.src = 'https://js.paystack.co/v1/inline.js';
-    script.onload = resolve;
+  return new Promise((resolve, reject) => {
+    if (window.MonnifySDK) { resolve(); return; }
+    const script    = document.createElement('script');
+    script.src      = 'https://sdk.monnify.com/plugin/monnify.js';
+    script.onload   = resolve;
+    script.onerror  = () => reject(new Error('Failed to load Monnify SDK'));
     document.head.appendChild(script);
   });
 };
 
-export const initiatePayment = async ({ email, amount, orderId, type, onSuccess, onClose }) => {
+// ── Initiate payment — same signature as before ──────────────────────────
+export const initiatePayment = async ({
+  email, amount, orderId, type, onSuccess, onClose,
+  customerName = '',   // optional: pass client full name if available
+}) => {
   await loadPaystack();
-  const handler = window.PaystackPop.setup({
-    key: PAYSTACK_KEY,
-    email,
-    amount: amount * 100, // Paystack uses kobo
-    currency: 'NGN',
-    ref: `${orderId}_${type}_${Date.now()}`,
-    metadata: { orderId, paymentType: type },
-    callback: (response) => onSuccess(response),
-    onClose: () => onClose && onClose(),
+
+  if (!MONNIFY_API_KEY || !MONNIFY_CONTRACT) {
+    alert('Payment is not configured. Please contact admin.');
+    return;
+  }
+
+  window.MonnifySDK.initialize({
+    amount,                     // ✅ Naira directly — Monnify does NOT use kobo
+    currency:           'NGN',
+    reference:          `${orderId}_${type}_${Date.now()}`,
+    customerFullName:   customerName || email.split('@')[0],
+    customerEmail:      email,
+    apiKey:             MONNIFY_API_KEY,
+    contractCode:       MONNIFY_CONTRACT,
+    paymentDescription: `${type} — Order ${orderId}`,
+    isTestMode:         IS_TEST,
+
+    // Accept cards, bank transfer, USSD and mobile money
+    paymentMethods: ['CARD', 'ACCOUNT_TRANSFER', 'USSD', 'PHONE_NUMBER'],
+
+    onLoadStart:    () => {},
+    onLoadComplete: () => {},
+
+    onComplete: (response) => {
+      if (response.paymentStatus === 'PAID') {
+        // Normalised to match Paystack shape so all existing onSuccess handlers work
+        onSuccess({
+          reference:     response.paymentReference,
+          trans:         response.transactionReference,
+          status:        'success',
+          message:       'Approved',
+          // Monnify-specific extras (useful for admin records)
+          monnifyRef:    response.transactionReference,
+          paymentMethod: response.paymentMethod,
+          amountPaid:    response.amountPaid,
+          paidOn:        response.paidOn,
+        });
+      }
+    },
+
+    onClose: (data) => {
+      onClose && onClose(data);
+    },
   });
-  handler.openIframe();
 };
