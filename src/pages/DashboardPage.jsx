@@ -5,7 +5,7 @@ import { useAuth } from '../context/AuthContext';
 import { onSnapshot, query, orderBy } from 'firebase/firestore';
 import { db } from '../firebase/config';
 import { subscribeToClientOrders } from '../firebase/orderService';
-import { initiatePayment } from '../firebase/paystackService';
+import useMonnify from '../hooks/useMonnify';
 import { doc, updateDoc, addDoc, collection, serverTimestamp as ts } from 'firebase/firestore';
 
 const NAV = [
@@ -52,6 +52,7 @@ function StatusBadge({ status }) {
 export default function DashboardPage() {
   const { user, profile } = useAuth();
   const navigate          = useNavigate();
+  const { initializePayment } = useMonnify();
   const [tab, setTab]         = useState('overview');
   const [orders, setOrders]   = useState([]);
   const [loading, setLoading] = useState(true);
@@ -85,30 +86,33 @@ export default function DashboardPage() {
   if (profile?.isAdmin || profile?.isWriter) return null;
 
   // ── 50% advance payment ──────────────────────────────────────
-  const handlePayAdvance = async (order) => {
+  const handlePayAdvance = (order) => {
     if (paying) return;
     const total = Number(order.agreedPrice || order.totalAmount);
     const advanceAmount = Math.round(total * 0.5);
     setPaying(order.id);
-    try {
-      await initiatePayment({
-        email: user.email,
-        amount: advanceAmount,
-        orderId: order.id,
-        type: order.serviceKey || order.serviceTitle || 'service',
-        onSuccess: async (response) => {
+
+    initializePayment({
+      amount: advanceAmount,
+      customerName: profile?.name || user.displayName || 'Client',
+      customerEmail: user.email,
+      customerPhone: profile?.phone || '',
+      description: `50% Advance - ${order.serviceTitle || order.topicTitle || 'Service'}`,
+      metadata: { orderId: order.id, paymentType: 'advance', clientId: user.uid },
+      onSuccess: async (response) => {
+        try {
           const orderRef = doc(db, 'serviceRequests', order.id);
           await updateDoc(orderRef, {
             status: 'in_progress',
             advancePaid: true,
             advanceAmount,
-            advancePaystackRef: response.reference,
+            advanceMonnifyRef: response.transactionReference,
             advancePaidAt: ts(),
           });
           await addDoc(collection(db, 'notifications'), {
             userId: 'admin',
             title: '💰 50% Advance Payment Received',
-            body: `₦${advanceAmount.toLocaleString()} advance paid for "${order.serviceTitle || order.topicTitle || 'order'}" — Ref: ${response.reference}`,
+            body: `₦${advanceAmount.toLocaleString()} advance paid for "${order.serviceTitle || order.topicTitle || 'order'}" — Ref: ${response.transactionReference}`,
             type: 'payment', read: false, createdAt: ts(),
           });
           if (order.assignedWriterId) {
@@ -121,39 +125,43 @@ export default function DashboardPage() {
           }
           setPaying(null);
           alert('✅ Advance payment successful! Work will begin now.');
-        },
-        onClose: () => setPaying(null),
-      });
-    } catch (e) {
-      console.error('Payment error:', e);
-      setPaying(null);
-      alert('Payment failed. Please try again.');
-    }
+        } catch (e) {
+          console.error('Error saving payment:', e);
+          setPaying(null);
+          alert('Payment received but failed to save. Contact support with ref: ' + response.transactionReference);
+        }
+      },
+      onClose: () => setPaying(null),
+    });
   };
 
   // ── Final 50% payment ────────────────────────────────────────
-  const handlePayFinal = async (order) => {
+  const handlePayFinal = (order) => {
     if (paying) return;
     const total = Number(order.agreedPrice || order.totalAmount);
     const finalAmount = total - Math.round(total * 0.5);
     setPaying(order.id);
-    try {
-      await initiatePayment({
-        email: user.email,
-        amount: finalAmount,
-        orderId: order.id,
-        type: order.serviceKey || order.serviceTitle || 'service',
-        onSuccess: async (response) => {
+
+    initializePayment({
+      amount: finalAmount,
+      customerName: profile?.name || user.displayName || 'Client',
+      customerEmail: user.email,
+      customerPhone: profile?.phone || '',
+      description: `Final 50% - ${order.serviceTitle || order.topicTitle || 'Service'}`,
+      metadata: { orderId: order.id, paymentType: 'final', clientId: user.uid },
+      onSuccess: async (response) => {
+        try {
           const orderRef = doc(db, 'serviceRequests', order.id);
           await updateDoc(orderRef, {
             status: 'paid',
             finalPaid: true,
             finalAmount,
-            finalPaystackRef: response.reference,
+            finalMonnifyRef: response.transactionReference,
             finalPaidAt: ts(),
-            paystackRef: response.reference,
+            monnifyRef: response.transactionReference,
             paidAt: ts(),
           });
+          // Payment split logic
           const referrerId = order.referredBy;
           const writerId   = order.assignedWriterId;
           const pushedBy   = order.pushedBy;
@@ -171,7 +179,7 @@ export default function DashboardPage() {
           await addDoc(collection(db, 'paymentSplits'), {
             orderId: order.id, clientId: user.uid, writerId: writerId || null, referrerId: referrerId || null,
             splitType, totalAmount: total, writerAmount, referrerAmount, adminAmount, maintenanceAmount,
-            paystackRef: response.reference, status: 'pending_payout', createdAt: ts(),
+            monnifyRef: response.transactionReference, status: 'pending_payout', createdAt: ts(),
           });
           if (writerId) {
             await addDoc(collection(db, 'notifications'), {
@@ -182,7 +190,7 @@ export default function DashboardPage() {
           }
           await addDoc(collection(db, 'notifications'), {
             userId: 'admin', title: '✅ Final Payment Confirmed',
-            body: `₦${finalAmount.toLocaleString()} final payment received for "${order.serviceTitle || order.topicTitle || 'order'}" — Ref: ${response.reference}`,
+            body: `₦${finalAmount.toLocaleString()} final payment received for "${order.serviceTitle || order.topicTitle || 'order'}" — Ref: ${response.transactionReference}`,
             type: 'payment', read: false, createdAt: ts(),
           });
           if (writerId) {
@@ -194,14 +202,14 @@ export default function DashboardPage() {
           }
           setPaying(null);
           alert('✅ Final payment successful! Your completed work will be delivered.');
-        },
-        onClose: () => setPaying(null),
-      });
-    } catch (e) {
-      console.error('Payment error:', e);
-      setPaying(null);
-      alert('Payment failed. Please try again.');
-    }
+        } catch (e) {
+          console.error('Error saving payment:', e);
+          setPaying(null);
+          alert('Payment received but failed to save. Contact support with ref: ' + response.transactionReference);
+        }
+      },
+      onClose: () => setPaying(null),
+    });
   };
 
   const handleTabChange = (id) => { setTab(id); setSidebarOpen(false); setSelectedOrder(null); };
@@ -580,7 +588,6 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack, onPayAdva
             <div ref={bottomRef} />
           </div>
           <div style={{ padding: '10px 12px', borderTop: '1px solid var(--border)', display: 'flex', gap: 8, alignItems: 'center', background: 'var(--bg-card)' }}>
-            {/* File attach button */}
             <label title="Attach file" style={{ display: 'flex', alignItems: 'center', justifyContent: 'center', width: 36, height: 36, borderRadius: 8, background: 'var(--bg-tertiary)', border: '1px solid var(--border)', cursor: 'pointer', flexShrink: 0, fontSize: 16 }}>
               {fileUploading ? <div style={{ width: 14, height: 14, border: '2px solid var(--teal)', borderTop: '2px solid transparent', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> : '📎'}
               <input ref={fileRef} type="file" style={{ display: 'none' }}
@@ -892,7 +899,7 @@ function PaymentsTab({ orders, stats }) {
             <div key={o.id} style={{ background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, padding: 20, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 12 }}>
               <div>
                 <div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 6 }}>{o.serviceTitle || o.topicTitle}</div>
-                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Ref: <span style={{ fontFamily: 'monospace' }}>{o.paystackRef}</span></div>
+                <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 6 }}>Ref: <span style={{ fontFamily: 'monospace' }}>{o.monnifyRef || o.finalMonnifyRef}</span></div>
                 <span style={{ display: 'inline-block', padding: '3px 10px', borderRadius: 20, fontSize: 11, fontWeight: 700, textTransform: 'uppercase', background: STATUS_COLORS['paid']?.bg, color: STATUS_COLORS['paid']?.color }}>Paid</span>
               </div>
               <div style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 22, fontWeight: 700 }}>₦{Number(o.agreedPrice || o.totalAmount || 0).toLocaleString()}</div>
@@ -903,8 +910,8 @@ function PaymentsTab({ orders, stats }) {
     </div>
   );
 }
+
 // ── Services Tab ──────────────────────────────────────────────
-// Per-service field definitions (matching the existing service pages exactly)
 const SERVICE_FIELDS = {
   research_projects: [
     { name: 'topic',    label: 'Research Topic / Area *',  type: 'text',     placeholder: 'e.g. Effect of malaria on under-5 children in Lagos', required: true },
@@ -991,7 +998,6 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
 
   const handle = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
-  // Check required fields
   const requiredFilled = () => {
     if (!form.details?.trim()) return false;
     return fields.filter(f => f.required).every(f => form[f.name]?.trim?.());
@@ -1002,10 +1008,8 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
     if (!user) { alert('Please log in first.'); return; }
     setSubmitting(true);
     try {
-      // Build extraData from service-specific fields
       const extraData = {};
       fields.forEach(f => { if (form[f.name]) extraData[f.name] = form[f.name]; });
-
       await addDoc(collection(db, 'serviceRequests'), {
         serviceKey:      service.key,
         serviceTitle:    service.title,
@@ -1044,11 +1048,9 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
     setSubmitting(false);
   };
 
-  // NMCN special form
   const isNMCN = selected === 'online_registration' &&
     (form.regType === 'NMCN Indexing' || form.regType === 'NMCN Licensing');
 
-  // ── Success ──
   if (submitted) return (
     <div style={{ textAlign: 'center', padding: '60px 24px' }}>
       <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>✅</div>
@@ -1057,7 +1059,6 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
     </div>
   );
 
-  // ── NMCN full form ──
   if (selected === 'online_registration' && isNMCN) return (
     <NMCNForm
       regType={form.regType}
@@ -1068,15 +1069,12 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
     />
   );
 
-  // ── Service form ──
   if (selected && service) return (
     <div>
       <button onClick={() => { setSelected(null); setForm({}); setSubmitted(false); }}
         style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
         ← Back to Services
       </button>
-
-      {/* Service header */}
       <div style={{ display: 'flex', alignItems: 'center', gap: 14, marginBottom: 8 }}>
         <span style={{ fontSize: 36 }}>{service.icon}</span>
         <div>
@@ -1084,39 +1082,22 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
           <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '4px 0 0' }}>{service.desc}</p>
         </div>
       </div>
-
-      {/* Info banner */}
       <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 24, fontSize: 13, color: 'var(--teal)', display: 'flex', gap: 8 }}>
         📋 After submitting, our team will review your request, discuss details & pricing with you, then begin work once agreed.
       </div>
-
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
-
-        {/* Full Name — pre-filled */}
         <div>
           <label style={labelSt}>Full Name *</label>
-          <input name="fullName" value={form.fullName || profile?.name || user?.displayName || ''} onChange={handle}
-            placeholder="Your full name"
-            style={inputSt} />
+          <input name="fullName" value={form.fullName || profile?.name || user?.displayName || ''} onChange={handle} placeholder="Your full name" style={inputSt} />
         </div>
-
-        {/* Email — pre-filled */}
         <div>
           <label style={labelSt}>Email Address *</label>
-          <input name="email" type="email" value={form.email || user?.email || ''} onChange={handle}
-            placeholder="your@email.com"
-            style={inputSt} />
+          <input name="email" type="email" value={form.email || user?.email || ''} onChange={handle} placeholder="your@email.com" style={inputSt} />
         </div>
-
-        {/* Phone */}
         <div>
           <label style={labelSt}>Phone Number *</label>
-          <input name="phone" value={form.phone || profile?.phone || ''} onChange={handle}
-            placeholder="e.g. 08012345678"
-            style={inputSt} />
+          <input name="phone" value={form.phone || profile?.phone || ''} onChange={handle} placeholder="e.g. 08012345678" style={inputSt} />
         </div>
-
-        {/* Service-specific fields */}
         {fields.map(f => (
           <div key={f.name}>
             <label style={labelSt}>{f.label}</label>
@@ -1126,26 +1107,16 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
                 {f.options.map(o => <option key={o} value={o}>{o}</option>)}
               </select>
             ) : f.type === 'textarea' ? (
-              <textarea name={f.name} value={form[f.name] || ''} onChange={handle}
-                placeholder={f.placeholder} rows={3}
-                style={{ ...inputSt, resize: 'vertical' }} />
+              <textarea name={f.name} value={form[f.name] || ''} onChange={handle} placeholder={f.placeholder} rows={3} style={{ ...inputSt, resize: 'vertical' }} />
             ) : (
-              <input name={f.name} type={f.type || 'text'} value={form[f.name] || ''} onChange={handle}
-                placeholder={f.placeholder}
-                style={inputSt} />
+              <input name={f.name} type={f.type || 'text'} value={form[f.name] || ''} onChange={handle} placeholder={f.placeholder} style={inputSt} />
             )}
           </div>
         ))}
-
-        {/* Project Details */}
         <div>
           <label style={labelSt}>Project Details / Description *</label>
-          <textarea name="details" rows={5} value={form.details || ''} onChange={handle}
-            placeholder="Describe exactly what you need — the more detail, the better we can help you."
-            style={{ ...inputSt, resize: 'vertical' }} />
+          <textarea name="details" rows={5} value={form.details || ''} onChange={handle} placeholder="Describe exactly what you need — the more detail, the better we can help you." style={{ ...inputSt, resize: 'vertical' }} />
         </div>
-
-        {/* Preferred Deadline */}
         <div>
           <label style={labelSt}>Preferred Deadline</label>
           <select name="deadline" value={form.deadline || ''} onChange={handle} style={inputSt}>
@@ -1155,8 +1126,6 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
             ))}
           </select>
         </div>
-
-        {/* Submit */}
         <button onClick={submit} disabled={submitting || !requiredFilled()}
           style={{ background: 'linear-gradient(135deg, #1E3A8A, #0D9488)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', opacity: requiredFilled() ? 1 : 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           {submitting ? '⏳ Submitting…' : `🚀 Submit Request`}
@@ -1165,7 +1134,6 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
     </div>
   );
 
-  // ── Services grid ──
   return (
     <div>
       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>Our Services</h2>
@@ -1192,15 +1160,13 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
 // ── NMCN Full Registration Form ───────────────────────────────
 function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
   const isIndexing  = regType === 'NMCN Indexing';
-  const isLicensing = regType === 'NMCN Licensing';
 
   const [subType, setSubType]       = useState('');
   const [passport, setPassport]     = useState(null);
   const [passportPreview, setPassportPreview] = useState(null);
   const [submitting, setSubmitting] = useState(false);
-  const [section, setSection]       = useState('A'); // current active section
+  const [section, setSection]       = useState('A');
   const [form, setForm]             = useState({
-    // Pre-fill from profile
     surname:    profile?.name?.split(' ')[0] || '',
     firstName:  profile?.name?.split(' ')[1] || '',
     lastName:   profile?.name?.split(' ')[0] || '',
@@ -1222,7 +1188,6 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
   const indexingTypes  = ['Basic Indexing','Midwifery Indexing','Public Health Indexing','Community Nursing','Community Midwifery','Other Post Basic'];
   const licensingTypes = ['Basic Licensing','Midwifery Licensing','Public Health Licensing','Community Nursing Licensing','Community Midwifery Licensing','Other Post Basic Licensing'];
   const subOptions = isIndexing ? indexingTypes : licensingTypes;
-
   const sections = ['A','B','C','D','E','F'];
 
   const inp = { width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', boxSizing: 'border-box' };
@@ -1294,24 +1259,12 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
 
   return (
     <div style={{ paddingBottom: 40 }}>
-      {/* Back */}
-      <button onClick={onBack}
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
-        ← Back
-      </button>
-
-      {/* Header */}
+      <button onClick={onBack} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>← Back</button>
       <div style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', borderRadius: 12, padding: '18px 20px', marginBottom: 20 }}>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>NMCN</div>
-        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#fff' }}>
-          {regType} Registration
-        </div>
-        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>
-          Online Registration and Licensing Platform
-        </div>
+        <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#fff' }}>{regType} Registration</div>
+        <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>Online Registration and Licensing Platform</div>
       </div>
-
-      {/* Type selector */}
       <div style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 10, padding: '14px 16px', marginBottom: 24 }}>
         <label style={{ ...lbl, color: 'var(--gold)' }}>{regType} Type *</label>
         <select value={subType} onChange={e => setSubType(e.target.value)} style={{ ...inp, borderColor: subType ? 'var(--gold)' : 'var(--border)' }}>
@@ -1319,13 +1272,9 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
           {subOptions.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       </div>
-
-      {/* Info */}
       <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 24, fontSize: 13, color: 'var(--teal)' }}>
         📋 Fill all sections accurately. Admin will process and provide payment details. Documents can be uploaded as files after submission via the order chat.
       </div>
-
-      {/* Section Tabs */}
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
         {sections.map(s => (
           <button key={s} onClick={() => setSection(s)}
@@ -1335,51 +1284,48 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
         ))}
       </div>
 
-      {/* ── SECTION A ── Institution & Admission Details */}
       {section === 'A' && (
         <div style={sec}>
           <div style={secTitle}>Section A — Institution & Admission Details</div>
           <div style={row}>
-            <Field name="institutionName"  label="1. Institution Name"   placeholder="e.g. University of Lagos Teaching Hospital" />
-            <Field name="examNumber"       label="2. Exam Number"         placeholder="e.g. 1234567890" />
-            <Field name="surname"          label="3. Surname *"           placeholder="e.g. Okonkwo" />
-            <Field name="emailA"           label="4. Email Address *"     type="email" placeholder={user?.email || 'your@email.com'} />
-            <Field name="phoneA"           label="5. Phone Number *"      placeholder="e.g. 08012345678" />
+            <Field name="institutionName" label="1. Institution Name" placeholder="e.g. University of Lagos Teaching Hospital" />
+            <Field name="examNumber" label="2. Exam Number" placeholder="e.g. 1234567890" />
+            <Field name="surname" label="3. Surname *" placeholder="e.g. Okonkwo" />
+            <Field name="emailA" label="4. Email Address *" type="email" placeholder={user?.email || 'your@email.com'} />
+            <Field name="phoneA" label="5. Phone Number *" placeholder="e.g. 08012345678" />
             <Field name="applicationNumber" label="6. Application Number" placeholder="Application reference number" />
-            <Field name="indexingNumber"   label="7. Indexing Number"     placeholder="Your NMCN indexing number (if any)" />
-            <Field name="admissionDate"    label="8. Admission Date"      type="date" />
-            <Field name="dobA"             label="9. Date of Birth"       type="date" />
-            <Field name="genderA"          label="10. Gender"             type="select" options={['Male','Female']} />
-            <Field name="maritalStatusA"   label="11. Marital Status"     type="select" options={['Single','Married','Divorced','Widowed']} />
+            <Field name="indexingNumber" label="7. Indexing Number" placeholder="Your NMCN indexing number (if any)" />
+            <Field name="admissionDate" label="8. Admission Date" type="date" />
+            <Field name="dobA" label="9. Date of Birth" type="date" />
+            <Field name="genderA" label="10. Gender" type="select" options={['Male','Female']} />
+            <Field name="maritalStatusA" label="11. Marital Status" type="select" options={['Single','Married','Divorced','Widowed']} />
           </div>
           <div style={{ display: 'flex', justifyContent: 'flex-end', marginTop: 18 }}>
             <button onClick={() => setSection('B')} style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}>Next: Section B →</button>
           </div>
         </div>
       )}
-
-      {/* ── SECTION B ── Personal Information */}
       {section === 'B' && (
         <div style={sec}>
           <div style={secTitle}>Section B — Personal Information</div>
           <div style={row}>
-            <Field name="firstName"     label="1. First Name *"        placeholder="e.g. Emeka" />
-            <Field name="middleName"    label="2. Middle Name"          placeholder="Optional" />
-            <Field name="lastName"      label="3. Last Name *"          placeholder="e.g. Okonkwo" />
-            <Field name="dob"           label="4. Date of Birth *"      type="date" />
-            <Field name="gender"        label="5. Gender *"             type="select" options={['Male','Female']} />
-            <Field name="phone"         label="6. Phone Number *"       placeholder="e.g. 08012345678" />
-            <Field name="email"         label="7. Email Address *"      type="email" placeholder={user?.email} />
-            <Field name="nationality"   label="8. Nationality"          placeholder="e.g. Nigerian" />
-            <Field name="stateOfOrigin" label="9. State of Origin"      placeholder="e.g. Anambra State" />
-            <Field name="lga"           label="10. Local Government Area" placeholder="e.g. Onitsha North" />
+            <Field name="firstName" label="1. First Name *" placeholder="e.g. Emeka" />
+            <Field name="middleName" label="2. Middle Name" placeholder="Optional" />
+            <Field name="lastName" label="3. Last Name *" placeholder="e.g. Okonkwo" />
+            <Field name="dob" label="4. Date of Birth *" type="date" />
+            <Field name="gender" label="5. Gender *" type="select" options={['Male','Female']} />
+            <Field name="phone" label="6. Phone Number *" placeholder="e.g. 08012345678" />
+            <Field name="email" label="7. Email Address *" type="email" placeholder={user?.email} />
+            <Field name="nationality" label="8. Nationality" placeholder="e.g. Nigerian" />
+            <Field name="stateOfOrigin" label="9. State of Origin" placeholder="e.g. Anambra State" />
+            <Field name="lga" label="10. Local Government Area" placeholder="e.g. Onitsha North" />
             <Field name="permanentAddress" label="11. Town & Permanent Address" placeholder="e.g. 5 Eze Street, Onitsha" />
-            <Field name="maritalStatus" label="12. Marital Status"      type="select" options={['Single','Married','Divorced','Widowed']} />
-            <Field name="country"       label="13. Country"             placeholder="e.g. Nigeria" />
+            <Field name="maritalStatus" label="12. Marital Status" type="select" options={['Single','Married','Divorced','Widowed']} />
+            <Field name="country" label="13. Country" placeholder="e.g. Nigeria" />
             <Field name="residentialAddress" label="14. Residential Address" placeholder="Current residential address" />
-            <Field name="residentialLGA"    label="15. Residential LGA"      placeholder="e.g. Yaba" />
-            <Field name="residentialState"  label="16. Residential State"    placeholder="e.g. Lagos State" />
-            <Field name="residentialTown"   label="17. Residential Town"     placeholder="e.g. Yaba" />
+            <Field name="residentialLGA" label="15. Residential LGA" placeholder="e.g. Yaba" />
+            <Field name="residentialState" label="16. Residential State" placeholder="e.g. Lagos State" />
+            <Field name="residentialTown" label="17. Residential Town" placeholder="e.g. Yaba" />
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'space-between' }}>
             <button onClick={() => setSection('A')} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}>← Section A</button>
@@ -1387,17 +1333,14 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
           </div>
         </div>
       )}
-
-      {/* ── SECTION C ── Next of Kin */}
       {section === 'C' && (
         <div style={sec}>
           <div style={secTitle}>Section C — Next of Kin (NOK)</div>
           <div style={row}>
-            <Field name="nokName"         label="1. NOK Full Name"         placeholder="e.g. Mrs. Grace Okonkwo" />
-            <Field name="nokPhone"        label="2. NOK Phone Number"       placeholder="e.g. 08098765432" />
-            <Field name="nokAddress"      label="3. NOK Address"            placeholder="e.g. 5 Eze Street, Onitsha" />
-            <Field name="nokRelationship" label="4. Relationship with NOK"  type="select"
-              options={['Father','Mother','Spouse','Sibling','Child','Guardian','Other']} />
+            <Field name="nokName" label="1. NOK Full Name" placeholder="e.g. Mrs. Grace Okonkwo" />
+            <Field name="nokPhone" label="2. NOK Phone Number" placeholder="e.g. 08098765432" />
+            <Field name="nokAddress" label="3. NOK Address" placeholder="e.g. 5 Eze Street, Onitsha" />
+            <Field name="nokRelationship" label="4. Relationship with NOK" type="select" options={['Father','Mother','Spouse','Sibling','Child','Guardian','Other']} />
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'space-between' }}>
             <button onClick={() => setSection('B')} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}>← Section B</button>
@@ -1405,8 +1348,6 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
           </div>
         </div>
       )}
-
-      {/* ── SECTION D ── Documents with actual file upload */}
       {section === 'D' && (
         <div style={sec}>
           <div style={secTitle}>Section D — Documents to Upload (Scanned Copies)</div>
@@ -1415,10 +1356,10 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
           </div>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
             {[
-              { name: 'waecNeco',       label: '1. WAEC or NECO Certificate *', desc: 'Scanned copy of result certificate' },
-              { name: 'admissionLetter',label: '2. Admission Letter *',          desc: 'Original admission letter from institution' },
-              { name: 'testimonial',    label: '3. Testimonial',                 desc: 'Signed testimonial from institution' },
-              { name: 'birthCert',      label: '4. Birth Certificate *',         desc: 'Birth certificate or declaration of age' },
+              { name: 'waecNeco', label: '1. WAEC or NECO Certificate *', desc: 'Scanned copy of result certificate' },
+              { name: 'admissionLetter', label: '2. Admission Letter *', desc: 'Original admission letter from institution' },
+              { name: 'testimonial', label: '3. Testimonial', desc: 'Signed testimonial from institution' },
+              { name: 'birthCert', label: '4. Birth Certificate *', desc: 'Birth certificate or declaration of age' },
             ].map(doc => {
               const fileKey = `docFile_${doc.name}`;
               const uploaded = form[fileKey];
@@ -1457,17 +1398,15 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
           </div>
         </div>
       )}
-
-      {/* ── SECTION E ── Sponsor Information */}
       {section === 'E' && (
         <div style={sec}>
           <div style={secTitle}>Section E — Sponsor Information</div>
           <div style={row}>
-            <Field name="nin"            label="1. NIN (National ID Number)" placeholder="11-digit NIN" />
-            <Field name="sponsorName"    label="2. Sponsor Name"              placeholder="e.g. Mr. John Okonkwo" />
-            <Field name="sponsorAddress" label="3. Sponsor Address"           placeholder="Full sponsor address" />
-            <Field name="sponsorPhone"   label="4. Sponsor Phone"             placeholder="e.g. 08012345678" />
-            <Field name="sponsorEmail"   label="5. Sponsor Email"             type="email" placeholder="sponsor@email.com" />
+            <Field name="nin" label="1. NIN (National ID Number)" placeholder="11-digit NIN" />
+            <Field name="sponsorName" label="2. Sponsor Name" placeholder="e.g. Mr. John Okonkwo" />
+            <Field name="sponsorAddress" label="3. Sponsor Address" placeholder="Full sponsor address" />
+            <Field name="sponsorPhone" label="4. Sponsor Phone" placeholder="e.g. 08012345678" />
+            <Field name="sponsorEmail" label="5. Sponsor Email" type="email" placeholder="sponsor@email.com" />
           </div>
           <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'space-between' }}>
             <button onClick={() => setSection('D')} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}>← Section D</button>
@@ -1475,31 +1414,25 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
           </div>
         </div>
       )}
-
-      {/* ── SECTION F ── Examination Body + Passport */}
       {section === 'F' && (
         <div style={sec}>
           <div style={secTitle}>Section F — Examination Body Details & Passport</div>
           <div style={row}>
-            <Field name="examBody"       label="1. WAEC / NECO"               type="select" options={['WAEC','NECO','Both']} />
-            <Field name="examType"       label="2. Exam Type"                  type="select" options={['SSCE','GCE','Other']} />
-            <Field name="examinationNumber" label="3. Examination Number"      placeholder="Your exam registration number" />
-            <Field name="examYear"       label="4. Exam Year"                  placeholder="e.g. 2022" />
-            <Field name="scratchSerial"  label="5. Scratch Card Serial Number" placeholder="Serial number on card" />
-            <Field name="scratchPin"     label="6. Scratch Card PIN"           placeholder="Scratch card PIN" />
-            <Field name="necoToken"      label="7. Token (NECO only)"          placeholder="NECO token (leave blank if WAEC)" />
-
-            {/* Passport Photo */}
+            <Field name="examBody" label="1. WAEC / NECO" type="select" options={['WAEC','NECO','Both']} />
+            <Field name="examType" label="2. Exam Type" type="select" options={['SSCE','GCE','Other']} />
+            <Field name="examinationNumber" label="3. Examination Number" placeholder="Your exam registration number" />
+            <Field name="examYear" label="4. Exam Year" placeholder="e.g. 2022" />
+            <Field name="scratchSerial" label="5. Scratch Card Serial Number" placeholder="Serial number on card" />
+            <Field name="scratchPin" label="6. Scratch Card PIN" placeholder="Scratch card PIN" />
+            <Field name="necoToken" label="7. Token (NECO only)" placeholder="NECO token (leave blank if WAEC)" />
             <div>
               <label style={{ ...lbl, color: 'var(--gold)' }}>8. Passport Photograph *</label>
-              <div style={{ border: `2px dashed ${passportPreview ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 10, padding: '20px', textAlign: 'center', background: 'var(--bg-tertiary)', position: 'relative' }}>
+              <div style={{ border: `2px dashed ${passportPreview ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 10, padding: '20px', textAlign: 'center', background: 'var(--bg-tertiary)' }}>
                 {passportPreview ? (
                   <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-                    <img src={passportPreview} alt="Passport preview"
-                      style={{ width: 100, height: 120, objectFit: 'cover', borderRadius: 8, border: '2px solid var(--teal)' }} />
+                    <img src={passportPreview} alt="Passport preview" style={{ width: 100, height: 120, objectFit: 'cover', borderRadius: 8, border: '2px solid var(--teal)' }} />
                     <span style={{ fontSize: 12, color: '#16A34A', fontWeight: 600 }}>✅ Passport uploaded</span>
-                    <button onClick={() => { setPassport(null); setPassportPreview(null); }}
-                      style={{ background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>Remove</button>
+                    <button onClick={() => { setPassport(null); setPassportPreview(null); }} style={{ background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6, padding: '4px 12px', cursor: 'pointer', fontSize: 12 }}>Remove</button>
                   </div>
                 ) : (
                   <>
@@ -1512,12 +1445,9 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
                   </>
                 )}
               </div>
-              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>
-                White background, front-facing, recent passport-size photo
-              </div>
+              <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 6 }}>White background, front-facing, recent passport-size photo</div>
             </div>
           </div>
-
           <div style={{ display: 'flex', gap: 10, marginTop: 18, justifyContent: 'space-between' }}>
             <button onClick={() => setSection('E')} style={{ background: 'var(--bg-secondary)', color: 'var(--text-primary)', border: '1px solid var(--border)', borderRadius: 8, padding: '10px 22px', cursor: 'pointer', fontWeight: 700, fontFamily: 'var(--font-body)' }}>← Section E</button>
             <button onClick={submit} disabled={submitting || !subType}
@@ -1544,123 +1474,29 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
   const [dropdownOpen, setDropdownOpen] = useState(false);
   const dropdownRef = useRef(null);
 
-  // Close dropdown when clicking outside
   useEffect(() => {
     const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
-        setDropdownOpen(false);
-      }
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
     };
     document.addEventListener('mousedown', handler);
     return () => document.removeEventListener('mousedown', handler);
   }, []);
 
-  // ── Top-level groups ──────────────────────────────────────
   const CATEGORY_GROUPS = [
-    {
-      group: '🏥 Health Sciences',
-      color: '#0D9488',
-      bg: 'rgba(13,148,136,0.1)',
-      cats: [
-        'Nursing Science',
-        'Midwifery',
-        'Medicine & Surgery',
-        'Public Health',
-        'Community Health',
-        'Mental Health',
-        'Pharmacology',
-        'Medical Laboratory Science',
-        'Physiotherapy',
-        'Radiography',
-        'Nutrition & Dietetics',
-        'Environmental Health',
-        'Health Information Management',
-        'Optometry',
-        'Dental Surgery',
-        'Medical Rehabilitation',
-        'Veterinary Medicine',
-      ],
-    },
-    {
-      group: '🎓 Education',
-      color: '#2563EB',
-      bg: 'rgba(37,99,235,0.1)',
-      cats: [
-        'Education',
-        'Educational Management',
-        'Guidance & Counselling',
-        'Early Childhood Education',
-        'Special Education',
-        'Curriculum Studies',
-        'Educational Psychology',
-      ],
-    },
-    {
-      group: '💼 Business & Social Sciences',
-      color: '#D97706',
-      bg: 'rgba(217,119,6,0.1)',
-      cats: [
-        'Business Administration',
-        'Accounting',
-        'Economics',
-        'Marketing',
-        'Banking & Finance',
-        'Public Administration',
-        'Sociology',
-        'Psychology',
-        'Political Science',
-        'Mass Communication',
-        'Social Work',
-      ],
-    },
-    {
-      group: '⚙️ Sciences & Technology',
-      color: '#7C3AED',
-      bg: 'rgba(124,58,237,0.1)',
-      cats: [
-        'Computer Science',
-        'Information Technology',
-        'Electrical Engineering',
-        'Civil Engineering',
-        'Mechanical Engineering',
-        'Agricultural Science',
-        'Biochemistry',
-        'Microbiology',
-        'Chemistry',
-        'Physics',
-        'Environmental Science',
-      ],
-    },
-    {
-      group: '⚖️ Law & Humanities',
-      color: '#DC2626',
-      bg: 'rgba(220,38,38,0.1)',
-      cats: [
-        'Law',
-        'English Language',
-        'History',
-        'Philosophy',
-        'Religious Studies',
-        'Linguistics',
-      ],
-    },
+    { group: '🏥 Health Sciences', color: '#0D9488', bg: 'rgba(13,148,136,0.1)', cats: ['Nursing Science','Midwifery','Medicine & Surgery','Public Health','Community Health','Mental Health','Pharmacology','Medical Laboratory Science','Physiotherapy','Radiography','Nutrition & Dietetics','Environmental Health','Health Information Management','Optometry','Dental Surgery','Medical Rehabilitation','Veterinary Medicine'] },
+    { group: '🎓 Education', color: '#2563EB', bg: 'rgba(37,99,235,0.1)', cats: ['Education','Educational Management','Guidance & Counselling','Early Childhood Education','Special Education','Curriculum Studies','Educational Psychology'] },
+    { group: '💼 Business & Social Sciences', color: '#D97706', bg: 'rgba(217,119,6,0.1)', cats: ['Business Administration','Accounting','Economics','Marketing','Banking & Finance','Public Administration','Sociology','Psychology','Political Science','Mass Communication','Social Work'] },
+    { group: '⚙️ Sciences & Technology', color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', cats: ['Computer Science','Information Technology','Electrical Engineering','Civil Engineering','Mechanical Engineering','Agricultural Science','Biochemistry','Microbiology','Chemistry','Physics','Environmental Science'] },
+    { group: '⚖️ Law & Humanities', color: '#DC2626', bg: 'rgba(220,38,38,0.1)', cats: ['Law','English Language','History','Philosophy','Religious Studies','Linguistics'] },
   ];
 
-  const ALL_CATS = ['All', ...CATEGORY_GROUPS.flatMap(g => g.cats), 'Other'];
-
-  // Find which group a category belongs to
-  const getCategoryGroup = (cat) =>
-    CATEGORY_GROUPS.find(g => g.cats.includes(cat)) || null;
-
-  const CATEGORIES = ALL_CATS; // kept for compatibility
+  const getCategoryGroup = (cat) => CATEGORY_GROUPS.find(g => g.cats.includes(cat)) || null;
 
   useEffect(() => {
     const unsub = onSnapshot(
       query(collection(db, 'researchTopics'), orderBy('createdAt', 'desc')),
       snap => {
-        setTopics(snap.docs
-          .map(d => ({ id: d.id, ...d.data() }))
-          .filter(t => t.badge !== 'Hidden'));
+        setTopics(snap.docs.map(d => ({ id: d.id, ...d.data() })).filter(t => t.badge !== 'Hidden'));
         setLoadingTopics(false);
       },
       () => setLoadingTopics(false)
@@ -1679,42 +1515,26 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
     setOrdering(true);
     try {
       await addDoc(collection(db, 'serviceRequests'), {
-        serviceKey:   'research_projects',
-        serviceTitle: selectedTopic.title,
-        topicId:      selectedTopic.id,
-        topicTitle:   selectedTopic.title,
-        userId:       user.uid,
-        clientId:     user.uid,
-        name:         profile?.name || user.displayName || '',
-        email:        user.email || '',
-        phone:        profile?.phone || '',
-        description:  details || `Order for topic: ${selectedTopic.title}`,
-        details:      details || '',
-        pages:        selectedTopic.pages || '',
-        status:       'pending',
-        agreedPrice:  selectedTopic.price ? Number(selectedTopic.price.replace(/[^0-9]/g,'')) || null : null,
-        adminNote:    '',
-        paymentStatus:'not_set',
-        referredBy:   profile?.referredBy || null,
-        createdAt:    ts(),
-        updatedAt:    ts(),
+        serviceKey: 'research_projects', serviceTitle: selectedTopic.title, topicId: selectedTopic.id,
+        topicTitle: selectedTopic.title, userId: user.uid, clientId: user.uid,
+        name: profile?.name || user.displayName || '', email: user.email || '',
+        phone: profile?.phone || '', description: details || `Order for topic: ${selectedTopic.title}`,
+        details: details || '', pages: selectedTopic.pages || '', status: 'pending',
+        agreedPrice: selectedTopic.price ? Number(selectedTopic.price.replace(/[^0-9]/g,'')) || null : null,
+        adminNote: '', paymentStatus: 'not_set', referredBy: profile?.referredBy || null,
+        createdAt: ts(), updatedAt: ts(),
       });
       await addDoc(collection(db, 'notifications'), {
-        userId:    'admin',
-        title:     `📚 Topic Order: ${selectedTopic.title}`,
-        body:      `${profile?.name || 'Client'} ordered the topic "${selectedTopic.title}"`,
-        type:      'order', read: false, createdAt: ts(),
+        userId: 'admin', title: `📚 Topic Order: ${selectedTopic.title}`,
+        body: `${profile?.name || 'Client'} ordered the topic "${selectedTopic.title}"`,
+        type: 'order', read: false, createdAt: ts(),
       });
       setOrdered(true);
       setTimeout(() => { onOrderCreated(); }, 2200);
-    } catch (e) {
-      console.error(e);
-      alert('Failed to place order. Please try again.');
-    }
+    } catch (e) { console.error(e); alert('Failed to place order. Please try again.'); }
     setOrdering(false);
   };
 
-  // ── Success ──
   if (ordered) return (
     <div style={{ textAlign: 'center', padding: '60px 24px' }}>
       <div style={{ fontSize: '3.5rem', marginBottom: 16 }}>✅</div>
@@ -1723,135 +1543,68 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
     </div>
   );
 
-  // ── Topic detail / order ──
   if (selectedTopic) return (
     <div>
-      <button onClick={() => { setSelectedTopic(null); setDetails(''); }}
-        style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>
-        ← Back to Topics
-      </button>
-
-      {/* Topic card */}
+      <button onClick={() => { setSelectedTopic(null); setDetails(''); }} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>← Back to Topics</button>
       <div style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', borderRadius: 14, padding: '22px', marginBottom: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }}>
-            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>
-              {selectedTopic.category} · {selectedTopic.pages ? `${selectedTopic.pages} pages` : 'Pages TBD'}
-            </div>
-            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(16px,3vw,20px)', fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.4 }}>
-              {selectedTopic.title}
-            </h2>
-            {selectedTopic.description && (
-              <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>{selectedTopic.description}</p>
-            )}
+            <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{selectedTopic.category} · {selectedTopic.pages ? `${selectedTopic.pages} pages` : 'Pages TBD'}</div>
+            <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(16px,3vw,20px)', fontWeight: 700, color: '#fff', margin: 0, lineHeight: 1.4 }}>{selectedTopic.title}</h2>
+            {selectedTopic.description && <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>{selectedTopic.description}</p>}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            {selectedTopic.price && (
-              <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--gold)' }}>{selectedTopic.price}</div>
-            )}
-            {selectedTopic.badge && (
-              <div style={{ marginTop: 6, display: 'inline-block', background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 700 }}>{selectedTopic.badge}</div>
-            )}
+            {selectedTopic.price && <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--gold)' }}>{selectedTopic.price}</div>}
+            {selectedTopic.badge && <div style={{ marginTop: 6, display: 'inline-block', background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 700 }}>{selectedTopic.badge}</div>}
           </div>
         </div>
       </div>
-
-      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 20, fontSize: 13, color: 'var(--teal)' }}>
-        📋 After ordering, admin will confirm and send you a final price quote. No payment until you agree.
-      </div>
-
+      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 20, fontSize: 13, color: 'var(--teal)' }}>📋 After ordering, admin will confirm and send you a final price quote. No payment until you agree.</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
-          <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>
-            Additional Instructions / Details
-          </label>
-          <textarea rows={4} value={details} onChange={e => setDetails(e.target.value)}
-            placeholder="Any specific instructions, department, academic level, deadline details, etc."
-            style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
+          <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Additional Instructions / Details</label>
+          <textarea rows={4} value={details} onChange={e => setDetails(e.target.value)} placeholder="Any specific instructions, department, academic level, deadline details, etc." style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
         </div>
-
-        <button onClick={submitOrder} disabled={ordering}
-          style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: ordering ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: ordering ? 0.7 : 1 }}>
-          {ordering
-            ? <><div style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Placing Order…</>
-            : '📚 Order This Topic'}
+        <button onClick={submitOrder} disabled={ordering} style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: ordering ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: ordering ? 0.7 : 1 }}>
+          {ordering ? <><div style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Placing Order…</> : '📚 Order This Topic'}
         </button>
       </div>
     </div>
   );
 
-  // ── Topics list ──
   return (
     <div>
-      {/* Header */}
       <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>
-          Research Library
-        </h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-          Browse pre-researched topics — select one and we'll write it to your specifications.
-        </p>
+        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Research Library</h2>
+        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Browse pre-researched topics — select one and we'll write it to your specifications.</p>
       </div>
-
-      {/* Search */}
       <div style={{ position: 'relative', marginBottom: 16 }}>
         <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--text-muted)', pointerEvents: 'none' }}>🔍</span>
-        <input
-          value={search}
-          onChange={e => setSearch(e.target.value)}
-          placeholder="Search topics..."
-          style={{ width: '100%', padding: '11px 14px 11px 38px', background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', boxSizing: 'border-box', transition: 'border-color 0.2s' }}
-          onFocus={e => e.target.style.borderColor = 'var(--teal)'}
-          onBlur={e => e.target.style.borderColor = 'var(--border)'}
-        />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search topics..." style={{ width: '100%', padding: '11px 14px 11px 38px', background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = 'var(--teal)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
       </div>
-
-      {/* Department Dropdown */}
       <div style={{ position: 'relative', marginBottom: 20 }} ref={dropdownRef}>
-        <button
-          onClick={() => setDropdownOpen(v => !v)}
-          style={{ width: '100%', padding: '11px 16px', background: 'var(--bg-card)', border: `1.5px solid ${activeCategory !== 'All' ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 10, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10, transition: 'border-color 0.2s' }}>
+        <button onClick={() => setDropdownOpen(v => !v)} style={{ width: '100%', padding: '11px 16px', background: 'var(--bg-card)', border: `1.5px solid ${activeCategory !== 'All' ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 10, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
           <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {activeCategory === 'All' ? (
-              <span style={{ color: 'var(--text-muted)' }}>🗂️ All Departments</span>
-            ) : (
-              <>
-                <span style={{ width: 10, height: 10, borderRadius: '50%', background: getCategoryGroup(activeCategory)?.color || 'var(--teal)', display: 'inline-block', flexShrink: 0 }} />
-                <span style={{ color: 'var(--teal)' }}>{activeCategory}</span>
-              </>
-            )}
+            {activeCategory === 'All' ? <span style={{ color: 'var(--text-muted)' }}>🗂️ All Departments</span> : <><span style={{ width: 10, height: 10, borderRadius: '50%', background: getCategoryGroup(activeCategory)?.color || 'var(--teal)', display: 'inline-block', flexShrink: 0 }} /><span style={{ color: 'var(--teal)' }}>{activeCategory}</span></>}
           </span>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', transition: 'transform 0.2s', transform: dropdownOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
+          <span style={{ fontSize: 12, color: 'var(--text-muted)', transform: dropdownOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
         </button>
-
         {dropdownOpen && (
           <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 200, maxHeight: 400, overflowY: 'auto' }}>
-
-            {/* All option */}
-            <button
-              onClick={() => { setActiveCategory('All'); setDropdownOpen(false); }}
-              style={{ width: '100%', padding: '11px 16px', background: activeCategory === 'All' ? 'var(--teal-glow)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, color: activeCategory === 'All' ? 'var(--teal)' : 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: activeCategory === 'All' ? 700 : 500, textAlign: 'left' }}>
-              🗂️ All Departments
-              {activeCategory === 'All' && <span style={{ marginLeft: 'auto', color: 'var(--teal)', fontSize: 14 }}>✓</span>}
+            <button onClick={() => { setActiveCategory('All'); setDropdownOpen(false); }} style={{ width: '100%', padding: '11px 16px', background: activeCategory === 'All' ? 'var(--teal-glow)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, color: activeCategory === 'All' ? 'var(--teal)' : 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: activeCategory === 'All' ? 700 : 500, textAlign: 'left' }}>
+              🗂️ All Departments {activeCategory === 'All' && <span style={{ marginLeft: 'auto', color: 'var(--teal)', fontSize: 14 }}>✓</span>}
             </button>
-
-            {/* Groups with their departments */}
             {CATEGORY_GROUPS.map((grp, gi) => (
               <div key={grp.group}>
-                {/* Group label — not selectable, just a header */}
-                <div style={{ padding: '8px 16px 5px', fontSize: 10, fontWeight: 800, color: grp.color, textTransform: 'uppercase', letterSpacing: 1, background: grp.bg, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>
-                  {grp.group}
-                </div>
+                <div style={{ padding: '8px 16px 5px', fontSize: 10, fontWeight: 800, color: grp.color, textTransform: 'uppercase', letterSpacing: 1, background: grp.bg, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>{grp.group}</div>
                 {grp.cats.map(cat => {
                   const isActive = activeCategory === cat;
                   return (
-                    <button key={cat}
-                      onClick={() => { setActiveCategory(cat); setDropdownOpen(false); }}
-                      style={{ width: '100%', padding: '9px 16px 9px 24px', background: isActive ? grp.bg : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: isActive ? grp.color : 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: isActive ? 700 : 400, textAlign: 'left', transition: 'background 0.15s' }}
+                    <button key={cat} onClick={() => { setActiveCategory(cat); setDropdownOpen(false); }}
+                      style={{ width: '100%', padding: '9px 16px 9px 24px', background: isActive ? grp.bg : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: isActive ? grp.color : 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: isActive ? 700 : 400, textAlign: 'left' }}
                       onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
                       onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
-                      {isActive && <span style={{ width: 6, height: 6, borderRadius: '50%', background: grp.color, flexShrink: 0 }} />}
-                      {!isActive && <span style={{ width: 6, height: 6, flexShrink: 0 }} />}
+                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? grp.color : 'transparent', flexShrink: 0 }} />
                       {cat}
                       {isActive && <span style={{ marginLeft: 'auto', color: grp.color, fontSize: 14 }}>✓</span>}
                     </button>
@@ -1859,92 +1612,45 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
                 })}
               </div>
             ))}
-
-            {/* Other */}
             <div style={{ borderTop: '1px solid var(--border)' }}>
-              <button
-                onClick={() => { setActiveCategory('Other'); setDropdownOpen(false); }}
-                style={{ width: '100%', padding: '10px 16px', background: activeCategory === 'Other' ? 'rgba(148,163,184,0.1)' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: activeCategory === 'Other' ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: activeCategory === 'Other' ? 700 : 400, textAlign: 'left' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0 }} />
-                Other
+              <button onClick={() => { setActiveCategory('Other'); setDropdownOpen(false); }} style={{ width: '100%', padding: '10px 16px', background: activeCategory === 'Other' ? 'rgba(148,163,184,0.1)' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: activeCategory === 'Other' ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: activeCategory === 'Other' ? 700 : 400, textAlign: 'left' }}>
+                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0 }} />Other
                 {activeCategory === 'Other' && <span style={{ marginLeft: 'auto', fontSize: 14 }}>✓</span>}
               </button>
             </div>
           </div>
         )}
       </div>
-
-      {/* Topics count */}
-      {!loadingTopics && (
-        <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>
-          {filtered.length} topic{filtered.length !== 1 ? 's' : ''} {activeCategory !== 'All' ? `in ${activeCategory}` : 'available'}
-          {search && ` matching "${search}"`}
-        </div>
-      )}
-
-      {/* Loading */}
-      {loadingTopics && (
-        <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}>
-          <div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTop: '3px solid var(--teal)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />
-          Loading topics…
-        </div>
-      )}
-
-      {/* Empty */}
+      {!loadingTopics && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{filtered.length} topic{filtered.length !== 1 ? 's' : ''} {activeCategory !== 'All' ? `in ${activeCategory}` : 'available'}{search && ` matching "${search}"`}</div>}
+      {loadingTopics && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}><div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTop: '3px solid var(--teal)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />Loading topics…</div>}
       {!loadingTopics && filtered.length === 0 && (
         <div style={{ textAlign: 'center', padding: '48px 24px', background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border-card)' }}>
           <div style={{ fontSize: '3rem', marginBottom: 12 }}>📭</div>
           <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 6 }}>No topics found</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>
-            {search ? `No topics match "${search}"` : `No topics available in this category yet.`}
-          </div>
-          {search && (
-            <button onClick={() => setSearch('')}
-              style={{ marginTop: 14, background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>
-              Clear Search
-            </button>
-          )}
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{search ? `No topics match "${search}"` : `No topics available in this category yet.`}</div>
+          {search && <button onClick={() => setSearch('')} style={{ marginTop: 14, background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Clear Search</button>}
         </div>
       )}
-
-      {/* Topics grid */}
       {!loadingTopics && filtered.length > 0 && (
         <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
           {filtered.map(t => (
-            <button key={t.id}
-              onClick={() => { setSelectedTopic(t); setDetails(''); setOrdered(false); }}
+            <button key={t.id} onClick={() => { setSelectedTopic(t); setDetails(''); setOrdered(false); }}
               style={{ ...s.card, display: 'flex', alignItems: 'flex-start', gap: 14, cursor: 'pointer', border: '1px solid var(--border-card)', textAlign: 'left', width: '100%', transition: 'border-color 0.2s, background 0.2s', padding: '16px' }}
               onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--teal)'; e.currentTarget.style.background = 'var(--teal-glow)'; }}
               onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-card)'; e.currentTarget.style.background = 'var(--bg-card)'; }}>
-
-              {/* Icon placeholder */}
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>
-                📄
-              </div>
-
+              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📄</div>
               <div style={{ flex: 1, minWidth: 0 }}>
                 <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
                   <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.4 }}>{t.title}</div>
-                  {t.badge && (
-                    <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: t.badge === 'Popular' ? 'rgba(13,148,136,0.12)' : t.badge === 'New' ? 'rgba(37,99,235,0.12)' : 'var(--bg-tertiary)', color: t.badge === 'Popular' ? 'var(--teal)' : t.badge === 'New' ? '#2563EB' : 'var(--text-muted)' }}>
-                      {t.badge === 'Popular' ? '🔥 Popular' : t.badge === 'New' ? '✨ New' : t.badge}
-                    </span>
-                  )}
+                  {t.badge && <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: t.badge === 'Popular' ? 'rgba(13,148,136,0.12)' : t.badge === 'New' ? 'rgba(37,99,235,0.12)' : 'var(--bg-tertiary)', color: t.badge === 'Popular' ? 'var(--teal)' : t.badge === 'New' ? '#2563EB' : 'var(--text-muted)' }}>{t.badge === 'Popular' ? '🔥 Popular' : t.badge === 'New' ? '✨ New' : t.badge}</span>}
                 </div>
-
                 <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
                   <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 12 }}>{t.category}</span>
                   {t.pages && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📄 {t.pages} pages</span>}
                   {t.price && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>{t.price}</span>}
                 </div>
-
-                {t.description && (
-                  <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>
-                    {t.description}
-                  </div>
-                )}
+                {t.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.description}</div>}
               </div>
-
               <span style={{ color: 'var(--teal)', fontSize: 20, flexShrink: 0, alignSelf: 'center' }}>›</span>
             </button>
           ))}
