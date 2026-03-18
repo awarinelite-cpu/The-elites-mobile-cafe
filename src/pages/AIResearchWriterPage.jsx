@@ -89,104 +89,274 @@ ANTI-PLAGIARISM RULES (TARGET: 0–5% SIMILARITY):
 - Add the writer's own analytical commentary after citing each source — do not just string citations together`;
 
     const researchInstructions = {
-      ch1: `Write a comprehensive CHAPTER ONE: INTRODUCTION for an academic research project. Include ALL of these sections with proper subheadings:
+      ch1: `Write CHAPTER ONE: INTRODUCTION. Follow this EXACT structure — no deviations:
 
-1.1 Background to the Study — 3–4 paragraphs of detailed historical and contextual background with ${citationStyle} citations (Global → Africa → Nigeria → Local setting)
-1.2 Statement of Problem — 2–3 paragraphs identifying the specific research gap (no subheading number prefix — write as "Statement of Problem")
-1.3 Objectives of the Study — start with "Broad Objective" (bold sub-label, 1 paragraph), then "Specific Objectives" (bold sub-label), then "The researcher intends to:" followed by numbered list
-1.4 Research Questions — one per objective, numbered list
-1.5 Research Hypotheses — H₀₁, H₀₂ etc. (bold, state null hypotheses derived from objectives)
-1.6 Significance of the Study — 2–3 paragraphs covering: nursing profession, healthcare providers, society
-1.7 Scope of the Study (Delimitation) — 1–2 paragraphs
-1.8 Operational Definition of Terms — define 6–8 key terms from the topic`,
+CHAPTER ONE (centered, bold)
+INTRODUCTION (centered, bold)
 
-      ch2: `Write a comprehensive CHAPTER TWO: LITERATURE REVIEW. Include ALL of these sections:
+1.1 Background to the Study
+- 4 paragraphs flowing: Global → Africa (sub-Saharan) → Nigeria → Local (specific city/facility)
+- Each paragraph cites real APA 7th ed. sources (2021–2025)
+- Final paragraph states the purpose of THIS study and what it aims to achieve
 
-2.1 Conceptual Review — paragraph introducing the section, then subsections:
-  2.1.1 [First major concept] — detailed discussion with sub-sub-topics as bold labels (not numbered)
-  2.1.2 [Second major concept/Preventive Measures] — with bold sub-topic labels inside
-  2.1.3 [Third major concept/Factors Influencing] — with bold sub-topic labels inside
-  All with APA 7th ed. citations (2021–2025)
-2.2 Theoretical Framework:
-  2.2.1 [Theory Name] ([Proponent], [Year]) — explain the theory and its key constructs as bold sub-labels
-  2.2.2 Application of [Theory Name] to the Study — map each construct to the study (bold sub-labels for each construct)
-2.3 Empirical Review — subsections per objective:
-  2.3.1 [First objective topic] — Global → Africa → Nigeria pattern, 3–4 studies each, end with a conclusion paragraph
-  2.3.2 [Second objective topic] — same pattern
-  2.3.3 [Third objective topic] — same pattern
-REFERENCES — full APA 7th edition list at end`,
+Statement of Problem  ← write exactly as "Statement of Problem" (bold, no number prefix)
+- 4–5 paragraphs
+- Para 1: introduce the global problem with statistics and citations
+- Para 2: state consequences/impact if not addressed (mortality, morbidity, SDG goals)
+- Para 3–4: cite 2 recent studies showing the gap persists (Author et al., year found that…)
+- Final para: "Therefore, [this study / these findings highlight the urgent need to]…" — transition to the study's purpose
 
-      ch3: `Write a comprehensive CHAPTER THREE: RESEARCH METHODOLOGY. Include ALL sections exactly:
+1.3 Objectives of the Study
+  Broad Objective  ← bold sub-label, no number
+  [One sentence beginning "To assess/determine/evaluate…"]
 
-3.1 Research Design — describe and justify (e.g. descriptive survey design)
-3.2 Research Setting — describe facility: full name, location, why chosen, services provided
-3.3 Target Population — describe who the population consists of
-3.4 Sample Size and Sampling Technique — show full Taro Yamane formula working:
-  n = N / [1 + N(e)²]  where N=population, e=0.05
-  Show step-by-step calculation. State final sample + 10% attrition buffer.
-  Describe stratified random sampling with strata (e.g. trimesters) and simple random within strata
-3.5 Instrument for Data Collection — describe questionnaire sections:
-  Section A: Demographic Information (list items)
-  Section B: [First variable] (Yes/No or Likert)
-  Section C: [Second variable] (4-point Likert: Strongly Agree=4, Agree=3, Disagree=2, Strongly Disagree=1)
-  Section D: [Third variable/Factors]
-3.6 Validity of the Instrument — face and content validity (supervisor review, expert scrutiny)
-3.7 Reliability of the Instrument — pilot study (n=15, ~10% of sample) at a similar facility; Cronbach's Alpha ≥ 0.70; all items retained
-3.8 Method of Data Collection — cover: Ethical Approval, Recruitment and Consent, Questionnaire Administration, Data Collection Period (4 weeks), Quality Control, Research Assistants (2 trained nurses)
-3.9 Method of Data Analysis — SPSS version 25+; Data Preparation (as numbered sub-steps); Descriptive Statistics (frequencies, percentages, means, SD per section); Inferential Statistics (Chi-square for hypotheses); Data Presentation (tables, charts, graphs)
-3.10 Ethical Considerations — cover: Ethical Approval, Informed Consent, Confidentiality and Anonymity, Voluntary Participation, Respect and Dignity, Beneficence and Non-maleficence, Data Management, Dissemination
-REFERENCES — full APA 7th edition list`,
+  Specific Objectives  ← bold sub-label, no number
+  1. [Action verb + variable 1 + population + setting]
+  2. [Action verb + variable 2 + population + setting]
+  3. [Action verb + factors influencing + population + setting]
 
-      ch4: `Write a comprehensive CHAPTER FOUR: ANALYSIS AND PRESENTATION OF DATA. Include:
+1.4 Research Questions
+  1. [Question derived from objective 1]
+  2. [Question derived from objective 2]
+  3. [Question derived from objective 3]
 
-Opening paragraph — total respondents recruited, response rate (e.g. 100%)
-4.2 Demographic Characteristics of Respondents:
-  - "Table 4.2.1: Socio-Demographic Characteristics of Respondents" (reference this table in prose)
-  - "Source: Research field work, [year]" after table reference
-  - "Figure 4.1: Bar Chart Showing [variable] Distribution of Respondents" for each demographic
-  - Write a narrative paragraph describing the demographics
-4.3 Answering of Research Questions — one sub-section per research question:
-  Research Question One: [state it in full]
-  "Table 4.3.1: [Description]"
-  "Source: Research field work, [year]"
-  "Figure 4.4: Bar Chart Showing [variable]"
-  Narrative paragraph interpreting findings with specific percentages
-  (Repeat for each research question with sequential table/figure numbers)
-4.4 Hypothesis Testing:
-  Research Hypothesis 1:
-  H₀₁: [state in full]
-  Describe Chi-Square test conducted (which items from which sections used)
-  "Table 4.4.1: Cross-Tabulation for Hypothesis 1 — [Variable A] vs [Variable B]"
-  "Source: Research field work, [year]"
-  Inference: State χ² value, critical value (3.841 at df=1), P-value, decision (reject/retain H₀)
-  (Repeat for each hypothesis)
-Note: Use plausible fictional data consistent with a Nigerian hospital setting.`,
+1.5 Research Hypotheses
+  1. H₀₁: There is no significant relationship between [variable 1] and [variable 2] among [population] in [setting].
+  2. H₀₂: There is no significant relationship between [factors] and [practices/outcomes] among [population] in [setting].
 
-      ch5: `Write a comprehensive CHAPTER FIVE: DISCUSSION OF RESULTS. Include ALL sections:
+1.6 Significance of the Study
+- 4 paragraphs addressing: (1) nursing/clinical practice, (2) healthcare professionals & administrators, (3) policymakers & program planners, (4) contribution to literature/future research
 
-5.1 Discussion of Findings:
-  Start with: Socio-Demographic Characteristics — narrative describing the sample demographics
-  Then one sub-section per research question titled "Findings on [topic]":
-  For each finding: state what was found, compare with Global → Africa → Nigeria studies (APA 7th ed. 2021–2025), explain implications
-5.2 Implications of the Study to Nursing — 4–6 sub-headed paragraphs (e.g. "Strengthening Nursing Education...", "Development of Institutional Protocols...", "Advocacy for Resource Allocation...", "Addressing Workload...")
-5.3 Summary of the Study — 2–3 paragraphs: objectives, methodology, key findings
-5.4 Conclusion — 2–3 paragraphs drawing from findings
-5.5 Recommendations — 5–8 numbered, practical, specific recommendations to named stakeholders (numbered with full paragraphs for each)
-5.6 Suggestions for Further Studies — 4–5 numbered future research directions with explanatory paragraphs
+1.7 Scope of the Study
+- 3 paragraphs: (1) what the study covers, (2) what it does NOT include, (3) setting restriction and why
 
-PILOT STUDY (as a final section after 5.6):
-  "PILOT STUDY" as a heading
-  "Reliability Analysis of Structured Questionnaire" as sub-heading
-  Paragraph describing pilot study (n=15, ~10% of sample, similar facility, purpose)
-  State the Cronbach's Alpha formula:
-  α = N/(N−1) × (1 − ΣItem Variance / Total Variance)
-  Where: N = Number of items; ΣItem Variance = Sum of variances; Total Variance = Variance of total scores
-  "Table P.1: Pilot Study Reliability Data (n = 15)" reference
-  "Source: Research field work, [year]"
-  Show calculation substituting plausible values, result α ≥ 0.70
-  Interpretation paragraph
+1.8 Operational Definition of Terms
+- 5–6 key terms, each as: bold term + colon + definition in context of THIS study and setting
+- Example format: "Knowledge: The level of understanding of [topic] including [specific dimensions] among [population] at [facility]."`,
 
-REFERENCES — full APA 7th edition list (2021–2025), 15–20 entries`,
+      ch2: `Write CHAPTER TWO: LITERATURE REVIEW. Follow this EXACT structure:
+
+CHAPTER TWO (centered, bold)
+LITERATURE REVIEW (centered, bold)
+
+2.1 Conceptual Review
+Opening paragraph — introduce the main concept and its global significance (2–3 sentences)
+
+2.1.1 [First Major Concept — e.g. Knowledge of [Topic]]
+- 1 defining paragraph
+- Then use bold (unnumbered) sub-headings for thematic breakdowns, e.g.:
+  [Concept Definition and Background]
+  [Types / Classification]
+  [Components / Principles]
+  [Benefits / Role of [Population]]
+  [Knowledge Gaps Among [Population]]
+  Each sub-section: 2–3 paragraphs with APA 7th ed. citations
+
+2.1.2 [Not used — skip to 2.1.3 if the second subsection is "Preventive Measures / Practices"]
+  OR
+2.1.2 [Practices / Preventive Measures Routinely Adopted by [Population]]
+- Bold (unnumbered) sub-headings for each practice, e.g.:
+  [Skin-to-skin Contact / Supplementation Adherence / etc.]
+  [Dietary Modifications / Nutritional Practices]
+  [Monitoring / Recognition of Symptoms]
+  [Adherence to Care Plans / Clinic Attendance]
+  [Family and Healthcare Provider Collaboration]
+  Each: 1–2 paragraphs with citations
+
+2.1.3 [Factors Influencing [Population]'s Knowledge and Practice of [Topic]] — or similar
+- Opening paragraph introducing the factors
+- Bold (unnumbered) sub-headings for each factor:
+  Socioeconomic Factors
+  Educational Factors and Health Literacy
+  Cultural and Social Influences
+  Psychological Factors
+  Healthcare System and Access to Care
+  Environmental and [Facility/Lifestyle]-Related Factors
+  Each: 2 paragraphs — first general, second citing a specific study (Author et al., year found that…)
+
+2.2 Theoretical Framework
+2.2.1 [Theory Name] ([Proponent], [Year])
+  "Figure 1: Diagrammatic Illustration of [Theory Name] ([Proponent], [Year])"
+  "Source: [Original source / Researchgate]"
+  - Opening paragraph: origin, developers, purpose of the theory
+  - "The [Theory Name] is grounded in [X] key constructs:"
+  - List each construct as a bold label + 1 paragraph explanation applying it to this study:
+    Perceived Susceptibility / Prior Related Behavior / Personal Factors / etc.
+  - Final paragraph: "The [Theory] is therefore suitable for exploring how…"
+
+2.2.2 Application of [Theory Name] to the Study
+  - Restate each construct as a bold sub-heading
+  - For each: 1–2 paragraphs applying specifically to the study topic, population, and setting
+  - End with: "Figure 2: Application of [Theory] to [Study Topic] among [Population]"
+  - "Source: Research Fieldwork [Year]"
+
+2.3 Empirical Review
+2.3.1 [Objective 1 topic, e.g. Knowledge of [Population] on [Topic]]
+  - Opening paragraph: introduce the scope of the review
+  - "Globally, …" — 2–3 studies, each: Author et al. (year) + design + sample + setting + key finding + limitation
+  - "In Africa, …" — 2–3 African studies, same structure
+  - "In Nigeria, …" — 1–2 Nigerian studies, same structure
+  - Closing paragraph: "In conclusion, empirical evidence highlights…" summarising gaps
+
+2.3.2 [Objective 2 topic, e.g. Practices Adopted by [Population]]
+  - Same Global → Africa → Nigeria structure with closing paragraph
+
+2.3.3 [Objective 3 topic, e.g. Factors Influencing Knowledge and Practice]
+  - Same structure`,
+
+      ch3: `Write CHAPTER THREE: RESEARCH METHODOLOGY. Follow this EXACT structure:
+
+CHAPTER THREE (centered, bold)
+RESEARCH METHODOLOGY (centered, bold)
+
+3.1 Research Design
+- 1 paragraph: name the design (e.g. "descriptive survey design"), define it briefly, justify why it suits this study
+
+3.2 Research Setting
+- 1–2 paragraphs: full name of facility, location, type, services offered, why it was chosen
+
+3.3 Target Population
+- 1 paragraph: who comprises the population, what they were doing at the facility, state N (e.g. N = 150)
+
+3.4 Sample Size and Sampling Technique
+- State: "The sample size was determined using Taro Yamane's formula for a known population:"
+- Show formula: n = N/1 + N(e)^2
+- Show: Where: n = sample size; N = population size = [X]; e = margin of error = 0.05
+- Show full calculation: n = [X]/1 + [X](0.0025) = [X]/[Y] = [result]
+- State final sample (e.g. "Thus, 109 mothers were selected as the study sample.")
+- Describe stratified random sampling: units/strata used, how simple random sampling applied within strata
+- 1 sentence on why this reduces bias
+
+3.5 Instrument for Data Collection
+- "A structured, self-administered questionnaire was used for data collection."
+- "The questionnaire was designed based on a thorough literature review and tailored to address the study's objectives. It consisted of four sections:"
+- Section A: Demographic Information (list 5–6 items)
+- Section B: [Variable 1 — Knowledge] (Yes/No questions)
+- Section C: [Variable 2 — Practices] (4-point Likert: Strongly Agree=4, Agree=3, Disagree=2, Strongly Disagree=1)
+- Section D: [Variable 3 — Factors Influencing] (4-point Likert scale)
+
+3.6 Validity of the Instrument
+- 1 paragraph: face and content validity, submitted to supervisor, questions scrutinized for alignment with objectives and clarity
+
+3.7 Reliability of the Instrument
+- 1 paragraph: pilot study involving 10 participants at a similar facility not in main study; test-retest or Cronbach's Alpha; resulting coefficient (e.g. r = 0.84); conclusion that instrument is reliable
+
+3.8 Method of Data Collection
+- 1–2 paragraphs (flowing prose, no sub-bullets):
+  Ethical approval obtained from relevant committee → letter to hospital management → questionnaires distributed during clinic visits → participants briefed → voluntary consent obtained → completed questionnaires collected immediately → data collection period stated
+
+3.9 Method of Data Analysis
+- "Data were cleaned, coded, and analyzed using Statistical Package for Social Sciences (SPSS) version 25.0. The analysis involved:"
+- Descriptive Statistics: frequencies, percentages, means, standard deviations for demographics, knowledge, practices
+- Inferential Statistics: Chi-square tests for associations; significance level p < 0.05
+
+3.10 Ethical Considerations
+- 1–2 paragraphs (flowing prose): ethical approval obtained; participants informed of objectives and confidentiality; right to withdraw without consequences; no names/identifiers collected; data used solely for academic purposes`,
+
+      ch4: `Write CHAPTER FOUR: ANALYSIS AND PRESENTATION OF DATA. Follow this EXACT structure:
+
+CHAPTER FOUR (centered, bold)
+ANALYSIS AND PRESENTATION OF DATA (centered, bold)
+
+Opening paragraph (NO section number):
+- "A total of [N] respondents were recruited, and all completed the questionnaires with adequate data for analysis, resulting in a 100% response rate."
+- State what this chapter presents: demographic characteristics, answers to research questions, hypothesis testing
+
+4.2 Demographic Characteristics of Respondents
+"Table 4.2.1: Socio-Demographic Characteristics of Respondents"
+"Source: Research field work [Year]"
+- Narrative paragraph: describe age distribution first (dominant group + %, second group + %), then other variables (sex, education, marital status, occupation, parity/experience). Use plausible Nigerian hospital data.
+- "Figure 4.1: Bar Chart Showing Age Distribution of Respondents."
+- "Figure 4.2: Bar Chart Showing [second demographic variable] of Respondents"
+- End with: "This diverse demographic profile provides a robust foundation for analyzing [topic] among [population] in [setting]."
+
+4.3 Answering of Research Questions
+(Use the research questions derived from the objectives)
+
+Research Question One: [state the full question]
+"Table 4.3.1: [Descriptive title matching the question]"
+"Source: Research field work [Year]"
+- Narrative paragraph: "The data from Table 4.3.1 indicates…" — state key findings with n and % for dominant responses, note any interesting patterns
+- "Figure 4.3: Bar Chart Showing [Variable] Among [Population] (N = [n])"
+
+Research Question Two: [state the full question]
+"Table 4.3.2: [Descriptive title]"
+"Source: Research field work [Year]"
+- Narrative paragraph interpreting key findings
+- "Figure 4.4: Bar Chart Showing [Variable] (N = [n])"
+
+Research Question Three: [state the full question]
+"Table 4.3.3: [Descriptive title]"
+"Source: Research field work [Year]"
+- Narrative paragraph interpreting findings
+- "Figure 4.5: Bar Chart Showing [Variable] (N = [n])"
+
+4.4 Hypothesis Testing
+"Decision Rule: If the P-value is less than 0.05, the null hypothesis (H₀) is rejected, and the alternative hypothesis (H₁) is accepted; otherwise, the null hypothesis is accepted."
+
+Research Hypothesis 1
+H₀: [State H₀₁ in full]
+H₁: [State H₁₁ in full]
+- Paragraph: describe Chi-Square test, which specific items from which sections were used
+- "Table 4.4.1: Cross-Tabulation for Hypothesis 1"
+- "Inference: The Chi-Square value ([X.XX]) exceeds the critical value (3.841), and the P-value ([0.00X]) is less than 0.05. Thus, the null hypothesis is rejected, indicating a statistically significant relationship between [variable A] and [variable B]…"
+
+Research Hypothesis 2
+H₀₂: [State H₀₂ in full]
+H₁₂: [State H₁₂ in full]
+- Same structure as Hypothesis 1
+- "Table 4.4.2: Cross-Tabulation for Hypothesis 2"
+- Inference paragraph`,
+
+      ch5: `Write CHAPTER FIVE: DISCUSSION OF RESULTS. Follow this EXACT structure:
+
+CHAPTER FIVE (centered, bold)
+DISCUSSION OF RESULTS (centered, bold)
+
+5.1 Discussion of Findings
+Opening paragraph: "This study aimed to [restate aim]. [The findings / A total of N participants]…" — restate briefly what was done.
+
+Socio-Demographic Characteristics  ← bold, NO section number
+- 1–2 paragraphs: describe dominant demographic groups and what they mean contextually for the study
+
+Findings on [Research Question 1 Topic]  ← bold, NO section number
+- Para 1: state what was found (cite your own Chapter 4 data — percentages, n values)
+- Para 2: compare with a global study — "This finding aligns with / exceeds / contrasts with [Author et al., year] who reported that…"
+- Para 3: compare with an African study
+- Para 4: compare with a Nigerian study + add contextual analytical remark
+
+Findings on [Research Question 2 Topic]  ← bold, NO section number
+- Same 4-paragraph structure: own finding → global → African → Nigerian comparison
+
+Findings on [Research Question 3 Topic]  ← bold, NO section number
+- Same 4-paragraph structure
+
+5.2 Implications of the Study to Nursing
+- 6–8 sub-sections, each with a bold heading (e.g. "Enhancing Maternal Education through Nursing Interventions", "Addressing Cultural and Religious Influences", "Strengthening Referral Systems...", "Advocating for Policy Changes...", "Building Community and Family Support Systems", "Enhancing Nursing Education and Training", "Promoting Preventive and Holistic Care", "Addressing Socioeconomic Disparities")
+- Each: 2–3 sentences of specific, actionable implications for nursing practice
+
+Summary of the Study  ← bold, NO section number (NOT "5.3")
+- 1 paragraph summarising: sample, dominant demographics, key findings from each research question, hypothesis outcomes
+
+Conclusion  ← bold, NO section number (NOT "5.4")
+- 1–2 paragraphs: draw conclusions from findings, reference specific percentages, note gaps that persist, end with forward-looking statement about improving practice
+
+Recommendations  ← bold, NO section number (NOT "5.5")
+- 6–8 items, each formatted as:
+  [Bold recommendation title]: [1–2 sentence explanation with a cited study to support] e.g.:
+  "Implement Targeted Education Programs: Develop hospital-based workshops focusing on [specific skills], tailored to address cultural misconceptions, as seen in [Author et al., year]."
+
+Suggestions for Further Studies  ← bold, NO section number (NOT "5.6")
+- 6 items, each formatted as:
+  [Bold title]: [1–2 sentence explanation] e.g.:
+  "Evaluate Culturally Tailored Interventions: Investigate the effectiveness of education programs designed for Nigeria's cultural context, focusing on [specific outcomes]."
+
+REFERENCES  ← bold, centered, NO section number
+- Full APA 7th edition reference list for ALL chapters
+- Alphabetical by first author surname
+- 20–30 entries minimum
+- 2021–2025 dates (except foundational theories)
+- Format: Author, A. A., & Author, B. B. (Year). Title in sentence case. Journal in Italics, Volume(Issue), page–page. https://doi.org/xxxxx`,
     };
 
     const clientCareInstructions = {
@@ -371,291 +541,231 @@ ${ch.subtitle.toUpperCase()}`;
   };
 
   // ────────────────────────────────────────────────────────────
-  // Download as .docx — NACON Standard Format
+  // Download as .docx — GAMZO/NACON Standard Format
   //
-  // Exact specs extracted from real NACON research documents:
-  //   Font:         Times New Roman, 12pt
-  //   Line spacing: Double (480 twips = 24pt line height for 12pt text)
-  //   Alignment:    JUSTIFIED for all body text & subheadings
-  //                 CENTER for chapter titles & subtitles only
-  //   Bold:         Chapter titles, subtitles, subheadings (1.1 etc.),
-  //                 hypothesis lines (H₀₁), sub-labels (Broad Objective etc.)
-  //   Indent:       None for body (no first-line indent)
-  //                 0.5in hanging indent for references
-  //                 0.5in left indent for list items
-  //   Spacing:      No space before or after paragraphs
-  //   Page:         US Letter (8.5×11 in = 12240×15840 DXA)
-  //   Margins:      1 inch all sides (1440 DXA)
+  //   Font:         Times New Roman, 12pt throughout
+  //   Line spacing: Double (480 twips)
+  //   Alignment:    JUSTIFIED body/subheadings, CENTER titles
+  //   Bold:         Chapter titles, subtitles, numbered subheadings,
+  //                 bold labels, hypothesis lines, inline bold phrases
+  //   Indent:       0.5in hanging for references; 0.5in left for lists
+  //   Spacing:      0 before/after paragraphs (double-spacing only)
+  //   Page:         A4 (11906 × 16838 DXA)
+  //   Margins:      1in top/right/bottom, 1.5in left (binding)
   //   Page numbers: Bottom centre, Times New Roman 12pt
   // ────────────────────────────────────────────────────────────
   const downloadDocx = async () => {
-    const allContent = activeChapters.map(c => chapters[c.id] || '').filter(Boolean);
-    if (!allContent.length) return;
+    const hasContent = activeChapters.some(c => chapters[c.id]);
+    if (!hasContent) { toast('⚠️ No chapters generated yet', '#D97706'); return; }
     setDownloadingDocx(true);
 
     try {
+      // ── Load docx library from CDN ───────────────────────────
       if (!window.docx) {
         await new Promise((resolve, reject) => {
           const s = document.createElement('script');
           s.src = 'https://cdnjs.cloudflare.com/ajax/libs/docx/8.5.0/docx.umd.min.js';
           s.onload = resolve;
-          s.onerror = reject;
+          s.onerror = () => reject(new Error('Failed to load docx library. Check your internet connection.'));
           document.head.appendChild(s);
         });
       }
+      if (!window.docx) throw new Error('docx library not available');
 
-      const {
-        Document, Packer, Paragraph, TextRun,
-        AlignmentType, LineRuleType,
-        PageNumber, NumberFormat, Footer,
-      } = window.docx;
+      const { Document, Packer, Paragraph, TextRun, AlignmentType, PageNumber, NumberFormat, Footer } = window.docx;
 
-      // ── Formatting constants ─────────────────────────────────
-      const FONT     = 'Times New Roman';
-      const SIZE     = 24;    // 12pt in half-points (docx unit)
-      const LINE     = 480;   // double spacing in twips (24pt for 12pt font)
-      const LINERULE = LineRuleType.EXACT;
-      const NO_SP    = { before: 0, after: 0 };
+      // ── Constants ────────────────────────────────────────────
+      const F  = 'Times New Roman';
+      const SZ = 24;              // 12pt (half-points)
+      const DL = 480;             // double line spacing (twips)
+      const SP = { before: 0, after: 0, line: DL };
 
-      // ── Paragraph factory functions ──────────────────────────
+      // ── Paragraph builders ───────────────────────────────────
+      const P = (runs, align = AlignmentType.JUSTIFIED, indent = {}) =>
+        new Paragraph({ alignment: align, spacing: SP, indent, children: runs });
 
-      // Chapter title: ALL CAPS, Bold, Centered
-      const mkChapterTitle = (text) => new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text: text.toUpperCase(), bold: true, font: FONT, size: SIZE })],
-      });
+      const run  = (text, bold = false, extra = {}) =>
+        new TextRun({ text, font: F, size: SZ, bold, ...extra });
 
-      // Chapter subtitle: ALL CAPS, Bold, Centered
-      const mkSubtitle = (text) => new Paragraph({
-        alignment: AlignmentType.CENTER,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text: text.toUpperCase(), bold: true, font: FONT, size: SIZE })],
-      });
+      const blank = () => P([run('')]);
 
-      // Numbered subheading (1.1, 2.3.1 etc.): Bold, Justified
-      const mkSubheading = (text) => new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text, bold: true, font: FONT, size: SIZE })],
-      });
-
-      // Bold label (Broad Objective, Specific Objectives, Inference: etc.): Bold, Justified
-      const mkBoldLabel = (text) => new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text, bold: true, font: FONT, size: SIZE })],
-      });
-
-      // Hypothesis (H₀₁, H₀₂): Bold, Justified
-      const mkHypothesis = (text) => new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text, bold: true, font: FONT, size: SIZE })],
-      });
-
-      // Body paragraph: normal weight, Justified
-      const mkBody = (text) => new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text, font: FONT, size: SIZE })],
-      });
-
-      // Blank line
-      const mkBlank = () => new Paragraph({
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        children: [new TextRun({ text: '', font: FONT, size: SIZE })],
-      });
-
-      // Reference entry: 0.5in hanging indent, Justified
-      const mkRef = (text) => new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        indent: { left: 720, hanging: 720 },
-        children: [new TextRun({ text, font: FONT, size: SIZE })],
-      });
-
-      // List item: 0.5in left indent, Justified
-      const mkListItem = (text) => new Paragraph({
-        alignment: AlignmentType.JUSTIFIED,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-        indent: { left: 720 },
-        children: [new TextRun({ text, font: FONT, size: SIZE })],
-      });
-
-      // Monospaced line (for ASCII tables)
-      const mkMono = (text) => new Paragraph({
+      const centerBold  = (text) => P([run(text, true)],  AlignmentType.CENTER);
+      const justBold    = (text) => P([run(text, true)],  AlignmentType.JUSTIFIED);
+      const justNormal  = (text) => P([run(text, false)], AlignmentType.JUSTIFIED);
+      const refLine     = (text) => P([run(text, false)], AlignmentType.JUSTIFIED, { left: 720, hanging: 720 });
+      const listLine    = (text) => P([run(text, false)], AlignmentType.JUSTIFIED, { left: 720 });
+      const monoLine    = (text) => new Paragraph({
         alignment: AlignmentType.LEFT,
-        spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
+        spacing: SP,
         children: [new TextRun({ text, font: 'Courier New', size: 20 })],
       });
-
-      // Page break
-      const mkPageBreak = () => new Paragraph({
+      const pageBreak   = () => new Paragraph({
         pageBreakBefore: true,
-        spacing: { ...NO_SP },
-        children: [new TextRun({ text: '', font: FONT, size: SIZE })],
+        spacing: { before: 0, after: 0 },
+        children: [run('')],
       });
+
+      // ── Inline bold parser ────────────────────────────────────
+      // Converts "**bold text** normal text" into mixed TextRun array
+      const parseInlineBold = (text, baseAlign = AlignmentType.JUSTIFIED, indent = {}) => {
+        const parts = text.split(/(\*\*[^*]+\*\*)/g);
+        const runs = parts.map(part => {
+          if (part.startsWith('**') && part.endsWith('**')) {
+            return run(part.slice(2, -2), true);
+          }
+          return run(part, false);
+        });
+        return P(runs, baseAlign, indent);
+      };
 
       // ── Line classifier ──────────────────────────────────────
       const classify = (line) => {
         const t = line.trim();
         if (!t) return 'blank';
 
-        // "CHAPTER ONE", "CHAPTER TWO" etc.
-        if (/^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE)$/i.test(t)) return 'chapter-title';
+        if (/^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE)$/i.test(t))
+          return 'chapter-title';
 
-        // ALL-CAPS subtitle lines (INTRODUCTION, LITERATURE REVIEW, REFERENCES, PILOT STUDY etc.)
+        // ALL-CAPS subtitle: pure uppercase letters/spaces, short, not a number
         if (
           t === t.toUpperCase() &&
-          /^[A-Z\s,&\/\-]+$/.test(t) &&
-          t.length > 3 &&
-          t.length < 80 &&
+          /^[A-Z][A-Z\s,&/\-]+$/.test(t) &&
+          t.length >= 4 && t.length < 90 &&
           !/^\d/.test(t)
         ) return 'chapter-subtitle';
 
-        // Numbered subheadings: 1.1, 2.3, 3.10, 1.1.1, 2.3.1 etc.
+        // Numbered subheadings: 1.1 / 2.3.1 / 3.10 etc.
         if (/^\d+\.\d+(\.\d+)?\s+\S/.test(t)) return 'subheading';
 
-        // Hypothesis lines: H₀₁, H₀₂, H01, Ho1 etc.
-        if (/^H[₀o0][₁₂₃123]:/.test(t)) return 'hypothesis';
+        // Hypothesis lines
+        if (/^H[₀oO0][₁₂₃123₄4][:.\s]/.test(t) || /^H₁[₁₂₃123][:.\s]/.test(t))
+          return 'hypothesis';
 
-        // Known bold sub-labels
-        if (/^(Broad Objective|Specific Objectives|Broad Aim|Specific Aims|Decision Rule|Inference:|Source:|Note:|Research (Question|Hypothesis)\s+\d+)/i.test(t)) return 'bold-label';
+        // Known bold labels (GAMZO format)
+        if (/^(Broad Objective|Specific Objectives|Broad Aim|Specific Aims|Decision Rule|Inference:|Source:|Note:|REFERENCES|Research (Question|Hypothesis)\s+\d+|Summary of the Study|Conclusion|Recommendations|Suggestions for Further Studies)/i.test(t))
+          return 'bold-label';
 
-        // Reference entries: Author, A. A. pattern
-        if (/^[A-Z][a-z]+,\s[A-Z][\.\s]/.test(t)) return 'reference';
+        // Implication subheadings in ch5 (bold title: text pattern)
+        if (/^[A-Z][A-Za-z\s]+:/.test(t) && t.length < 120 && !/^(http|https|doi|www)/.test(t) && !/^\d/.test(t) && t.split(':')[0].split(' ').length <= 10)
+          return 'bold-colon';
 
-        // Numbered list items: "1.", "2.", "(i)", "a)"
+        // APA reference entries
+        if (/^[A-Z][a-záéíóúñ\-]+,\s[A-Z][\.\s]/.test(t) || /^[A-Z][a-z]+,\s[A-Z][a-z]*\./.test(t))
+          return 'reference';
+
+        // Numbered / lettered list items
         if (/^(\d+\.|[ivxlIVXL]+\.|[a-z]\))\s/.test(t)) return 'list-item';
 
-        // Table rows (ASCII)
-        if (t.includes('|') && (t.startsWith('|') || t.indexOf('|') < 6)) return 'table-row';
+        // ASCII table rows
+        if (t.startsWith('|') || (t.includes('|') && t.indexOf('|') < 5))
+          return 'table-row';
+
+        // Inline bold markers
+        if (t.includes('**')) return 'inline-bold';
 
         return 'body';
       };
 
-      // ── Convert chapter text to docx paragraphs ──────────────
-      const textToParas = (text) => {
-        const lines  = text.split('\n');
+      // ── Chapter text → docx paragraphs ──────────────────────
+      const textToParas = (rawText) => {
+        const lines  = rawText.split('\n');
         const result = [];
-        let prevType = null;
-        let tableBuffer = [];
+        let prev     = null;
+        let tableBuf = [];
 
         const flushTable = () => {
-          if (!tableBuffer.length) return;
-          tableBuffer.forEach(row => result.push(mkMono(row)));
-          tableBuffer = [];
+          if (!tableBuf.length) return;
+          tableBuf.forEach(r => result.push(monoLine(r)));
+          result.push(blank());
+          tableBuf = [];
         };
 
         for (const line of lines) {
           const type = classify(line);
+          const t    = line.trim();
 
-          if (type === 'table-row') { tableBuffer.push(line.trim()); prevType = type; continue; }
-          if (type !== 'table-row' && tableBuffer.length) flushTable();
+          // Buffer table rows
+          if (type === 'table-row') { tableBuf.push(t); prev = type; continue; }
+          if (tableBuf.length)       flushTable();
 
-          if (type === 'blank') { result.push(mkBlank()); prevType = type; continue; }
+          if (type === 'blank') {
+            // Only add blank if prev wasn't already blank or a title
+            if (prev !== 'blank' && prev !== null) result.push(blank());
+            prev = 'blank';
+            continue;
+          }
 
-          // Insert a blank line before chapter-titles and subheadings
-          // (unless we're at the very start or after a blank)
+          // Extra blank before subheadings and chapter titles (breathing room)
           if (
-            (type === 'chapter-title' || type === 'subheading') &&
-            prevType !== null && prevType !== 'blank' && prevType !== 'chapter-title'
+            (type === 'subheading' || type === 'chapter-title' || type === 'bold-label') &&
+            prev !== null && prev !== 'blank' && prev !== 'chapter-title' && prev !== 'chapter-subtitle'
           ) {
-            result.push(mkBlank());
+            result.push(blank());
           }
 
-          const t = line.trim();
           switch (type) {
-            case 'chapter-title':    result.push(mkChapterTitle(t)); break;
-            case 'chapter-subtitle': result.push(mkSubtitle(t));     break;
-            case 'subheading':       result.push(mkSubheading(t));   break;
-            case 'bold-label':       result.push(mkBoldLabel(t));    break;
-            case 'hypothesis':       result.push(mkHypothesis(t));   break;
-            case 'reference':        result.push(mkRef(t));          break;
-            case 'list-item':        result.push(mkListItem(t));     break;
-            default:                 result.push(mkBody(t));         break;
+            case 'chapter-title':    result.push(centerBold(t.toUpperCase())); break;
+            case 'chapter-subtitle': result.push(centerBold(t.toUpperCase())); break;
+            case 'subheading':       result.push(justBold(t));   break;
+            case 'bold-label':       result.push(justBold(t));   break;
+            case 'hypothesis':       result.push(justBold(t));   break;
+            case 'bold-colon': {
+              // Format "Title: rest of text" — bold the part before the colon
+              const colonIdx = t.indexOf(':');
+              const title    = t.slice(0, colonIdx + 1);
+              const rest     = t.slice(colonIdx + 1);
+              result.push(P([run(title, true), run(rest, false)], AlignmentType.JUSTIFIED));
+              break;
+            }
+            case 'reference':        result.push(refLine(t));    break;
+            case 'list-item':        result.push(listLine(t));   break;
+            case 'inline-bold':      result.push(parseInlineBold(t)); break;
+            default:                 result.push(justNormal(t)); break;
           }
-          prevType = type;
+          prev = type;
         }
-
         flushTable();
         return result;
       };
 
       // ── Title page ───────────────────────────────────────────
       const titlePage = [
-        mkBlank(), mkBlank(), mkBlank(),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({ text: (topic || 'Research Project').toUpperCase(), bold: true, font: FONT, size: SIZE })],
-        }),
-
-        mkBlank(),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({ text: 'BY', bold: true, font: FONT, size: SIZE })],
-        }),
-
-        mkBlank(),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({ text: '___________________________', font: FONT, size: SIZE })],
-        }),
-
-        mkBlank(),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({ text: 'PRESENTED TO', bold: true, font: FONT, size: SIZE })],
-        }),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({ text: `DEPARTMENT OF ${(department || 'NURSING SCIENCE').toUpperCase()}`, bold: true, font: FONT, size: SIZE })],
-        }),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({ text: 'NIGERIAN ARMY COLLEGE OF NURSING, YABA-LAGOS', bold: true, font: FONT, size: SIZE })],
-        }),
-
-        mkBlank(), mkBlank(),
-
-        new Paragraph({
-          alignment: AlignmentType.CENTER,
-          spacing: { ...NO_SP, line: LINE, lineRule: LINERULE },
-          children: [new TextRun({
-            text: `${new Date().toLocaleString('default', { month: 'long' }).toUpperCase()}, ${new Date().getFullYear()}.`,
-            bold: true, font: FONT, size: SIZE,
-          })],
-        }),
+        blank(), blank(), blank(), blank(),
+        centerBold((topic || 'RESEARCH PROJECT').toUpperCase()),
+        blank(),
+        centerBold('BY'),
+        blank(),
+        P([run('___________________________')], AlignmentType.CENTER),
+        blank(),
+        centerBold('PRESENTED TO'),
+        centerBold(`DEPARTMENT OF ${(department || 'NURSING SCIENCE').toUpperCase()}`),
+        centerBold('NIGERIAN ARMY COLLEGE OF NURSING, YABA-LAGOS'),
+        blank(), blank(),
+        centerBold(
+          `${new Date().toLocaleString('default', { month: 'long' }).toUpperCase()}, ${new Date().getFullYear()}.`
+        ),
       ];
 
-      // ── Assemble full document paragraphs ────────────────────
+      // ── Assemble all content ─────────────────────────────────
       const allParas = [...titlePage];
       for (const ch of activeChapters) {
         if (!chapters[ch.id]) continue;
-        allParas.push(mkPageBreak());
+        allParas.push(pageBreak());
         allParas.push(...textToParas(chapters[ch.id]));
       }
 
-      // ── Create and save document ─────────────────────────────
+      // ── Build document with exact NACON/GAMZO specs ──────────
       const doc = new Document({
+        styles: {
+          default: {
+            document: { run: { font: F, size: SZ } },
+          },
+        },
         sections: [{
           properties: {
             page: {
-              size: { width: 12240, height: 15840 },      // US Letter
-              margin: { top: 1440, right: 1440, bottom: 1440, left: 1440 }, // 1 inch
+              size: { width: 11906, height: 16838 },           // A4
+              margin: { top: 1440, right: 1440, bottom: 1440, left: 2160 }, // 1.5in left binding
               pageNumbers: { start: 1, formatType: NumberFormat.DECIMAL },
             },
           },
@@ -664,7 +774,7 @@ ${ch.subtitle.toUpperCase()}`;
               children: [new Paragraph({
                 alignment: AlignmentType.CENTER,
                 spacing: { before: 0, after: 0 },
-                children: [new TextRun({ children: [PageNumber.CURRENT], font: FONT, size: SIZE })],
+                children: [new TextRun({ children: [PageNumber.CURRENT], font: F, size: SZ })],
               })],
             }),
           },
@@ -672,18 +782,22 @@ ${ch.subtitle.toUpperCase()}`;
         }],
       });
 
-      const buffer = await Packer.toBlob(doc);
-      const url    = URL.createObjectURL(buffer);
-      const a      = document.createElement('a');
-      a.href       = url;
-      a.download   = `${(topic || 'document').slice(0, 50).replace(/[^a-zA-Z0-9 ]/g, '').trim()}_${mode}.docx`;
+      // ── Save file ────────────────────────────────────────────
+      const blob     = await Packer.toBlob(doc);
+      const url      = URL.createObjectURL(blob);
+      const fileName = `${(topic || 'Research').slice(0, 60).replace(/[^a-zA-Z0-9 ]/g, '').trim()}.docx`;
+      const a        = document.createElement('a');
+      a.href         = url;
+      a.download     = fileName;
+      document.body.appendChild(a);
       a.click();
+      document.body.removeChild(a);
       URL.revokeObjectURL(url);
-      toast('✅ Downloaded as .docx (NACON Format)!', '#16A34A');
-    } catch (e) {
-      console.error(e);
-      toast('❌ DOCX failed — downloading .txt instead', '#DC2626');
-      downloadAll();
+      toast('✅ Word document downloaded!', '#16A34A');
+
+    } catch (err) {
+      console.error('DOCX error:', err);
+      toast(`❌ Download failed: ${err.message}`, '#DC2626');
     }
     setDownloadingDocx(false);
   };
@@ -919,10 +1033,7 @@ ${ch.subtitle.toUpperCase()}`;
                     ? <><div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Building .docx…</>
                     : `⬇️ Download .docx (${generatedCount}/${totalChapters} chapters)`}
                 </button>
-                <button onClick={downloadAll}
-                  style={{ background: 'transparent', color: 'var(--text-muted,#718096)', border: '1px solid var(--border,#2d3748)', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 600, fontSize: 11 }}>
-                  .txt
-                </button>
+
               </div>
             </div>
             <div style={{ background: 'var(--bg-tertiary,#2d3748)', borderRadius: 20, height: 8, overflow: 'hidden' }}>
