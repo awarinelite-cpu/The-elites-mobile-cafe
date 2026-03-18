@@ -58,9 +58,16 @@ export default function AIResearchWriterPage() {
     const ch = activeChapters.find(c => c.id === chapterId);
     const isCC = mode === 'clientcare';
     const guideSection = guideDoc.trim()
-      ? `\nGUIDE DOCUMENT (use this as a structural and stylistic template — adapt content to the new topic):\n"""\n${guideDoc.trim().slice(0, 3000)}${guideDoc.length > 3000 ? '\n[...truncated for length]' : ''}\n"""\n`
-      : '';
+  ? `\n
+MANDATORY FORMAT GUIDE (HIGHEST PRIORITY — STRICTLY ENFORCED):
+You MUST follow the structure, headings, subheadings, writing style, paragraph length, table format, and all formatting conventions shown in this guide document EXACTLY. This guide overrides all other formatting instructions below. Do NOT skip any section shown in the guide. Do NOT add sections not in the guide. Do NOT produce half-complete work — every section must be fully written out to the same depth and length as the guide.
 
+GUIDE DOCUMENT:
+"""
+${guideDoc.trim().slice(0, 6000)}${guideDoc.length > 6000 ? '\n[...guide continues — maintain same pattern throughout]' : ''}
+"""
+`
+  : '';
     const citationRules = `
 CITATION RULES (STRICTLY ENFORCED):
 - Use ONLY real, verifiable academic sources published from 2021 onwards
