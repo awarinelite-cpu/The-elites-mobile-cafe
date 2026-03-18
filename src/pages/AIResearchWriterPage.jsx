@@ -765,7 +765,164 @@ ${ch.subtitle.toUpperCase()}`;
         flushTable();
         return out;
       };
+const [downloadingPdf, setDownloadingPdf] = useState(false);
+      const downloadPdf = async () => {
+  const hasContent = activeChapters.some(c => chapters[c.id]);
+  if (!hasContent) { toast('⚠️ No chapters generated yet', '#D97706'); return; }
+  setDownloadingPdf(true);
 
+  try {
+    // Load jsPDF from CDN
+    if (!window.jspdf) {
+      await new Promise((resolve, reject) => {
+        const s = document.createElement('script');
+        s.src = 'https://cdnjs.cloudflare.com/ajax/libs/jspdf/2.5.1/jspdf.umd.min.js';
+        s.onload = resolve;
+        s.onerror = () => reject(new Error('Could not load jsPDF.'));
+        document.head.appendChild(s);
+      });
+    }
+
+    const { jsPDF } = window.jspdf;
+    const doc = new jsPDF({ orientation: 'portrait', unit: 'mm', format: 'a4' });
+
+    const pageW    = doc.internal.pageSize.getWidth();
+    const pageH    = doc.internal.pageSize.getHeight();
+    const marginL  = 25;
+    const marginR  = 20;
+    const marginT  = 25;
+    const marginB  = 20;
+    const usableW  = pageW - marginL - marginR;
+    let y          = marginT;
+    let pageNum    = 1;
+
+    const addPageNumber = () => {
+      doc.setFontSize(10);
+      doc.setFont('times', 'normal');
+      doc.text(String(pageNum), pageW / 2, pageH - 10, { align: 'center' });
+    };
+
+    const checkNewPage = (needed = 10) => {
+      if (y + needed > pageH - marginB) {
+        addPageNumber();
+        doc.addPage();
+        pageNum++;
+        y = marginT;
+      }
+    };
+
+    const writeLine = (text, bold = false, center = false, fontSize = 12, indent = 0) => {
+      doc.setFontSize(fontSize);
+      doc.setFont('times', bold ? 'bold' : 'normal');
+      const x     = center ? pageW / 2 : marginL + indent;
+      const align = center ? 'center' : 'left';
+      const maxW  = usableW - indent;
+      const lines = doc.splitTextToSize(text, maxW);
+      lines.forEach(line => {
+        checkNewPage(8);
+        doc.text(line, x, y, { align });
+        y += 8;
+      });
+    };
+
+    const writePara = (text) => {
+      doc.setFontSize(12);
+      doc.setFont('times', 'normal');
+      const lines = doc.splitTextToSize(text, usableW);
+      lines.forEach(line => {
+        checkNewPage(8);
+        doc.text(line, marginL, y);
+        y += 8;
+      });
+      y += 4;
+    };
+
+    // ── Title page ──
+    y = pageH / 2 - 40;
+    doc.setFontSize(14);
+    doc.setFont('times', 'bold');
+    const titleLines = doc.splitTextToSize((topic || 'RESEARCH PROJECT').toUpperCase(), usableW);
+    titleLines.forEach(line => { doc.text(line, pageW / 2, y, { align: 'center' }); y += 10; });
+    y += 6;
+    doc.setFontSize(12);
+    doc.text('BY', pageW / 2, y, { align: 'center' }); y += 10;
+    doc.setFont('times', 'normal');
+    doc.text('___________________________', pageW / 2, y, { align: 'center' }); y += 10;
+    doc.text('PRESENTED TO', pageW / 2, y, { align: 'center' }); y += 8;
+    doc.text(`DEPARTMENT OF ${(department || 'NURSING SCIENCE').toUpperCase()}`, pageW / 2, y, { align: 'center' }); y += 8;
+    doc.text('NIGERIAN ARMY COLLEGE OF NURSING, YABA-LAGOS', pageW / 2, y, { align: 'center' }); y += 12;
+    const monthYear = `${new Date().toLocaleString('default', { month: 'long' }).toUpperCase()}, ${new Date().getFullYear()}`;
+    doc.text(monthYear, pageW / 2, y, { align: 'center' });
+
+    // ── Chapters ──
+    for (const ch of activeChapters) {
+      if (!chapters[ch.id]) continue;
+      addPageNumber();
+      doc.addPage();
+      pageNum++;
+      y = marginT;
+
+      const lines = chapters[ch.id].split('\n');
+      for (const line of lines) {
+        const t = line.trim();
+        if (!t) { y += 4; continue; }
+
+        if (/^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE)$/i.test(t)) {
+          checkNewPage(14);
+          writeLine(t.toUpperCase(), true, true, 14);
+          y += 2;
+        } else if (t === t.toUpperCase() && /^[A-Z][A-Z\s,&/\-]+$/.test(t) && t.length >= 4 && t.length < 90 && !/^\d/.test(t)) {
+          writeLine(t.toUpperCase(), true, true, 13);
+          y += 2;
+        } else if (/^\d+\.\d+(\.\d+)?\s+\S/.test(t)) {
+          y += 2; checkNewPage(12);
+          writeLine(t, true, false, 12);
+          y += 2;
+        } else if (/^H[₀oO0][₁₂₃123][:.\s]/.test(t) || /^H[₁1][₁₂₃123][:.\s]/.test(t)) {
+          writeLine(t, true, false, 12);
+        } else if (/^(REFERENCES|Summary of the Study|Conclusion|Recommendations|Suggestions for Further Studies|Socio-Demographic|Findings on|Implications|Limitations)/i.test(t)) {
+          y += 2; checkNewPage(12);
+          writeLine(t, true, false, 12);
+          y += 2;
+        } else if (t.startsWith('|') || (t.includes('|') && t.indexOf('|') < 5)) {
+          doc.setFontSize(9);
+          doc.setFont('courier', 'normal');
+          const tlines = doc.splitTextToSize(t, usableW);
+          tlines.forEach(l => { checkNewPage(6); doc.text(l, marginL, y); y += 6; });
+        } else if (/^[A-Z][A-Za-z\s]+:/.test(t) && t.length < 140 && t.split(':')[0].split(' ').length <= 10) {
+          const ci = t.indexOf(':');
+          checkNewPage(8);
+          doc.setFontSize(12);
+          doc.setFont('times', 'bold');
+          const boldPart  = t.slice(0, ci + 1);
+          const normalPart = t.slice(ci + 1);
+          const bW = doc.getTextWidth(boldPart);
+          doc.text(boldPart, marginL, y);
+          doc.setFont('times', 'normal');
+          const rest = doc.splitTextToSize(normalPart, usableW - bW - 2);
+          doc.text(rest[0] || '', marginL + bW + 1, y);
+          y += 8;
+          if (rest.length > 1) {
+            rest.slice(1).forEach(l => { checkNewPage(8); doc.text(l, marginL, y); y += 8; });
+          }
+        } else {
+          writePara(t);
+        }
+      }
+    }
+
+    addPageNumber();
+
+    const fileName = `${(topic || 'Research').slice(0, 60).replace(/[^a-zA-Z0-9 ]/g, '').trim()}.pdf`;
+    doc.save(fileName);
+    toast('✅ PDF downloaded!', '#16A34A');
+
+  } catch (err) {
+    console.error('PDF error:', err);
+    toast(`❌ PDF failed: ${err.message}`, '#DC2626');
+  }
+  setDownloadingPdf(false);
+};
       const monthYear = `${new Date().toLocaleString('default', { month: 'long' }).toUpperCase()}, ${new Date().getFullYear()}.`;
       const titleXML  = [
         blank(), blank(), blank(), blank(),
@@ -1104,18 +1261,23 @@ ${ch.subtitle.toUpperCase()}`;
                 {generatedCount === totalChapters && <span style={{ marginLeft: 8, color: '#16A34A' }}>✅ Complete</span>}
               </span>
               <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
-                <button onClick={copyAll}
-                  style={{ background: '#1E3A8A', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
-                  📋 Copy All
-                </button>
-                <button onClick={downloadDocx} disabled={downloadingDocx}
-                  style={{ background: downloadingDocx ? 'rgba(13,148,136,0.5)' : '#0D9488', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: downloadingDocx ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
-                  {downloadingDocx
-                    ? <><div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Building .docx…</>
-                    : `⬇️ Download .docx (${generatedCount}/${totalChapters} chapters)`}
-                </button>
-              </div>
-            </div>
+  <button onClick={copyAll}
+    style={{ background: '#1E3A8A', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 12 }}>
+    📋 Copy All
+  </button>
+  <button onClick={downloadDocx} disabled={downloadingDocx}
+    style={{ background: downloadingDocx ? 'rgba(13,148,136,0.5)' : '#0D9488', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: downloadingDocx ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+    {downloadingDocx
+      ? <><div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Building…</>
+      : `⬇️ Word (.docx)`}
+  </button>
+  <button onClick={downloadPdf} disabled={downloadingPdf}
+    style={{ background: downloadingPdf ? 'rgba(220,38,38,0.5)' : '#DC2626', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 16px', cursor: downloadingPdf ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 12, display: 'flex', alignItems: 'center', gap: 6 }}>
+    {downloadingPdf
+      ? <><div style={{ width: 12, height: 12, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} /> Building…</>
+      : `⬇️ PDF`}
+  </button>
+</div>
             <div style={{ background: 'var(--bg-tertiary,#2d3748)', borderRadius: 20, height: 8, overflow: 'hidden' }}>
               <div style={{ height: '100%', width: `${(generatedCount / totalChapters) * 100}%`, background: `linear-gradient(90deg,${mode === 'clientcare' ? '#7C3AED' : '#1E3A8A'},#0D9488)`, borderRadius: 20, transition: 'width 0.5s ease' }} />
             </div>
@@ -1141,11 +1303,13 @@ ${ch.subtitle.toUpperCase()}`;
                     📋 Copy
                   </button>
                   <button onClick={downloadDocx} disabled={downloadingDocx}
-                    style={{ background: downloadingDocx ? 'rgba(13,148,136,0.4)' : '#0D9488', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: downloadingDocx ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}>
-                    {downloadingDocx
-                      ? <><div style={{ width: 11, height: 11, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Saving…</>
-                      : '⬇️ .docx'}
-                  </button>
+  style={{ background: downloadingDocx ? 'rgba(13,148,136,0.4)' : '#0D9488', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: downloadingDocx ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}>
+  {downloadingDocx ? <><div style={{ width: 11, height: 11, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Saving…</> : '⬇️ .docx'}
+</button>
+<button onClick={downloadPdf} disabled={downloadingPdf}
+  style={{ background: downloadingPdf ? 'rgba(220,38,38,0.4)' : '#DC2626', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 14px', cursor: downloadingPdf ? 'not-allowed' : 'pointer', fontWeight: 700, fontSize: 13, display: 'flex', alignItems: 'center', gap: 5 }}>
+  {downloadingPdf ? <><div style={{ width: 11, height: 11, border: '2px solid rgba(255,255,255,0.4)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Saving…</> : '⬇️ .pdf'}
+</button>
                   <button onClick={() => generateChapter(activeChapter)} disabled={loading !== null}
                     style={{ background: 'transparent', color: ch.color, border: `1.5px solid ${ch.color}`, borderRadius: 8, padding: '8px 14px', cursor: 'pointer', fontWeight: 700, fontSize: 13 }}>
                     🔄 Regenerate
