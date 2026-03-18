@@ -1,8 +1,4 @@
 // src/pages/AIResearchWriterPage.jsx
-import {
-  Document, Packer, Paragraph, TextRun,
-  AlignmentType, PageNumber, NumberFormat, Footer,
-} from 'docx';
 import { useState, useRef } from 'react';
 
 const RESEARCH_CHAPTERS = [
