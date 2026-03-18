@@ -93,147 +93,254 @@ ANTI-PLAGIARISM RULES (TARGET: 0–5% SIMILARITY):
 - Add the writer's own analytical commentary after citing each source — do not just string citations together`;
 
     const researchInstructions = {
-      ch1: `Write CHAPTER ONE: INTRODUCTION. Follow this EXACT structure — no deviations:
+      ch1: `Write CHAPTER ONE: INTRODUCTION. Follow this EXACT GAMZO format — no deviations whatsoever:
 
-CHAPTER ONE (centered, bold)
-INTRODUCTION (centered, bold)
+CHAPTER ONE
+INTRODUCTION
 
 1.1 Background to the Study
-- 4 paragraphs flowing: Global → Africa (sub-Saharan) → Nigeria → Local (specific city/facility)
-- Each paragraph cites real APA 7th ed. sources (2021–2025)
-- Final paragraph states the purpose of THIS study and what it aims to achieve
+Write FIVE full paragraphs in this exact flow:
+- Paragraph 1 — GLOBAL: Define the main concept/condition with a landmark statistic. Cite WHO or major global body. Mention global prevalence, mortality burden, and WHO recommendations. End with the global gap or challenge. (6–8 sentences, multiple APA citations)
+- Paragraph 2 — GLOBAL (continued): Discuss high-income country implementation/progress. Cite 2–3 specific countries (USA, UK, Sweden or equivalent) with statistics, policies, and remaining challenges. (6–8 sentences)
+- Paragraph 3 — AFRICA: Shift to sub-Saharan Africa. State neonatal/disease burden. Cite 3–4 African country studies (Kenya, Ethiopia, South Africa, Ghana or relevant) each with Author (year) + specific finding + barrier identified. (6–8 sentences)
+- Paragraph 4 — NIGERIA: Focus on Nigeria specifically. State national prevalence/mortality figures. Cite 2–3 Nigerian studies with specific percentages, locations, and findings. End with what remains unknown or unaddressed. (6–8 sentences)
+- Paragraph 5 — LOCAL/THIS STUDY: Narrow to the specific state/city/facility. Describe the setting briefly (type of facility, population served). State WHY this setting matters. End with: "This study therefore seeks to assess [exact topic] among [population] in [facility]. The findings are expected to [state purpose and expected contribution]." (4–6 sentences)
 
-Statement of Problem  ← write exactly as "Statement of Problem" (bold, no number prefix)
-- 4–5 paragraphs
-- Para 1: introduce the global problem with statistics and citations
-- Para 2: state consequences/impact if not addressed (mortality, morbidity, SDG goals)
-- Para 3–4: cite 2 recent studies showing the gap persists (Author et al., year found that…)
-- Final para: "Therefore, [this study / these findings highlight the urgent need to]…" — transition to the study's purpose
+1.2 Statement of the Problem
+Write FIVE paragraphs:
+- Paragraph 1: State the global recognition of the problem. Cite WHO or authoritative global source with a specific coverage target/statistic that is NOT being met. State the national gap explicitly (e.g. "fewer than X% of eligible [population] in Nigeria receive/practice [intervention]"). Cite 2 sources. (4–6 sentences)
+- Paragraph 2: Describe the consequences in Nigeria — mortality, morbidity, SDG implications. Name the specific SDG goal and target. State how current rates compare to the target. (4–6 sentences)
+- Paragraph 3: Cite a specific recent Nigerian or local study (Author et al., year) that found a knowledge or practice gap. State exact percentages. Explain what the gap means for outcomes. (3–5 sentences)
+- Paragraph 4: Cite a second study confirming the gap persists. Mention the specific facility/region and what barrier was identified. (3–5 sentences)
+- Paragraph 5 (final): Begin with "Therefore, this study aims to assess [topic] among [population] at [facility]. The findings from this study will provide evidence for [list 3–4 specific uses: education, training, policy, intervention]." (3–4 sentences)
 
 1.3 Objectives of the Study
-  Broad Objective  ← bold sub-label, no number
-  [One sentence beginning "To assess/determine/evaluate…"]
 
-  Specific Objectives  ← bold sub-label, no number
-  1. [Action verb + variable 1 + population + setting]
-  2. [Action verb + variable 2 + population + setting]
-  3. [Action verb + factors influencing + population + setting]
+Broad Objective
+To [assess/determine/evaluate] the [topic] among [population] in [facility/setting].
+
+Specific Objectives
+- To [action verb] the level of [variable 1] among [population] in [facility].
+- To [action verb] the level of [variable 2] among [population] in [facility].
+- To identify the factors influencing [variable 1 and variable 2] among [population] in [facility].
+(Use bullet points — NOT numbered list — exactly as in the GAMZO format)
 
 1.4 Research Questions
-  1. [Question derived from objective 1]
-  2. [Question derived from objective 2]
-  3. [Question derived from objective 3]
+- What is the level of [variable 1] among [population] in [facility]?
+- What is the level of [variable 2] among [population] in [facility]?
+- What are the factors influencing [variable 1 and variable 2] among [population] in [facility]?
+(Use bullet points — NOT numbered list)
 
 1.5 Research Hypotheses
-  1. H₀₁: There is no significant relationship between [variable 1] and [variable 2] among [population] in [setting].
-  2. H₀₂: There is no significant relationship between [factors] and [practices/outcomes] among [population] in [setting].
+H₀₁: There is no relationship between [variable 1] and [variable 2] among [population] in [facility].
+H₀₂: There is no relationship between socio-demographic factors (educational qualification) and [variable 2] among [population] in [facility].
+(Use bold H₀₁ and H₀₂ labels, NO bullet points or numbering)
 
 1.6 Significance of the Study
-- 4 paragraphs addressing: (1) nursing/clinical practice, (2) healthcare professionals & administrators, (3) policymakers & program planners, (4) contribution to literature/future research
+Write FOUR paragraphs — NO sub-headings, flowing prose:
+- Paragraph 1 (Opening + Nursing Profession): Begin "This research addresses critical gaps in [topic] within [setting], with important implications for nursing, healthcare providers, and society." Then explain significance to the nursing profession — knowledge gaps identified, evidence-based care, culturally sensitive education, specific nursing roles.
+- Paragraph 2 (Healthcare Providers): "For healthcare providers—including [list relevant roles]—this study provides actionable data…" Cover clinical practice, health system planning, patient-centred education, standardized protocols.
+- Paragraph 3 (Society/Public Health): "From a societal perspective…" Cover public health challenge, neonatal mortality, SDG alignment, health equity, community impact.
+- Paragraph 4 (Literature): "Moreover, the study enriches the existing body of literature…" Cover contribution to scholarship, reference for future research, evidence for policy and program evaluation.
 
-1.7 Scope of the Study
-- 3 paragraphs: (1) what the study covers, (2) what it does NOT include, (3) setting restriction and why
+1.7 Scope of the Study (Delimitation)
+Write THREE paragraphs — NO sub-headings:
+- Paragraph 1: State what the study focuses on (topic, population, facility, study period).
+- Paragraph 2: State what the scope is confined to — specific dimensions evaluated. State clearly what is NOT included (e.g. "It does not include evaluation of [X], [Y], or [Z]").
+- Paragraph 3: State the setting restriction — restricted to [specific facility type], does not extend to [other facility types]. Explain what the findings will therefore reflect.
 
 1.8 Operational Definition of Terms
-- 5–6 key terms, each as: bold term + colon + definition in context of THIS study and setting
-- Example format: "Knowledge: The level of understanding of [topic] including [specific dimensions] among [population] at [facility]."`,
+Define SIX terms. Format each as:
+[Bold Term] ([abbreviation if applicable]): [Definition specifically in the context of this study and facility — not a generic dictionary definition. Must reference the population and facility.]
+Example: "Knowledge: The level of understanding [population] have about [topic], including [specific dimensions — e.g. benefits, techniques, principles], as assessed among [population] at [facility]."`,
 
-      ch2: `Write CHAPTER TWO: LITERATURE REVIEW. Follow this EXACT structure:
+      ch2: `Write CHAPTER TWO: LITERATURE REVIEW. Follow this EXACT GAMZO format:
 
-CHAPTER TWO (centered, bold)
-LITERATURE REVIEW (centered, bold)
+CHAPTER TWO
+LITERATURE REVIEW
 
 2.1 Conceptual Review
-Opening paragraph — introduce the main concept and its global significance (2–3 sentences)
+Opening paragraph (2–3 sentences): Introduce the main concept as a transformative intervention. State its significance for the study population. Mention the challenge in resource-limited settings and the role of the primary caregiver (the study population).
 
-2.1.1 [First Major Concept — e.g. Knowledge of [Topic]]
-- 1 defining paragraph
-- Then use bold (unnumbered) sub-headings for thematic breakdowns, e.g.:
-  [Concept Definition and Background]
-  [Types / Classification]
-  [Components / Principles]
-  [Benefits / Role of [Population]]
-  [Knowledge Gaps Among [Population]]
-  Each sub-section: 2–3 paragraphs with APA 7th ed. citations
+2.1.1 [Variable 1 — e.g. Knowledge on/of (Topic)]
+- Paragraph 1: Define the concept simply and state its origin/history. Cite 1 source. (3–4 sentences)
+- Paragraph 2: Describe HOW it is done — the physical process, positioning, mechanics. Cite 1–2 sources. (4–5 sentences)
+- Paragraph 3: Describe the components/process in more detail. Use plain language. Cite 1 source. (3–4 sentences)
 
-2.1.2 [Not used — skip to 2.1.3 if the second subsection is "Preventive Measures / Practices"]
-  OR
-2.1.2 [Practices / Preventive Measures Routinely Adopted by [Population]]
-- Bold (unnumbered) sub-headings for each practice, e.g.:
-  [Skin-to-skin Contact / Supplementation Adherence / etc.]
-  [Dietary Modifications / Nutritional Practices]
-  [Monitoring / Recognition of Symptoms]
-  [Adherence to Care Plans / Clinic Attendance]
-  [Family and Healthcare Provider Collaboration]
-  Each: 1–2 paragraphs with citations
+Then write the following BOLD UNNUMBERED sub-sections, each with 1–2 paragraphs:
 
-2.1.3 [Factors Influencing [Population]'s Knowledge and Practice of [Topic]] — or similar
-- Opening paragraph introducing the factors
-- Bold (unnumbered) sub-headings for each factor:
-  Socioeconomic Factors
-  Educational Factors and Health Literacy
-  Cultural and Social Influences
-  Psychological Factors
-  Healthcare System and Access to Care
-  Environmental and [Facility/Lifestyle]-Related Factors
-  Each: 2 paragraphs — first general, second citing a specific study (Author et al., year found that…)
+Principles of [Topic]
+[List the core principles as a flowing sentence or short paragraph. Cite 1 source.]
+
+Types of [Topic] (if applicable)
+[Bold sub-label for each type, e.g. "Continuous [Topic]:" and "Intermittent [Topic]:" — each with 2–4 sentences of description. Cite sources.]
+
+Components of [Topic]
+[List components briefly, then expand on each as a bold sub-label with 2–3 sentences. Cite sources.]
+
+Positioning / Steps (if applicable)
+[Step 1, Step 2, Step 3 format. Brief and practical. Cite 1 source.]
+
+[1 closing paragraph]: Describe the clinical/care context — what neonatal/healthcare setting this applies to, what knowledge enables the caregiver to do, why understanding is essential. Cite 1–2 sources.
+
+Benefits of [Topic]
+[1–2 paragraphs on key benefits. Cite 2 sources. End with statement on why equipping the population with this knowledge is important.]
+
+[Topic] Practice: The Role of [Population]
+[1–2 paragraphs on what implementation requires from the population — key practices, challenges in resource-constrained settings. Cite 2 sources.]
+
+Knowledge Gaps Among [Population]
+[1–2 paragraphs on what gaps persist globally and in Nigeria specifically. Cite 2 studies with findings. End with a statement on what exacerbates these gaps.]
+
+2.1.3 [Variable 2 — e.g. Preventive Measures / Practices Routinely [Done] by [Population] through/regarding [Topic]]
+Opening paragraph (2–3 sentences): State why this is a critical responsibility for the population. Mention what this requires in terms of knowledge, commitment, and daily practice.
+
+Then write BOLD UNNUMBERED sub-sections for each KEY PRACTICE, each with 2 paragraphs:
+- Paragraph 1: Describe the practice — what it involves, why it matters, how it is done
+- Paragraph 2: Cite a specific study (Author et al., year found/reported that…) supporting the practice. Add clinical implication.
+
+Sub-sections should include (adapt to the topic):
+[Practice 1 — e.g. Continuous Skin-to-Skin Contact / Supplementation Adherence]
+[Practice 2 — e.g. Exclusive Breastfeeding and Nutritional Support / Dietary Modifications]
+[Practice 3 — e.g. Monitoring Infant/Patient Vital Signs and Danger Signs]
+[Practice 4 — e.g. Adherence to Care Plans]
+[Practice 5 — e.g. Family and Healthcare Provider Support]
+[Practice 6 — e.g. Collaboration with Healthcare Providers]
+
+2.1.4 Factors Influencing [Population]'s Knowledge and [Practice/Prevention] of [Topic]
+Opening paragraph (3–4 sentences): Introduce the multifaceted nature of the factors. State why understanding them is essential. Name the categories that will be discussed.
+
+Then write BOLD UNNUMBERED sub-sections, each with EXACTLY 2 paragraphs:
+- Paragraph 1: General discussion of the factor — what it is, how it relates to the topic, what it affects
+- Paragraph 2: "A [year] study by [Author et al.] found that…" — cite a specific study with design, sample, finding, and implication
+
+Sub-sections (use all six):
+Socioeconomic Factors
+Educational Factors and Health Literacy
+Cultural and Social Influences
+Psychological Factors
+Healthcare System and Access to Care
+Environmental and Facility-Related Factors
 
 2.2 Theoretical Framework
-2.2.1 [Theory Name] ([Proponent], [Year])
-  "Figure 1: Diagrammatic Illustration of [Theory Name] ([Proponent], [Year])"
-  "Source: [Original source / Researchgate]"
-  - Opening paragraph: origin, developers, purpose of the theory
-  - "The [Theory Name] is grounded in [X] key constructs:"
-  - List each construct as a bold label + 1 paragraph explanation applying it to this study:
-    Perceived Susceptibility / Prior Related Behavior / Personal Factors / etc.
-  - Final paragraph: "The [Theory] is therefore suitable for exploring how…"
+
+2.2.1 [Theory Name] ([Original Developer], [Year])
+
+[Draw/describe the theory diagram in text format if possible, or write:]
+Figure 1: Diagrammatic Illustration of [Theory Name] ([Developer(s)], [Year])
+Source: Researchgate
+
+Opening paragraph (3–4 sentences): State when the theory was developed, by whom (full names of original developers), and its purpose. State that this study is anchored in this theory and why.
+
+"The [Theory Name] is grounded in [number] key constructs:"
+
+Then list each construct as a BOLD LABEL followed by 1 paragraph:
+[Construct 1 Name]: [Define the construct. Apply it directly to this study's population and topic — e.g. "In the context of this study, [population]'s perception of…"]
+[Construct 2 Name]: [Same structure]
+(Continue for all constructs — minimum 5, maximum 8)
+
+Final paragraph: "The [Theory] is therefore suitable for exploring how the interplay of these [beliefs/factors] affects [the practical implementation / the knowledge and practice] of [topic] among [population] in [setting]."
 
 2.2.2 Application of [Theory Name] to the Study
-  - Restate each construct as a bold sub-heading
-  - For each: 1–2 paragraphs applying specifically to the study topic, population, and setting
-  - End with: "Figure 2: Application of [Theory] to [Study Topic] among [Population]"
-  - "Source: Research Fieldwork [Year]"
+
+Restate each construct as a BOLD HEADING, then write 1–2 paragraphs applying it specifically to this study's topic, population, and setting. Be concrete — name the facility, the population, and specific examples.
+
+End with:
+Figure 2: Application of [Theory Name] to [Topic] among [Population]
+Source: Research Fieldwork [Year]
 
 2.3 Empirical Review
-2.3.1 [Objective 1 topic, e.g. Knowledge of [Population] on [Topic]]
-  - Opening paragraph: introduce the scope of the review
-  - "Globally, …" — 2–3 studies, each: Author et al. (year) + design + sample + setting + key finding + limitation
-  - "In Africa, …" — 2–3 African studies, same structure
-  - "In Nigeria, …" — 1–2 Nigerian studies, same structure
-  - Closing paragraph: "In conclusion, empirical evidence highlights…" summarising gaps
 
-2.3.2 [Objective 2 topic, e.g. Practices Adopted by [Population]]
-  - Same Global → Africa → Nigeria structure with closing paragraph
+2.3.1 [Variable 1 — e.g. Knowledge of [Population] on [Topic]]
+Opening paragraph (3–4 sentences): State the global public health challenge. Describe the role of the primary caregiver. State that knowledge is essential but that findings show inconsistencies. Name the factors shaping knowledge levels.
 
-2.3.3 [Objective 3 topic, e.g. Factors Influencing Knowledge and Practice]
-  - Same structure`,
+Globally, [opening connector sentence about global variation]:
+Write 4 global studies, each as a separate paragraph following this EXACT structure:
+"[Connector word], [Author et al. (year)], in a [study design] [published in / conducted in / involving] [sample size and setting], [used method] and [found/reported/revealed] that [specific percentage or finding]. [Additional detail or contrast]. [Implication or recommendation from the study]."
+Use varied connectors: "For instance,", "Similarly,", "Moreover,", "Furthermore,"
 
-      ch3: `Write CHAPTER THREE: RESEARCH METHODOLOGY. Follow this EXACT structure:
+"In Africa, [opening sentence about Africa-specific burden]:"
+Write 3 African studies with the same Author-design-sample-finding-implication structure.
+End with: "Encouragingly, intervention-based studies have shown promise…" — mention 1–2 intervention studies.
 
-CHAPTER THREE (centered, bold)
-RESEARCH METHODOLOGY (centered, bold)
+"In Nigeria, [opening sentence about Nigeria-specific trends]:"
+Write 2–3 Nigerian studies with the same structure.
+
+Closing paragraph: Begin "In conclusion, empirical evidence highlights persistent inadequacies in [population]'s [variable] of [topic]…" — summarise the key gaps, contributing factors, and promising strategies identified across the review.
+
+2.3.2 [Variable 2 — e.g. [Practice/Implementation] of [Topic] among [Population]]
+Same structure: opening paragraph → Globally → In Africa → In Nigeria → closing paragraph.
+Each section: 3–4 studies, each with Author-design-sample-finding-implication pattern.
+
+2.3.3 Factors Influencing [Variable 1 and Variable 2] of [Topic] Among [Population]
+Same structure: opening paragraph → Globally (2–3 studies) → In Sub-Saharan Africa (2–3 studies) → In Nigeria (2–3 studies) → closing paragraph.
+Final paragraph: "Overall, the literature underscores that [variable 1] and [variable 2] are deeply intertwined with multiple intersecting factors including [list 6–8 factors]. Across diverse settings, [population] who are [positive profile] demonstrate higher levels of [outcomes], whereas those facing [barriers] struggle to [implement/practice] this [life-saving/evidence-based] intervention effectively. Strengthening multi-level interventions that address [individual, family, community, health system, and policy-level factors] are essential strategies for [improving outcomes]."`,
+
+      ch3: `Write CHAPTER THREE: RESEARCH METHODOLOGY. Follow this EXACT GAMZO format:
+
+CHAPTER THREE
+RESEARCH METHODOLOGY
 
 3.1 Research Design
-- 1 paragraph: name the design (e.g. "descriptive survey design"), define it briefly, justify why it suits this study
+1 paragraph: State "This study will use a descriptive quantitative survey design…" Define the design briefly. Justify why it suits this study's objectives (collecting quantifiable data, systematic approach, structured questionnaires, neonatal/healthcare setting).
 
 3.2 Research Setting
-- 1–2 paragraphs: full name of facility, location, type, services offered, why it was chosen
+1–2 paragraphs: State the full name of the facility, its location (state, LGA), the body it is under (e.g. Nigerian Army Medical Corps), and why it was chosen (high attendance of target population, accessibility, established services relevant to the study).
 
 3.3 Target Population
-- 1 paragraph: who comprises the population, what they were doing at the facility, state N (e.g. N = 150)
+1 paragraph: Describe who comprises the target population and what brings them to the facility. State: "A total of [N] [population] will be identified as the accessible population for the study."
 
 3.4 Sample Size and Sampling Technique
-- State: "The sample size was determined using Taro Yamane's formula for a known population:"
-- Show formula: n = N/1 + N(e)^2
-- Show: Where: n = sample size; N = population size = [X]; e = margin of error = 0.05
-- Show full calculation: n = [X]/1 + [X](0.0025) = [X]/[Y] = [result]
-- State final sample (e.g. "Thus, 109 mothers were selected as the study sample.")
-- Describe stratified random sampling: units/strata used, how simple random sampling applied within strata
-- 1 sentence on why this reduces bias
+Write in this EXACT order:
+"The sample size will be determined using Slovin's formula for a known population:"
+
+n = N/1 + N(e)^2
+
+Where:
+- n = sample size
+- N = population size = [state N]
+- e = margin of error = 0.05
+
+n = [N]/1 + [N](0.0025) = [N]/[1+N×0.0025] = [result, round down]
+
+"Thus, [result] [population] will be selected as the study sample. A stratified random sampling technique will be used to ensure that [population] from different units ([list strata, e.g. neonatal intensive care, postnatal wards, and outpatient]) are adequately represented. This approach will help reduce selection bias and enhance the generalizability of findings."
 
 3.5 Instrument for Data Collection
-- "A structured, self-administered questionnaire was used for data collection."
-- "The questionnaire was designed based on a thorough literature review and tailored to address the study's objectives. It consisted of four sections:"
+"A structured, non-standardized self-administered questionnaire will be used for data collection. The questionnaire will be designed based on a thorough literature review and tailored to address the study's objectives. It will consist of four sections:"
+
+Section A: Demographic Information (e.g., [list 5 demographic items relevant to the population]).
+Section B: [Variable 1 — Knowledge] of [topic] among [population] (e.g., [list 3 examples of knowledge items]).
+Section C: [Variable 2 — Practice/Prevention] of [topic] among [population] (e.g., [list 3 examples of practice items]).
+Section D: Factors influencing [population]'s [variable 1 and variable 2] regarding [topic] (e.g., [list 3 examples of factor items]).
+
+"Items in Section B will be formatted as Yes/No questions, while other sections will use a 4-point Likert scale: Strongly Agree (4), Agree (3), Disagree (2), and Strongly Disagree (1)."
+
+3.6 Validity of the Instrument
+1 paragraph: "To ensure face and content validity, the questionnaire will be submitted to the research supervisor for corrections and approval. Each item will be scrutinized to ensure alignment with the research objectives. Questions will be phrased in simple, clear language to ensure [population] of various educational backgrounds can understand and respond accurately."
+
+3.7 Reliability of the Instrument
+1 paragraph: "Reliability will be assessed through a pilot study involving [10–15] [population] at a similar [facility type] who will not be part of the main study. The test-retest method will be employed, and the data obtained will be analyzed using Cronbach's Alpha to determine internal consistency. The resulting coefficient is expected to be at least 0.70, indicating an acceptable level of reliability."
+
+3.8 Method of Data Collection
+1–2 paragraphs of flowing prose (NO sub-bullets or numbered list):
+Cover: ethical approval from [specific ethics committee name], official letter to hospital management, questionnaire distribution during clinic visits, assistance from nurses, informed consent from each participant, researcher available on-site for clarification, immediate collection of completed forms to minimize data loss.
+
+3.9 Method of Data Analysis
+"Data will be cleaned, coded, and analyzed using Statistical Package for Social Sciences (SPSS) version 25.0. The analysis will involve:"
+
+Descriptive Statistics: [State exactly what will be used and for what — frequencies, percentages, means, standard deviations for demographics and knowledge/practice items.]
+
+Inferential Statistics: [State exactly — Chi-square tests for associations between categorical variables, significance level p < 0.05.]
+
+3.10 Ethical Considerations
+1–2 paragraphs of flowing prose: ethical approval obtained before data collection; participants informed about study objectives; confidentiality assured; right to decline or withdraw without consequences; no names or personal identifiers collected; all responses kept strictly confidential; used solely for academic purposes.
+
+REFERENCES
+[Full APA 7th edition reference list — all sources cited in Chapters 1, 2, and 3]
+[Alphabetical by first author surname]
+[Minimum 25 entries]
+[2021–2025 dates only, except foundational theories cited at their original year]
+[Format: Author, A. A., & Author, B. B. (Year). Title of article in sentence case. Journal Name in Italics, Volume(Issue), page–page. https://doi.org/xxxxx]`,
 - Section A: Demographic Information (list 5–6 items)
 - Section B: [Variable 1 — Knowledge] (Yes/No questions)
 - Section C: [Variable 2 — Practices] (4-point Likert: Strongly Agree=4, Agree=3, Disagree=2, Strongly Disagree=1)
@@ -257,110 +364,163 @@ RESEARCH METHODOLOGY (centered, bold)
 3.10 Ethical Considerations
 - 1–2 paragraphs (flowing prose): ethical approval obtained; participants informed of objectives and confidentiality; right to withdraw without consequences; no names/identifiers collected; data used solely for academic purposes`,
 
-      ch4: `Write CHAPTER FOUR: ANALYSIS AND PRESENTATION OF DATA. Follow this EXACT structure:
+      ch4: `Write CHAPTER FOUR: ANALYSIS AND PRESENTATION OF DATA. Follow this EXACT GAMZO format:
 
-CHAPTER FOUR (centered, bold)
-ANALYSIS AND PRESENTATION OF DATA (centered, bold)
+CHAPTER FOUR
+ANALYSIS AND PRESENTATION OF DATA
 
-Opening paragraph (NO section number):
-- "A total of [N] respondents were recruited, and all completed the questionnaires with adequate data for analysis, resulting in a 100% response rate."
-- State what this chapter presents: demographic characteristics, answers to research questions, hypothesis testing
+Opening paragraph (NO section number, NO heading):
+Begin: "A total of [N] respondents were recruited, and all completed the questionnaires with adequate data for analysis, resulting in a 100% response rate." Then state what this chapter presents: "This chapter presents the demographic characteristics of the respondents, answers to the research questions, and hypothesis testing based on the collected data."
 
 4.2 Demographic Characteristics of Respondents
-"Table 4.2.1: Socio-Demographic Characteristics of Respondents"
-"Source: Research field work [Year]"
-- Narrative paragraph: describe age distribution first (dominant group + %, second group + %), then other variables (sex, education, marital status, occupation, parity/experience). Use plausible Nigerian hospital data.
-- "Figure 4.1: Bar Chart Showing Age Distribution of Respondents."
-- "Figure 4.2: Bar Chart Showing [second demographic variable] of Respondents"
-- End with: "This diverse demographic profile provides a robust foundation for analyzing [topic] among [population] in [setting]."
+
+Table 4.2.1: Socio-Demographic Characteristics of Respondents
+Source: Research field work [Year]
+
+[Write a plausible ASCII/text table with columns: Variable | Category | Frequency | Percentage. Include: Age groups (18–25, 26–30, 31–35, 36–40, 41+), Sex (Female/Male), Marital Status, Education Level (Primary/Secondary/Tertiary/No formal), Occupation, and 1–2 topic-specific variables. Use realistic Nigerian hospital frequencies that sum to the sample size N.]
+
+Narrative paragraph: Begin "The demographic profile of the [N] respondents reveals…" Describe age distribution FIRST — state the dominant group (n, %), second group (n, %), etc. Then describe sex distribution, education, marital status. End with: "This diverse demographic profile provides a robust foundation for analyzing [variable 1 and variable 2] related to [topic] among [population] in [facility]."
+
+Figure 4.1: Bar Chart Showing Age Distribution of Respondents.
+Figure 4.2: Bar Chart Showing Education Level of Respondents.
 
 4.3 Answering of Research Questions
-(Use the research questions derived from the objectives)
 
-Research Question One: [state the full question]
-"Table 4.3.1: [Descriptive title matching the question]"
-"Source: Research field work [Year]"
-- Narrative paragraph: "The data from Table 4.3.1 indicates…" — state key findings with n and % for dominant responses, note any interesting patterns
-- "Figure 4.3: Bar Chart Showing [Variable] Among [Population] (N = [n])"
+Research Question One: [State the full research question exactly as written in Chapter 1]
 
-Research Question Two: [state the full question]
-"Table 4.3.2: [Descriptive title]"
-"Source: Research field work [Year]"
-- Narrative paragraph interpreting key findings
-- "Figure 4.4: Bar Chart Showing [Variable] (N = [n])"
+Table 4.3.1: [Descriptive title — e.g. Knowledge of [Topic] Among [Population]]
+Source: Research field work [Year]
 
-Research Question Three: [state the full question]
-"Table 4.3.3: [Descriptive title]"
-"Source: Research field work [Year]"
-- Narrative paragraph interpreting findings
-- "Figure 4.5: Bar Chart Showing [Variable] (N = [n])"
+[Write a plausible ASCII/text table. For knowledge items (Yes/No format): columns = Item | Yes n(%) | No n(%). Include 6–8 knowledge items relevant to the topic. Use realistic frequencies summing to N. Most items should show high positive response (75–95%) for face validity.]
+
+Narrative paragraph: Begin "The data from Table 4.3.1 indicates a generally [high/moderate/low] level of [variable 1] about [topic] among the [N] [population]. A significant majority, [n (X%)] [finding from dominant item]. [Second key finding with n and %]. [Third finding]. [Any noteworthy contrast or pattern]. [Closing analytical sentence linking findings to Nigerian context or practice implication]."
+
+Figure 4.3: Bar Chart Showing [Variable 1] Among [Population] (N = [n])
+
+Research Question Two: [State the full research question exactly as written in Chapter 1]
+
+Table 4.3.2: [Descriptive title — e.g. [Practices/Preventive Measures] Adopted by [Population]]
+Source: Research field work [Year]
+
+[Write a plausible Likert-scale table. Columns = Item | Always n(%) | Often n(%) | Sometimes n(%) | Never n(%). Include 6–8 practice items. Use realistic frequencies. Dominant response should be "Always" or "Often" for most items, with variation.]
+
+Narrative paragraph: Begin "Table 4.3.2 highlights the [practices/measures] adopted by [population] to [implement/prevent] [topic]. The most frequently [practiced/reported] measure was [item], with [n (X%)] always doing so…" Continue describing 3–4 key findings with n and %. Note any gap between knowledge and practice if relevant.
+
+Figure 4.4: Bar Chart Showing [Variable 2] Among [Population] (N = [n])
+
+Research Question Three: [State the full research question exactly as written in Chapter 1]
+
+Table 4.3.3: Factors Influencing [Variable 1 and Variable 2] of [Topic]
+Source: Research field work [Year]
+
+[Write a Likert-scale table. Columns = Item | Strongly Agree n(%) | Agree n(%) | Disagree n(%) | Strongly Disagree n(%). Include 6–8 factor items covering: awareness, access to healthcare, cultural beliefs, socioeconomic factors, healthcare provider support, family support. Use realistic frequencies.]
+
+Narrative paragraph: Begin "Table 4.3.3 identifies factors influencing [population]'s [variable 1 and variable 2] for [topic]." Describe 4–5 key findings with n and %. Name the most strongly endorsed factor first, then others. End with analytical remark on what these factors collectively mean for intervention design.
+
+Figure 4.5: Bar Chart Showing Factors Influencing [Variable 1 and Variable 2] (N = [n])
 
 4.4 Hypothesis Testing
-"Decision Rule: If the P-value is less than 0.05, the null hypothesis (H₀) is rejected, and the alternative hypothesis (H₁) is accepted; otherwise, the null hypothesis is accepted."
+
+Decision Rule: If the P-value is less than 0.05, the null hypothesis (H₀) is rejected, and the alternative hypothesis (H₁) is accepted; otherwise, the null hypothesis is accepted.
 
 Research Hypothesis 1
-H₀: [State H₀₁ in full]
-H₁: [State H₁₁ in full]
-- Paragraph: describe Chi-Square test, which specific items from which sections were used
-- "Table 4.4.1: Cross-Tabulation for Hypothesis 1"
-- "Inference: The Chi-Square value ([X.XX]) exceeds the critical value (3.841), and the P-value ([0.00X]) is less than 0.05. Thus, the null hypothesis is rejected, indicating a statistically significant relationship between [variable A] and [variable B]…"
+H₀: [State H₀₁ exactly as written in Chapter 1 — beginning "There is no relationship between…"]
+H₁: [State the alternative — beginning "There is a significant relationship between…"]
+
+To test this hypothesis, a Chi-Square Test of Independence was conducted using responses from the [variable 1] item "[quote a specific knowledge item from Table 4.3.1]" and the [variable 2] item "[quote a specific practice item from Table 4.3.2]." Responses were categorized as [Yes/No] or [High/Low] accordingly. [State N used in the test].
+
+Table 4.4.1: Cross-Tabulation for Hypothesis 1
+Source: Research field work [Year]
+
+[Write a simple 2×2 cross-tabulation table: rows = knowledge (Yes/No or High/Low), columns = practice (Yes/No or High/Low), with cell frequencies, row totals, and column totals. Make the chi-square statistically significant.]
+
+Inference: The Chi-Square value ([state χ² value, e.g. 7.89]) exceeds the critical value (3.841), and the P-value ([state p-value, e.g. 0.005]) is less than 0.05. Thus, the null hypothesis is rejected, indicating a statistically significant relationship between [variable 1] and [variable 2] among [population] in [facility].
 
 Research Hypothesis 2
-H₀₂: [State H₀₂ in full]
-H₁₂: [State H₁₂ in full]
-- Same structure as Hypothesis 1
-- "Table 4.4.2: Cross-Tabulation for Hypothesis 2"
-- Inference paragraph`,
+H₀₂: [State H₀₂ exactly as written in Chapter 1]
+H₁₂: [State the alternative H₁₂]
 
-      ch5: `Write CHAPTER FIVE: DISCUSSION OF RESULTS. Follow this EXACT structure:
+A Chi-Square Test of Independence was conducted using responses from the factor item "[quote a specific factor item from Table 4.3.3]" and the [variable 2] item "[quote a specific practice item from Table 4.3.2]." Responses were categorized into High (Strongly Agree, Agree) and Low (Disagree, Strongly Disagree). [State N].
 
-CHAPTER FIVE (centered, bold)
-DISCUSSION OF RESULTS (centered, bold)
+Table 4.4.2: Cross-Tabulation for Hypothesis 2
+Source: Research field work [Year]
+
+[Write a 2×2 cross-tabulation table — make the chi-square statistically significant.]
+
+Inference: The Chi-Square value ([state χ² value, e.g. 12.45]) exceeds the critical value (3.841), and the P-value ([state p-value, e.g. 0.0004]) is less than 0.05. Thus, the null hypothesis is rejected, indicating a statistically significant relationship between [factor] and [variable 2] among [population] in [facility].`,
+
+      ch5: `Write CHAPTER FIVE: DISCUSSION OF RESULTS. Follow this EXACT GAMZO format:
+
+CHAPTER FIVE
+DISCUSSION OF RESULTS
 
 5.1 Discussion of Findings
-Opening paragraph: "This study aimed to [restate aim]. [The findings / A total of N participants]…" — restate briefly what was done.
 
-Socio-Demographic Characteristics  ← bold, NO section number
-- 1–2 paragraphs: describe dominant demographic groups and what they mean contextually for the study
+Opening paragraph (NO sub-heading): Begin "This study aimed to [restate aim exactly]. [The findings from the socio-demographic characteristics, variable 1 levels, variable 2, and influencing factors provide a comprehensive understanding of the topic]." State sample size. (3–4 sentences)
 
-Findings on [Research Question 1 Topic]  ← bold, NO section number
-- Para 1: state what was found (cite your own Chapter 4 data — percentages, n values)
-- Para 2: compare with a global study — "This finding aligns with / exceeds / contrasts with [Author et al., year] who reported that…"
-- Para 3: compare with an African study
-- Para 4: compare with a Nigerian study + add contextual analytical remark
+Socio-Demographic Characteristics  [bold, NO section number — on its own line]
+1–2 paragraphs: "The socio-demographic profile of the [N] respondents, as presented in Table 4.2.1, offers critical insights into the factors shaping [variable 1 and variable 2]." Describe dominant age group (n, %), sex distribution, education level, and 1–2 other variables. State what this profile means for interpreting findings in the Nigerian/military/hospital context.
 
-Findings on [Research Question 2 Topic]  ← bold, NO section number
-- Same 4-paragraph structure: own finding → global → African → Nigerian comparison
+Findings on [Variable 1 — e.g. Knowledge of [Topic] Among [Population]]  [bold, NO section number]
+4 paragraphs:
+- Para 1: "The analysis revealed [a high/moderate/low] level of [variable 1], with [X%] [key finding from Table 4.3.1]…" State 2–3 specific findings with percentages from Chapter 4. Note any pattern or contrast.
+- Para 2: "This [finding] [aligns with / far exceeds / contrasts with] [Author et al., year] who [reported/found] that [specific percentage or finding] in [country/setting]." Add why the comparison is significant.
+- Para 3: Compare with an African study: "[Author et al., year] [conducted/reported] in [African country] that [finding]…" State whether your finding is higher, lower, or similar and why.
+- Para 4: Compare with a Nigerian study: "[Author et al., year] in [Nigerian city/state] found that [finding]…" Add contextual analytical remark specific to the Nigerian military or urban setting. State what this means for nursing practice.
 
-Findings on [Research Question 3 Topic]  ← bold, NO section number
-- Same 4-paragraph structure
+Findings on [Variable 2 — e.g. [Practices/Preventive Measures] of [Topic] Among [Population]]  [bold, NO section number]
+Same 4-paragraph structure:
+- Para 1: Key findings from Table 4.3.2 with specific percentages, dominant and notable findings
+- Para 2: Comparison with a global/high-income country study
+- Para 3: Comparison with an African study
+- Para 4: Comparison with a Nigerian study + analytical remark on military/urban context
+
+Findings on Factors Influencing [Variable 1 and Variable 2] of [Topic]  [bold, NO section number]
+Same 4-paragraph structure:
+- Para 1: Key factor findings from Table 4.3.3 — name top 2–3 factors with percentages
+- Para 2: Compare with a global study on factors
+- Para 3: Compare with an African study on factors
+- Para 4: Compare with a Nigerian study + analytical remark on what the multiple influences mean for intervention design
 
 5.2 Implications of the Study to Nursing
-- 6–8 sub-sections, each with a bold heading (e.g. "Enhancing Maternal Education through Nursing Interventions", "Addressing Cultural and Religious Influences", "Strengthening Referral Systems...", "Advocating for Policy Changes...", "Building Community and Family Support Systems", "Enhancing Nursing Education and Training", "Promoting Preventive and Holistic Care", "Addressing Socioeconomic Disparities")
-- Each: 2–3 sentences of specific, actionable implications for nursing practice
 
-Summary of the Study  ← bold, NO section number (NOT "5.3")
-- 1 paragraph summarising: sample, dominant demographics, key findings from each research question, hypothesis outcomes
+Write 6–8 sub-sections. Each sub-section: BOLD HEADING on its own line, followed by 2–4 sentences of specific, actionable implications. NO section numbers. Use these headings (adapt to the topic):
 
-Conclusion  ← bold, NO section number (NOT "5.4")
-- 1–2 paragraphs: draw conclusions from findings, reference specific percentages, note gaps that persist, end with forward-looking statement about improving practice
+Enhancing [Population] Education through Nursing Interventions
+Addressing Cultural and Religious Influences
+Strengthening Referral Systems and Interdisciplinary Collaboration
+Advocating for Policy Changes and Resource Allocation
+Building Community and Family Support Systems
+Enhancing Nursing Education and Training
+Promoting Preventive and Holistic Care
+Addressing Socioeconomic Disparities
 
-Recommendations  ← bold, NO section number (NOT "5.5")
-- 6–8 items, each formatted as:
-  [Bold recommendation title]: [1–2 sentence explanation with a cited study to support] e.g.:
-  "Implement Targeted Education Programs: Develop hospital-based workshops focusing on [specific skills], tailored to address cultural misconceptions, as seen in [Author et al., year]."
+Summary of the Study  [bold, NO section number]
+1 paragraph: "This study assessed [topic] among [N] [population] in [facility]." State: dominant demographics (age, tribe/ethnicity, marital status, education), key findings for variable 1 (with %) and variable 2 (with %), and hypothesis outcomes (both H₀₁ and H₀₂ rejected/retained with χ² values and p-values).
 
-Suggestions for Further Studies  ← bold, NO section number (NOT "5.6")
-- 6 items, each formatted as:
-  [Bold title]: [1–2 sentence explanation] e.g.:
-  "Evaluate Culturally Tailored Interventions: Investigate the effectiveness of education programs designed for Nigeria's cultural context, focusing on [specific outcomes]."
+Conclusion  [bold, NO section number]
+1–2 paragraphs: Draw conclusions directly from findings. Reference specific percentages. Acknowledge what gaps persist despite high overall scores. End with a forward-looking statement about improving practice and neonatal/health outcomes through targeted interventions.
 
-REFERENCES  ← bold, centered, NO section number
-- Full APA 7th edition reference list for ALL chapters
-- Alphabetical by first author surname
-- 20–30 entries minimum
-- 2021–2025 dates (except foundational theories)
-- Format: Author, A. A., & Author, B. B. (Year). Title in sentence case. Journal in Italics, Volume(Issue), page–page. https://doi.org/xxxxx`,
+Recommendations  [bold, NO section number]
+6–8 items. Each formatted EXACTLY as:
+[Bold title of recommendation]: [1–2 sentence explanation referencing a specific strategy and citing a supporting study — e.g. "as seen in [Author et al., year]" or "as recommended by [Author et al., year]".]
+
+Example format:
+Implement Targeted [Topic] Education Programs: Develop hospital-based workshops focusing on [specific skills], tailored to address cultural misconceptions, as seen in [Author et al., year].
+
+Suggestions for Further Studies  [bold, NO section number]
+6 items. Each formatted EXACTLY as:
+[Bold title]: [1–2 sentence description of what to study, where, and what outcomes to measure.]
+
+Example format:
+Evaluate Culturally Tailored Interventions: Investigate the effectiveness of [topic] education programs designed for Nigeria's cultural context, focusing on outcomes like [specific measures].
+
+REFERENCES  [bold, centered, NO section number]
+Full APA 7th edition reference list for ALL chapters combined.
+Alphabetical by first author surname.
+Minimum 25–30 entries.
+2021–2025 dates only (except foundational theories cited at original year).
+Format: Author, A. A., & Author, B. B. (Year). Title of article in sentence case. Journal Name in Italics, Volume(Issue), page–page. https://doi.org/xxxxx`,
     };
 
     const clientCareInstructions = {
