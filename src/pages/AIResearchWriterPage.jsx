@@ -64,7 +64,7 @@ export default function AIResearchWriterPage() {
   const handleGuideFile = (e) => {
     const file = e.target.files?.[0];
     if (!file) return;
-    if (file.size > 500000) { alert('Guide document must be under 500KB.'); return; }
+    if (file.size > 5000000) { alert('Guide document must be under 5MB.'); return; }
     setGuideFileName(file.name);
     const reader = new FileReader();
     reader.onloadend = () => setGuideDoc(reader.result || '');
@@ -83,38 +83,44 @@ You MUST follow the structure, headings, subheadings, writing style, paragraph l
 
 GUIDE DOCUMENT:
 """
-${guideDoc.trim().slice(0, 6000)}${guideDoc.length > 6000 ? '\n[...guide continues — maintain same pattern throughout]' : ''}
+${guideDoc.trim().slice(0, 15000)}${guideDoc.length > 15000 ? '\n[...guide continues — maintain same pattern throughout]' : ''}
 """
 `
       : '';
 
     const citationRules = `
-CITATION RULES (STRICTLY ENFORCED):
-- Use ONLY real, verifiable academic sources published from 2021 onwards
-- Every in-text citation must be in ${citationStyle} 7th edition format: (Author, Year) or Author (Year)
-- Do NOT invent or fabricate author names, journal titles, volume numbers, or article titles
-- Only cite sources that genuinely exist — preferred journals include:
-  * Journal of Advanced Nursing, Nurse Education Today, BMC Nursing, International Journal of Nursing Studies, Nursing Open
-  * The Lancet, BMJ, JAMA, PLOS ONE, New England Journal of Medicine
-  * African Journal of Nursing and Midwifery, West African Journal of Nursing, Nigerian Journal of Medicine
-  * World Health Organization (WHO) reports, Federal Ministry of Health Nigeria reports (2021–2025)
-- If you are uncertain whether a specific source exists, paraphrase the idea in your own words without citing
-- ALL references must be formatted in APA 7th edition:
+CITATION & REFERENCE RULES (STRICTLY ENFORCED — NO EXCEPTIONS):
+
+IN-TEXT CITATIONS:
+- EVERY paragraph must contain at least ONE in-text citation
+- EVERY factual statement, statistic, finding, or claim MUST have an in-text citation immediately after it
+- Format: (Author, Year) or Author (Year) — ${citationStyle} 7th edition strictly
+- Do NOT write any sentence presenting a fact, figure, or finding without a citation
+- Minimum 3–5 citations per page of content
+- Use ONLY real, verifiable academic sources published 2021–2025
+- Preferred journals: Journal of Advanced Nursing, Nurse Education Today, BMC Nursing, International Journal of Nursing Studies, Nursing Open, The Lancet, BMJ, JAMA, PLOS ONE, New England Journal of Medicine, African Journal of Nursing and Midwifery, West African Journal of Nursing, Nigerian Journal of Medicine, WHO reports, Federal Ministry of Health Nigeria reports
+- If uncertain whether a source exists, paraphrase without citing rather than fabricating
+- Foundational nursing theories (Orem, Roy, etc.) may use original publication year
+
+REFERENCES SECTION:
+- Do NOT add a reference list at the end of Chapter 1, 2, 3, or 4
+- ALL references for the entire work must appear ONLY at the end of Chapter 5
+- The references section must be titled: REFERENCES (bold, centered, no section number)
+- List ALL sources cited across all five chapters in one combined alphabetical list
+- Minimum 25–30 unique reference entries
+- Format every entry in ${citationStyle} 7th edition:
   Author, A. A., & Author, B. B. (Year). Title of article in sentence case. Journal Name in Italics, Volume(Issue), page–page. https://doi.org/xxxxx
-- References must be dated 2021–2025 unless citing foundational nursing theories (e.g. Orem, 1991; Roy, 1984)
+- Only 2021–2025 sources except foundational theories
 
 ANTI-PLAGIARISM RULES (TARGET: 0–5% SIMILARITY):
-- NEVER copy, reproduce, or closely paraphrase any sentence from any existing published source
-- Express ALL ideas, concepts, and research findings entirely in your own original words and sentence structures
-- When referencing a researcher's finding, describe WHAT they found using completely different sentence construction from the original
-- Vary sentence length and structure throughout — mix short punchy sentences with longer analytical ones
-- Use active AND passive voice strategically — not exclusively passive
-- Avoid formulaic academic clichés such as: "It is worth noting that...", "In the light of the foregoing...", "It is evident that...", "This study therefore seeks to..."
-- Each paragraph must flow organically from the previous — use transition phrases that fit the specific content
-- Do NOT start multiple consecutive sentences or paragraphs with the same word or structure
-- Write as if explaining to a knowledgeable colleague — precise, thoughtful, and original
-- Add the writer's own analytical commentary after citing each source — do not just string citations together`;
-
+- NEVER copy or closely paraphrase any published sentence
+- Express ALL ideas entirely in your own original words
+- Vary sentence length, structure, and openings throughout
+- Use active AND passive voice strategically
+- Avoid clichés: "It is worth noting", "In the light of the foregoing", "It is evident that"
+- Add your own analytical commentary after every citation
+- Do NOT string citations together without analysis between them`;
+    
     const researchInstructions = {
       ch1: `Write CHAPTER ONE: INTRODUCTION. Follow this EXACT GAMZO format — no deviations whatsoever:
 
@@ -225,8 +231,7 @@ RESEARCH METHODOLOGY
 3.10 Ethical Considerations — 1–2 paragraphs flowing prose
 
 REFERENCES
-Full APA 7th edition list — all sources from Chapters 1, 2, and 3. Minimum 25 entries. 2021–2025 only except foundational theories.`,
-
+NOTE: Do NOT add a reference list at the end of this chapter. All references will appear at the end of Chapter 5 only.`,
       ch4: `Write CHAPTER FOUR: ANALYSIS AND PRESENTATION OF DATA. Follow this EXACT GAMZO format:
 
 CHAPTER FOUR
@@ -269,9 +274,12 @@ Conclusion [bold, no number] — 1–2 paragraphs
 Recommendations [bold, no number] — 6–8 items, bold-title-colon format with cited study each
 Suggestions for Further Studies [bold, no number] — 6 items, bold-title-colon format
 
-REFERENCES [bold, centered]
-Full APA 7th edition list for ALL chapters. Minimum 25–30 entries. Alphabetical.`,
-    };
+REFERENCES [bold, centered, NO section number]
+This is the ONLY place references appear in the entire research work.
+Include ALL sources cited in Chapters 1, 2, 3, 4, and 5 combined.
+Minimum 25–30 entries. Alphabetical by first author surname.
+Format: Author, A. A., & Author, B. B. (Year). Title in sentence case. Journal in Italics, Volume(Issue), page–page. https://doi.org/xxxxx
+2021–2025 only except foundational theories.`,    };
 
     const clientCareInstructions = {
       ch1: `Write a comprehensive CHAPTER ONE: INTRODUCTION for a Client Care Study. Include ALL sections:
@@ -326,12 +334,13 @@ ${topicLbl}: ${topic}
 ${objLbl}:
 ${objectives.trim()}
 
-${guideSection}
-
 ACADEMIC LEVEL: ${level}
 DEPARTMENT/FIELD: ${department || 'Nursing Science'}
-TARGET LENGTH FOR THIS CHAPTER: Approximately ${chapterPages[chapterId] || '10-15'} pages
 WRITING MODE: ${modeLabel}
+
+${guideSection}
+
+TARGET LENGTH FOR THIS CHAPTER: Approximately ${chapterPages[chapterId] || '10-15'} pages
 
 STRICT CHAPTER FORMAT (NACON / NIGERIAN ARMY COLLEGE OF NURSING STANDARD):
 ${instructions[chapterId]}
@@ -838,7 +847,7 @@ ${ch.subtitle.toUpperCase()}`;
                   📎 Upload File
                   <input type="file" accept=".txt,.doc,.docx,.pdf" style={{ display: 'none' }} onChange={handleGuideFile} />
                 </label>
-                <span style={{ fontSize: 12, color: 'var(--text-muted,#718096)' }}>.txt files recommended · max 500KB</span>
+                <span style={{ fontSize: 12, color: 'var(--text-muted,#718096)' }}>.txt files recommended · max 5MB</span>
                 {guideDoc.trim() && (
                   <button onClick={() => { setGuideDoc(''); setGuideFileName(''); }}
                     style={{ marginLeft: 'auto', background: '#EF4444', color: '#fff', border: 'none', borderRadius: 6, padding: '5px 12px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
