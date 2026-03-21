@@ -1,6 +1,6 @@
 // src/pages/services/ServiceRequestPage.jsx
 import { useState } from 'react';
-import { useNavigate } from 'react-router-dom';
+import { useNavigate, useSearchParams } from 'react-router-dom';
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
@@ -15,12 +15,19 @@ export default function ServiceRequestPage({
 }) {
   const { user, profile } = useAuth();
   const navigate = useNavigate();
+  const [searchParams] = useSearchParams();
+
+  // ── Read writer UID from URL (?writer=UID) ────────────────
+  // This is set when a client arrives via a writer's referral/profile link.
+  // If present, the order is assigned directly to that writer.
+  // If absent, the order goes to admin (no assignedWriterId).
+  const writerUidFromUrl = searchParams.get('writer') || profile?.referredBy || null;
 
   const [form, setForm] = useState({
     fullName: user?.displayName || '',
-    email: user?.email || '',
-    phone: '',
-    details: '',
+    email:    user?.email       || '',
+    phone:    '',
+    details:  '',
     deadline: '',
     ...Object.fromEntries(extraFields.map(f => [f.name, ''])),
   });
@@ -40,17 +47,46 @@ export default function ServiceRequestPage({
         serviceTitle,
         ...form,
         status:      'pending',
-        userId:      user?.uid || null,   // queried by subscribeToClientOrders
-        clientId:    user?.uid || null,   // also saved as clientId for compatibility
+        userId:      user?.uid  || null,
+        clientId:    user?.uid  || null,
         name:        form.fullName || profile?.name || '',
-        description: form.details || '',
+        description: form.details  || '',
         referredBy:  profile?.referredBy || null,
-        createdAt:   serverTimestamp(),
-        updatedAt:   serverTimestamp(),
-        adminNote:   '',
-        agreedPrice: null,
+
+        // ── Direct assignment ──────────────────────────────
+        // If the client came via a writer's link, assign immediately.
+        // Admin can still reassign later if needed.
+        assignedWriterId: writerUidFromUrl || null,
+
+        createdAt:     serverTimestamp(),
+        updatedAt:     serverTimestamp(),
+        adminNote:     '',
+        agreedPrice:   null,
         paymentStatus: 'not_set',
       });
+
+      if (writerUidFromUrl) {
+        // Notify the writer that they have a new direct order
+        await addDoc(collection(db, 'notifications'), {
+          userId:    writerUidFromUrl,
+          title:     '📥 New Direct Order!',
+          body:      `${form.fullName} placed a new order: ${serviceTitle}`,
+          type:      'new_order',
+          read:      false,
+          createdAt: serverTimestamp(),
+        });
+      } else {
+        // Notify admin only when no writer is assigned
+        await addDoc(collection(db, 'notifications'), {
+          userId:    'admin',
+          title:     '📋 New Service Request',
+          body:      `${form.fullName} submitted a ${serviceTitle} request`,
+          type:      'new_order',
+          read:      false,
+          createdAt: serverTimestamp(),
+        });
+      }
+
       toast.success('Request submitted! We will review and get back to you shortly.');
       navigate('/dashboard');
     } catch (err) {
@@ -68,12 +104,20 @@ export default function ServiceRequestPage({
           style={{ background: 'transparent', border: '1px solid var(--border, #e2e8f0)', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', color: 'var(--text-secondary, #64748b)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20, fontFamily: 'inherit' }}>
           ← Back
         </button>
+
         <div className="service-icon-badge">{serviceIcon}</div>
         <h1>{serviceTitle}</h1>
         <p className="subtitle">{serviceDesc}</p>
 
+        {/* Writer attribution notice */}
+        {writerUidFromUrl && (
+          <div style={{ background: 'rgba(13,148,136,0.10)', border: '1px solid rgba(13,148,136,0.30)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#0D9488', fontWeight: 600 }}>
+            ✍️ This request will be handled directly by your writer.
+          </div>
+        )}
+
         <div className="alert alert-info" style={{ marginBottom: 28 }}>
-          📋 After submitting, our team will review your request, discuss details & pricing with you, then begin work once agreed.
+          📋 After submitting, our team will review your request, discuss details &amp; pricing with you, then begin work once agreed.
         </div>
 
         <div className="form-group">
