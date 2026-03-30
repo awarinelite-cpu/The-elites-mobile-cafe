@@ -1,0 +1,15 @@
+<!DOCTYPE html>
+<html>
+  <head>
+    <meta charset="utf-8">
+    <title>The Elites Mobile Cafe</title>
+    <script>
+      var path = window.location.pathname;
+      var search = window.location.search;
+      var hash = window.location.hash;
+      var redirect = encodeURIComponent(path + search + hash);
+      window.location.replace('/?redirect=' + redirect);
+    </script>
+  </head>
+  <body></body>
+</html>
