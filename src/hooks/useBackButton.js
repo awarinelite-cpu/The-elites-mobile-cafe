@@ -19,10 +19,14 @@ export default function useBackButton({ onExitPrompt } = {}) {
 
   const isHome = HOME_ROUTES.includes(location.pathname);
 
-  // Push a sentinel state so the next popstate is ours to intercept
+  // Push a sentinel state only on home/exit routes so the next popstate is ours to intercept.
+  // Non-home routes (e.g. /dashboard) must NOT get an extra sentinel — that would
+  // require two back presses to actually navigate back.
   useEffect(() => {
-    window.history.pushState({ _sentinel: true }, '');
-  }, [location.pathname]);
+    if (isHome) {
+      window.history.pushState({ _sentinel: true }, '');
+    }
+  }, [location.pathname, isHome]);
 
   const handlePop = useCallback(() => {
     if (isHome) {
