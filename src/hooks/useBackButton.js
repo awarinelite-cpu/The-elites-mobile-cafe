@@ -9,7 +9,10 @@
 import { useEffect, useRef, useCallback } from 'react';
 import { useNavigate, useLocation } from 'react-router-dom';
 
-const HOME_ROUTES = ['/', '/login', '/register', '/forgot-password'];
+// "Dead-end" routes: back here should prompt exit, not navigate backwards.
+// /dashboard, /admin, /writer are included because going back from them
+// leads to /login — not a useful navigation target.
+const HOME_ROUTES = ['/', '/login', '/register', '/forgot-password', '/dashboard', '/admin', '/writer'];
 
 export default function useBackButton({ onExitPrompt } = {}) {
   const navigate  = useNavigate();
