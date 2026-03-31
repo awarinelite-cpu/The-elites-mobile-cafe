@@ -269,9 +269,8 @@ return (
         />
       )}
     </div>
-  );
-              
-
+  );             
+  
 // ── Order Detail View ─────────────────────────────────────────
 function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
   const [order, setOrder]       = useState(initialOrder);
