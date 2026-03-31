@@ -171,96 +171,106 @@ export default function DashboardPage() {
       />
     );
   }
-
-  return (
+return (
     <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', paddingTop: 64, position: 'relative', overflow: 'hidden' }}>
       <style>{`
-        @keyframes spin{to{transform:rotate(360deg)}}
-        @media (max-width: 768px) {
-          .dash-sidebar { position: fixed !important; top: 64px !important; left: 0 !important; height: calc(100vh - 64px) !important; z-index: 100 !important; transform: translateX(0); transition: transform 0.3s ease !important; box-shadow: 4px 0 20px rgba(0,0,0,0.2); }
-          .dash-sidebar.closed { transform: translateX(-110%) !important; }
-          .dash-main { padding: 16px !important; }
-          .dash-menu-btn { display: flex !important; }
+        @keyframes spin { to { transform: rotate(360deg); } }
+
+        /* Animated Hamburger Button */
+        .hamburger {
+          display: none;
+          flex-direction: column;
+          justify-content: center;
+          gap: 5px;
+          width: 36px;
+          height: 36px;
+          background: var(--bg-card);
+          border: 1px solid var(--border);
+          border-radius: 8px;
+          cursor: pointer;
+          padding: 7px;
         }
-        @media (min-width: 769px) { .dash-sidebar { position: sticky !important; transform: none !important; } .dash-menu-btn { display: none !important; } }
-        .dash-menu-btn { display: none; }
+
+        .hamburger span {
+          width: 20px;
+          height: 2.5px;
+          background: var(--text-primary);
+          border-radius: 2px;
+          transition: all 0.3s ease;
+        }
+
+        .hamburger.active span:nth-child(1) { transform: rotate(45deg) translate(5px, 5px); }
+        .hamburger.active span:nth-child(2) { opacity: 0; transform: translateX(10px); }
+        .hamburger.active span:nth-child(3) { transform: rotate(-45deg) translate(6px, -6px); }
+
+        @media (max-width: 768px) {
+          .hamburger { display: flex !important; }
+          .dash-sidebar {
+            position: fixed !important;
+            top: 64px !important;
+            left: 0 !important;
+            height: calc(100vh - 64px) !important;
+            z-index: 100 !important;
+            transform: translateX(-100%);
+            transition: transform 0.35s cubic-bezier(0.32, 0.72, 0, 1) !important;
+            box-shadow: 8px 0 30px rgba(0,0,0,0.35);
+          }
+          .dash-sidebar.open { transform: translateX(0) !important; }
+          .dash-main { padding: 16px !important; }
+        }
+
+        @media (min-width: 769px) {
+          .dash-sidebar { position: sticky !important; transform: none !important; }
+          .hamburger { display: none !important; }
+        }
       `}</style>
 
-      {/* Sidebar */}
-      <aside className={`dash-sidebar${sidebarOpen ? '' : ' closed'}`} style={{ width: 210, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', padding: '24px 0', flexShrink: 0, top: 64, height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
-        <div style={{ padding: '0 18px 18px', borderBottom: '1px solid var(--border)' }}>
-          <div style={{ fontSize: 10, color: 'var(--text-muted)', letterSpacing: 1.5, textTransform: 'uppercase', marginBottom: 4 }}>Client Portal</div>
-          <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, fontWeight: 700, color: 'var(--text-primary)' }}>{profile?.name?.split(' ')[0] || 'Client'}</div>
-          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginTop: 2, overflow: 'hidden', textOverflow: 'ellipsis', whiteSpace: 'nowrap' }}>{user?.email}</div>
-        </div>
-        <nav style={{ padding: '12px 8px', flex: 1 }}>
-          <Link to="/" onClick={() => setSidebarOpen(false)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', textDecoration: 'none', marginBottom: 3, boxSizing: 'border-box', transition: 'color 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--teal)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-            🏠 Home
-          </Link>
-          {NAV.map(n => {
-            const active = tab === n.id;
-            const badge = n.id === 'orders' ? (unreadOrderIds.size > 0 ? unreadOrderIds.size : null)
-                        : n.id === 'messages' ? (unreadMsgCount > 0 ? unreadMsgCount : null)
-                        : null;
-            return (
-              <button key={n.id} onClick={() => handleTabChange(n.id)}
-                style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 8, background: active ? 'var(--teal-glow)' : 'transparent', border: `1px solid ${active ? 'var(--teal)' : 'transparent'}`, color: active ? 'var(--teal)' : 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginBottom: 3, textAlign: 'left', transition: 'all 0.2s', fontWeight: active ? 600 : 400 }}>
-                <span>{n.label}</span>
-                {badge && <span style={{ background: '#EF4444', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 10, fontWeight: 700, flexShrink: 0 }}>{badge}</span>}
-              </button>
-            );
-          })}
-          <Link to="/request" onClick={() => setSidebarOpen(false)}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, background: 'var(--teal)', color: '#fff', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginTop: 6, textAlign: 'left', fontWeight: 700, textDecoration: 'none', boxSizing: 'border-box' }}>
-            ＋ New Request
-          </Link>
-
-          <button
-            onClick={async () => { await logout(); navigate('/login'); }}
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#FCA5A5', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginTop: 10, textAlign: 'left', fontWeight: 600, transition: 'all 0.2s' }}
-            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.5)'; }}
-            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}>
-            🚪 Logout
-          </button>
-
-        </nav>
+      {/* Sidebar - keep your existing sidebar content here */}
+      <aside className={`dash-sidebar ${sidebarOpen ? 'open' : ''}`} style={{ width: 210, background: 'var(--bg-secondary)', borderRight: '1px solid var(--border)', padding: '24px 0', flexShrink: 0, top: 64, height: 'calc(100vh - 64px)', display: 'flex', flexDirection: 'column' }}>
+        {/* ←←← Paste your original sidebar content here (the <div> with Client Portal, nav links, New Request, Logout, etc.) */}
+        {/* Everything from <div style={{ padding: '0 18px 18px'... to the closing </nav> and </aside> stays exactly the same */}
       </aside>
 
-      {/* Main */}
+      {/* Main Content */}
       <main className="dash-main" style={{ flex: 1, padding: 'clamp(20px,3vw,36px)', overflowY: 'auto', minWidth: 0 }}>
-        {/* ── Hamburger + page title (mobile only) ── */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        {/* Improved Hamburger + Title */}
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           <button
-            className="dash-menu-btn"
-            onClick={() => setSidebarOpen(o => !o)}
-            style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 10px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 18, lineHeight: 1, display: 'none', flexShrink: 0 }}
+            className="hamburger"
+            onClick={() => setSidebarOpen(prev => !prev)}
+            aria-label="Toggle menu"
+            aria-expanded={sidebarOpen}
           >
-            ☰
+            <span></span>
+            <span></span>
+            <span></span>
           </button>
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)' }}>
+
+          <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>
             {NAV.find(n => n.id === tab)?.label || '🏠 Dashboard'}
           </span>
         </div>
+
         <div style={{ marginBottom: 16 }}>
-        {tab === 'overview'  && <Overview stats={stats} orders={orders} loading={loading} s={s} onSelectOrder={setSelectedOrder} />}
-        {tab === 'orders'    && <OrdersTab orders={orders} loading={loading} s={s} user={user} profile={profile} onSelectOrder={setSelectedOrder} onDeleteOrder={async (id) => { if (window.confirm('Delete this order permanently?')) { try { await deleteDoc(doc(db, 'serviceRequests', id)); } catch(e) { alert('Failed to delete.'); } } }} />}
-        {tab === 'topics'    && <TopicsTab user={user} profile={profile} onOrderCreated={() => setTab('orders')} s={s} />}
-        {tab === 'services'  && <ServicesTab user={user} profile={profile} onOrderCreated={() => { setTab('orders'); }} s={s} />}
-        {tab === 'messages'  && <MessagesTab user={user} profile={profile} />}
-        {tab === 'payments'  && <PaymentsTab orders={orders} stats={stats} />}
+          {tab === 'overview' && <Overview stats={stats} orders={orders} loading={loading} s={s} onSelectOrder={setSelectedOrder} />}
+          {tab === 'orders' && <OrdersTab orders={orders} loading={loading} s={s} user={user} profile={profile} onSelectOrder={setSelectedOrder} onDeleteOrder={async (id) => { if (window.confirm('Delete this order permanently?')) { try { await deleteDoc(doc(db, 'serviceRequests', id)); } catch(e) { alert('Failed to delete.'); } } }} />}
+          {tab === 'topics' && <TopicsTab user={user} profile={profile} onOrderCreated={() => setTab('orders')} s={s} />}
+          {tab === 'services' && <ServicesTab user={user} profile={profile} onOrderCreated={() => { setTab('orders'); }} s={s} />}
+          {tab === 'messages' && <MessagesTab user={user} profile={profile} />}
+          {tab === 'payments' && <PaymentsTab orders={orders} stats={stats} />}
         </div>
       </main>
 
+      {/* Mobile Overlay */}
       {sidebarOpen && (
-        <div className="dash-menu-btn" onClick={() => setSidebarOpen(false)}
-          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.4)', zIndex: 99, display: 'block', top: 64 }} />
+        <div 
+          onClick={() => setSidebarOpen(false)}
+          style={{ position: 'fixed', inset: 0, background: 'rgba(0,0,0,0.65)', zIndex: 99, top: 64 }}
+        />
       )}
     </div>
   );
-}
+              
 
 // ── Order Detail View ─────────────────────────────────────────
 function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
