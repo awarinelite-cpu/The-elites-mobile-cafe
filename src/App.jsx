@@ -7,6 +7,7 @@ import { ProtectedRoute } from './components/auth/ProtectedRoute';
 import Navbar from './components/layout/Navbar';
 import Footer from './components/layout/Footer';
 import PWAWrapper from './components/PWAWrapper';
+import BackButtonProvider from './components/BackButtonProvider'; // ← NEW
 
 // Core pages
 import HomePage           from './pages/HomePage';
@@ -137,7 +138,9 @@ export default function App() {
     <AuthProvider>
       <BrowserRouter>
         <PWAWrapper>
-          <Layout />
+          <BackButtonProvider>  {/* ← ADDED: wraps Layout so hook has router context */}
+            <Layout />
+          </BackButtonProvider>
         </PWAWrapper>
         <Toaster
           position="top-right"
