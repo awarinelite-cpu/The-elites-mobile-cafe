@@ -1,3 +1,5 @@
+// src/components/Navbar.jsx
+
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X } from 'lucide-react';
 import { useState, useEffect } from 'react';
@@ -11,7 +13,13 @@ export default function Navbar({ user, onLogout }) {
   const [menuOpen, setMenuOpen] = useState(false);
   const location = useLocation();
 
-  const isActive = (path) => location.pathname === path ? 'active' : '';
+  const isActive = (path) =>
+    location.pathname === path ? 'active' : '';
+
+  // ✅ Close menu on route change
+  useEffect(() => {
+    setMenuOpen(false);
+  }, [location.pathname]);
 
   // ✅ Swipe gesture
   useEffect(() => {
@@ -48,40 +56,48 @@ export default function Navbar({ user, onLogout }) {
         </Link>
 
         {/* Desktop Nav */}
-        <ul className="navbar-links" style={{ display: 'flex' }}>
+        <ul className="navbar-links">
           {user ? (
             <>
-              <li><Link to="/dashboard" className={isActive('/dashboard')}>Dashboard</Link></li>
-              {user.isAdmin && (
-                <li><Link to="/admin" className={isActive('/admin')}>Admin</Link></li>
-              )}
               <li>
-                <button onClick={onLogout} style={{
-                  background: 'rgba(239,68,68,0.15)',
-                  color: '#FCA5A5',
-                  border: '1px solid rgba(239,68,68,0.3)',
-                  padding: '6px 14px',
-                  borderRadius: 8,
-                  cursor: 'pointer',
-                  fontSize: 14,
-                  fontWeight: 600,
-                }}>
+                <Link to="/dashboard" className={isActive('/dashboard')}>
+                  Dashboard
+                </Link>
+              </li>
+
+              {user.isAdmin && (
+                <li>
+                  <Link to="/admin" className={isActive('/admin')}>
+                    Admin
+                  </Link>
+                </li>
+              )}
+
+              <li>
+                <button onClick={onLogout} className="logout-btn">
                   Logout
                 </button>
               </li>
             </>
           ) : (
             <>
-              <li><Link to="/login" className={isActive('/login')}>Login</Link></li>
               <li>
-                <Link to="/register" className="btn btn-teal btn-sm">Register</Link>
+                <Link to="/login" className={isActive('/login')}>
+                  Login
+                </Link>
+              </li>
+
+              <li>
+                <Link to="/register" className="btn btn-teal btn-sm">
+                  Register
+                </Link>
               </li>
             </>
           )}
         </ul>
 
         {/* Right controls */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
+        <div className="nav-right">
           {authUser && <NotificationBell />}
 
           {/* Dark Mode */}
@@ -94,8 +110,7 @@ export default function Navbar({ user, onLogout }) {
 
           {/* Hamburger */}
           <button
-            onClick={() => setMenuOpen(o => !o)}
-            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 6 }}
+            onClick={() => setMenuOpen((o) => !o)}
             className="mobile-menu-btn"
           >
             {menuOpen ? <X size={24} /> : <Menu size={24} />}
@@ -103,97 +118,187 @@ export default function Navbar({ user, onLogout }) {
         </div>
       </div>
 
-      {/* ✅ OVERLAY */}
+      {/* OVERLAY */}
       <div
         onClick={() => setMenuOpen(false)}
-        style={{
-          position: 'fixed',
-          inset: 0,
-          background: 'rgba(0,0,0,0.5)',
-          zIndex: 998,
-          opacity: menuOpen ? 1 : 0,
-          pointerEvents: menuOpen ? 'auto' : 'none',
-          transition: 'opacity 0.3s ease'
-        }}
+        className={`overlay ${menuOpen ? 'show' : ''}`}
       />
 
-      {/* ✅ SIDEBAR */}
-      <div style={{
-        position: 'fixed',
-        top: 0,
-        left: 0,
-        height: '100%',
-        width: 260,
-        background: '#0F172A',
-        padding: 20,
-        zIndex: 999,
-        display: 'flex',
-        flexDirection: 'column',
-        gap: 18,
-        boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+      {/* SIDEBAR */}
+      <div className={`sidebar ${menuOpen ? 'open' : ''}`}>
+        <h2>Menu</h2>
 
-        transform: menuOpen ? 'translateX(0)' : 'translateX(-100%)',
-        transition: 'transform 0.3s ease'
-      }}>
-
-        <h2 style={{ color: '#fff' }}>Menu</h2>
-
-        <Link to="/" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+        <Link to="/" onClick={() => setMenuOpen(false)}>
           🏠 Overview
         </Link>
 
-        <Link to="/services" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+        <Link to="/services" onClick={() => setMenuOpen(false)}>
           📦 Services
         </Link>
 
-        <Link to="/topics" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+        <Link to="/topics" onClick={() => setMenuOpen(false)}>
           📚 Topics
         </Link>
 
         {authUser ? (
           <>
-            <Link to="/dashboard" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+            <Link to="/dashboard" onClick={() => setMenuOpen(false)}>
               📊 Dashboard
             </Link>
 
             {authUser.isAdmin && (
-              <Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+              <Link to="/admin" onClick={() => setMenuOpen(false)}>
                 ⚙️ Admin
               </Link>
             )}
 
             <button
-              onClick={() => { onLogout(); setMenuOpen(false); }}
-              style={{
-                marginTop: 20,
-                padding: 10,
-                background: '#DC2626',
-                color: '#fff',
-                border: 'none',
-                borderRadius: 6,
-                cursor: 'pointer'
-              }}>
+              onClick={() => {
+                onLogout();
+                setMenuOpen(false);
+              }}
+              className="logout-mobile"
+            >
               Logout
             </button>
           </>
         ) : (
           <>
-            <Link to="/login" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+            <Link to="/login" onClick={() => setMenuOpen(false)}>
               🔑 Login
             </Link>
 
-            <Link to="/register" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+            <Link to="/register" onClick={() => setMenuOpen(false)}>
               📝 Register
             </Link>
           </>
         )}
       </div>
 
-      {/* Mobile CSS */}
+      {/* STYLES */}
       <style>{`
+        .navbar {
+          background: #0F172A;
+          color: white;
+          position: sticky;
+          top: 0;
+          z-index: 1000;
+        }
+
+        .navbar-inner {
+          display: flex;
+          justify-content: space-between;
+          align-items: center;
+          padding: 12px 20px;
+        }
+
+        .navbar-brand {
+          color: white;
+          font-weight: bold;
+          text-decoration: none;
+        }
+
+        .navbar-links {
+          display: flex;
+          gap: 20px;
+          list-style: none;
+        }
+
+        .navbar-links a {
+          color: white;
+          text-decoration: none;
+        }
+
+        .nav-right {
+          display: flex;
+          align-items: center;
+          gap: 10px;
+        }
+
+        .dark-toggle {
+          background: transparent;
+          border: none;
+          color: white;
+          cursor: pointer;
+        }
+
+        .mobile-menu-btn {
+          display: none;
+          background: none;
+          border: none;
+          color: white;
+          cursor: pointer;
+        }
+
+        .logout-btn {
+          background: rgba(239,68,68,0.15);
+          color: #FCA5A5;
+          border: 1px solid rgba(239,68,68,0.3);
+          padding: 6px 14px;
+          border-radius: 8px;
+          cursor: pointer;
+        }
+
+        /* Overlay */
+        .overlay {
+          position: fixed;
+          inset: 0;
+          background: rgba(0,0,0,0.5);
+          opacity: 0;
+          pointer-events: none;
+          transition: 0.3s;
+          z-index: 998;
+        }
+
+        .overlay.show {
+          opacity: 1;
+          pointer-events: auto;
+        }
+
+        /* Sidebar */
+        .sidebar {
+          position: fixed;
+          top: 0;
+          left: 0;
+          width: 260px;
+          height: 100%;
+          background: #0F172A;
+          padding: 20px;
+          display: flex;
+          flex-direction: column;
+          gap: 18px;
+          transform: translateX(-100%);
+          transition: 0.3s;
+          z-index: 999;
+        }
+
+        .sidebar.open {
+          transform: translateX(0);
+        }
+
+        .sidebar a {
+          color: white;
+          text-decoration: none;
+        }
+
+        .logout-mobile {
+          margin-top: 20px;
+          padding: 10px;
+          background: #DC2626;
+          color: white;
+          border: none;
+          border-radius: 6px;
+        }
+
+        /* Mobile */
         @media (max-width: 768px) {
-          .navbar-links { display: none !important; }
-          .mobile-menu-btn { display: block !important; }
+          .navbar-links {
+            display: none;
+          }
+
+          .mobile-menu-btn {
+            display: block;
+          }
         }
       `}</style>
     </nav>
