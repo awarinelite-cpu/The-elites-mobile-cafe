@@ -252,7 +252,6 @@ export default function DashboardPage() {
         {tab === 'messages'  && <MessagesTab user={user} profile={profile} />}
         {tab === 'payments'  && <PaymentsTab orders={orders} stats={stats} />}
         </div>
-        </div>{/* closes hamburger+content wrapper */}
       </main>
 
       {sidebarOpen && (
