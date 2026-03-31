@@ -179,6 +179,18 @@ export default function ServicesPage() {
           </div>
         )}
 
+        {/* Page-level back button — visible on the main services list only */}
+        {!selectedService && !showResearchMenu && !submitted && (
+          <button
+            onClick={() => navigate(-1)}
+            style={S.backBtn}
+            onMouseEnter={e => e.currentTarget.style.background = 'rgba(255,255,255,0.1)'}
+            onMouseLeave={e => e.currentTarget.style.background = 'transparent'}
+          >
+            ← Back
+          </button>
+        )}
+
         <div style={S.header}>
           <p style={S.eyebrow}>What can we help you with?</p>
           <h1 style={S.title}>OUR SERVICES</h1>
