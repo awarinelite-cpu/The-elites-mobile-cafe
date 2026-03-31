@@ -1,10 +1,6 @@
-// src/components/Navbar.jsx
-// Drop-in Navbar with dark mode toggle.
-// Usage: <Navbar user={user} onLogout={handleLogout} />
-
 import { Link, useLocation } from 'react-router-dom';
 import { Sun, Moon, Menu, X } from 'lucide-react';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import useDarkMode from '../../hooks/useDarkMode';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../NotificationBell';
@@ -17,7 +13,29 @@ export default function Navbar({ user, onLogout }) {
 
   const isActive = (path) => location.pathname === path ? 'active' : '';
 
-  const links = [];
+  // ✅ Swipe gesture
+  useEffect(() => {
+    let startX = 0;
+
+    const handleTouchStart = (e) => {
+      startX = e.touches[0].clientX;
+    };
+
+    const handleTouchEnd = (e) => {
+      const endX = e.changedTouches[0].clientX;
+
+      if (startX < 50 && endX > 100) setMenuOpen(true);   // open
+      if (startX > 200 && endX < 100) setMenuOpen(false); // close
+    };
+
+    window.addEventListener('touchstart', handleTouchStart);
+    window.addEventListener('touchend', handleTouchEnd);
+
+    return () => {
+      window.removeEventListener('touchstart', handleTouchStart);
+      window.removeEventListener('touchend', handleTouchEnd);
+    };
+  }, []);
 
   return (
     <nav className="navbar">
@@ -31,11 +49,6 @@ export default function Navbar({ user, onLogout }) {
 
         {/* Desktop Nav */}
         <ul className="navbar-links" style={{ display: 'flex' }}>
-          {links.map(l => (
-            <li key={l.to}>
-              <Link to={l.to} className={isActive(l.to)}>{l.label}</Link>
-            </li>
-          ))}
           {user ? (
             <>
               <li><Link to="/dashboard" className={isActive('/dashboard')}>Dashboard</Link></li>
@@ -52,8 +65,6 @@ export default function Navbar({ user, onLogout }) {
                   cursor: 'pointer',
                   fontSize: 14,
                   fontWeight: 600,
-                  fontFamily: 'var(--font-body)',
-                  transition: 'var(--transition)',
                 }}>
                   Logout
                 </button>
@@ -63,9 +74,7 @@ export default function Navbar({ user, onLogout }) {
             <>
               <li><Link to="/login" className={isActive('/login')}>Login</Link></li>
               <li>
-                <Link to="/register" className="btn btn-teal btn-sm" style={{ marginLeft: 4 }}>
-                  Register
-                </Link>
+                <Link to="/register" className="btn btn-teal btn-sm">Register</Link>
               </li>
             </>
           )}
@@ -73,56 +82,114 @@ export default function Navbar({ user, onLogout }) {
 
         {/* Right controls */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-          {/* Notification Bell — only for logged-in users */}
           {authUser && <NotificationBell />}
 
-          {/* Dark Mode Toggle */}
-          <button
-            className="dark-toggle"
-            onClick={toggle}
-            title={dark ? 'Switch to light mode' : 'Switch to dark mode'}
-          >
+          {/* Dark Mode */}
+          <button className="dark-toggle" onClick={toggle}>
             <div className="toggle-track">
               <div className="toggle-thumb" />
             </div>
             {dark ? <Moon size={15} /> : <Sun size={15} />}
           </button>
 
-          {/* Mobile menu button */}
+          {/* Hamburger */}
           <button
             onClick={() => setMenuOpen(o => !o)}
-            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', display: 'none', padding: 6 }}
+            style={{ background: 'none', border: 'none', color: '#fff', cursor: 'pointer', padding: 6 }}
             className="mobile-menu-btn"
           >
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            {menuOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
-      {/* Mobile Dropdown */}
-      {menuOpen && (
-        <div style={{ background: 'var(--nav-bg)', borderTop: '1px solid var(--border)', padding: '12px 20px 20px' }}>
-          {user ? (
-            <>
-              <Link to="/dashboard" onClick={() => setMenuOpen(false)}
-                style={{ display: 'block', padding: '11px 0', color: 'rgba(255,255,255,0.85)', fontSize: 15 }}>
-                Dashboard
-              </Link>
-              <button onClick={() => { onLogout(); setMenuOpen(false); }}
-                style={{ marginTop: 12, width: '100%', padding: '10px', background: 'rgba(239,68,68,0.15)', color: '#FCA5A5', border: '1px solid rgba(239,68,68,0.3)', borderRadius: 8, cursor: 'pointer', fontWeight: 600, fontFamily: 'var(--font-body)' }}>
-                Logout
-              </button>
-            </>
-          ) : (
-            <div style={{ display: 'flex', gap: 10, marginTop: 14 }}>
-              <Link to="/login" onClick={() => setMenuOpen(false)} className="btn btn-outline btn-sm" style={{ flex: 1 }}>Login</Link>
-              <Link to="/register" onClick={() => setMenuOpen(false)} className="btn btn-teal btn-sm" style={{ flex: 1 }}>Register</Link>
-            </div>
-          )}
-        </div>
-      )}
+      {/* ✅ OVERLAY */}
+      <div
+        onClick={() => setMenuOpen(false)}
+        style={{
+          position: 'fixed',
+          inset: 0,
+          background: 'rgba(0,0,0,0.5)',
+          zIndex: 998,
+          opacity: menuOpen ? 1 : 0,
+          pointerEvents: menuOpen ? 'auto' : 'none',
+          transition: 'opacity 0.3s ease'
+        }}
+      />
 
-      {/* Mobile menu CSS */}
+      {/* ✅ SIDEBAR */}
+      <div style={{
+        position: 'fixed',
+        top: 0,
+        left: 0,
+        height: '100%',
+        width: 260,
+        background: '#0F172A',
+        padding: 20,
+        zIndex: 999,
+        display: 'flex',
+        flexDirection: 'column',
+        gap: 18,
+        boxShadow: '4px 0 20px rgba(0,0,0,0.3)',
+
+        transform: menuOpen ? 'translateX(0)' : 'translateX(-100%)',
+        transition: 'transform 0.3s ease'
+      }}>
+
+        <h2 style={{ color: '#fff' }}>Menu</h2>
+
+        <Link to="/" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+          🏠 Overview
+        </Link>
+
+        <Link to="/services" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+          📦 Services
+        </Link>
+
+        <Link to="/topics" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+          📚 Topics
+        </Link>
+
+        {authUser ? (
+          <>
+            <Link to="/dashboard" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+              📊 Dashboard
+            </Link>
+
+            {authUser.isAdmin && (
+              <Link to="/admin" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+                ⚙️ Admin
+              </Link>
+            )}
+
+            <button
+              onClick={() => { onLogout(); setMenuOpen(false); }}
+              style={{
+                marginTop: 20,
+                padding: 10,
+                background: '#DC2626',
+                color: '#fff',
+                border: 'none',
+                borderRadius: 6,
+                cursor: 'pointer'
+              }}>
+              Logout
+            </button>
+          </>
+        ) : (
+          <>
+            <Link to="/login" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+              🔑 Login
+            </Link>
+
+            <Link to="/register" onClick={() => setMenuOpen(false)} style={{ color: '#fff' }}>
+              📝 Register
+            </Link>
+          </>
+        )}
+      </div>
+
+      {/* Mobile CSS */}
       <style>{`
         @media (max-width: 768px) {
           .navbar-links { display: none !important; }
