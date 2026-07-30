@@ -119,12 +119,6 @@ export default function Navbar({ user, onLogout }) {
             </div>
           )}
 
-          {/* Hamburger — hidden on portal pages, they have their own sidebar toggle */}
-          {!hasOwnSidebar && (
-            <button onClick={() => setMenuOpen((o) => !o)} className="mobile-menu-btn" aria-label="Menu">
-              {menuOpen ? <X size={22} /> : <Menu size={22} />}
-            </button>
-          )}
         </div>
       </div>
 
