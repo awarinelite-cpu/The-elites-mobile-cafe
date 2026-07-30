@@ -4,70 +4,74 @@
    Dark Mode: Navy #020B18 base
    ============================================================ */
 
-@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@400;600;700;900&family=DM+Sans:wght@300;400;500;600&display=swap');
+@import url('https://fonts.googleapis.com/css2?family=Fraunces:opsz,wght@9..144,400;9..144,500;9..144,600;9..144,700&family=Inter:wght@400;500;600;700;800&family=IBM+Plex+Mono:wght@400;500&display=swap');
 
 /* ── CSS Variables: Light Mode ─────────────────────────────── */
 :root {
-  /* Brand Colors */
-  --teal:           #0D9488;
-  --teal-light:     #14B8A8;
-  --teal-dark:      #0F766E;
-  --teal-glow:      rgba(13,148,136,0.18);
+  /* Brand Colors — deepened & warmed for a trustworthy academic feel */
+  --teal:           #0F766E;
+  --teal-light:     #2DD4BF;
+  --teal-dark:      #0B5D54;
+  --teal-glow:      rgba(15,118,110,0.16);
 
-  --blue-deep:      #1E3A8A;
-  --blue-mid:       #2563EB;
-  --blue-light:     #3B82F6;
-  --blue-glow:      rgba(30,58,138,0.15);
+  --blue-deep:      #16233F;
+  --blue-mid:       #2C4670;
+  --blue-light:     #4A6FA5;
+  --blue-glow:      rgba(22,35,63,0.14);
 
-  --gold:           #F59E0B;
-  --gold-light:     #FCD34D;
-  --gold-dark:      #D97706;
-  --gold-glow:      rgba(245,158,11,0.18);
+  --gold:           #C87F0A;
+  --gold-light:     #E4A93D;
+  --gold-dark:      #9C6208;
+  --gold-glow:      rgba(200,127,10,0.16);
 
-  --green:          #16A34A;
-  --green-hover:    #15803D;
+  --green:          #2F7D4F;
+  --green-hover:    #256640;
 
-  /* Light Mode Backgrounds */
+  --terracotta:     #B94A2C;
+  --terracotta-glow: rgba(185,74,44,0.14);
+
+  /* Light Mode Backgrounds — warm parchment, not stark white */
   --bg-primary:     #FFFFFF;
-  --bg-secondary:   #F0FDFA;
-  --bg-tertiary:    #F8FAFC;
+  --bg-secondary:   #FBF8F2;
+  --bg-tertiary:    #F5F1E8;
   --bg-card:        #FFFFFF;
-  --bg-overlay:     rgba(255,255,255,0.92);
+  --bg-overlay:     rgba(255,255,255,0.94);
 
-  /* Light Mode Text — high contrast for visibility */
-  --text-primary:   #0A0A0A;
-  --text-secondary: #1A1A2E;
-  --text-muted:     #3D4A5C;
-  --text-hint:      #5A6A7E;
+  /* Light Mode Text — high contrast, warm ink instead of flat black */
+  --text-primary:   #17202E;
+  --text-secondary: #2B3648;
+  --text-muted:     #5B6B7D;
+  --text-hint:      #7C8AA0;
   --text-on-dark:   #FFFFFF;
   --text-on-teal:   #FFFFFF;
 
   /* Borders */
-  --border:         #C8D4E0;
+  --border:         #E1DCCF;
   --border-focus:   var(--teal);
-  --border-card:    #B0BEC5;
+  --border-card:    #E8E2D3;
 
   /* Navbar */
   --nav-bg:         var(--blue-deep);
   --nav-text:       #FFFFFF;
   --nav-border:     var(--teal);
 
-  /* Shadows */
-  --shadow-sm:      0 1px 3px rgba(0,0,0,0.08);
-  --shadow-md:      0 4px 16px rgba(0,0,0,0.10);
-  --shadow-lg:      0 10px 40px rgba(0,0,0,0.13);
-  --shadow-teal:    0 4px 20px rgba(13,148,136,0.25);
-  --shadow-gold:    0 4px 20px rgba(245,158,11,0.25);
+  /* Shadows — softer, diffused, warm-tinted */
+  --shadow-sm:      0 1px 2px rgba(23,32,46,0.06);
+  --shadow-md:      0 6px 20px rgba(23,32,46,0.08);
+  --shadow-lg:      0 16px 48px rgba(23,32,46,0.12);
+  --shadow-teal:    0 6px 24px rgba(15,118,110,0.22);
+  --shadow-gold:    0 6px 24px rgba(200,127,10,0.22);
 
-  /* Typography — Times New Roman everywhere */
-  --font-display:   'Times New Roman', Times, Georgia, serif;
-  --font-body:      'Times New Roman', Times, Georgia, serif;
+  /* Typography — Fraunces for character, Inter for legibility, Plex Mono for data */
+  --font-display:   'Fraunces', Georgia, serif;
+  --font-body:      'Inter', -apple-system, BlinkMacSystemFont, 'Segoe UI', sans-serif;
+  --font-mono:      'IBM Plex Mono', 'SF Mono', Menlo, monospace;
 
-  /* Radius */
+  /* Radius — calmer scale */
   --radius-sm:      6px;
-  --radius-md:      12px;
-  --radius-lg:      20px;
-  --radius-xl:      28px;
+  --radius-md:      10px;
+  --radius-lg:      16px;
+  --radius-xl:      22px;
 
   /* Transitions */
   --transition:     all 0.22s cubic-bezier(0.4,0,0.2,1);
