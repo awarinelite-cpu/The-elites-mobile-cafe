@@ -1,6 +1,6 @@
 # The Elites Mobile Cafe 🎓
 
-Premium research writing platform — React + Firebase + Render + Paystack.
+Research writing marketplace connecting clients with writers. React + Firebase + Vite, deployed on Render, payments via Monnify.
 
 ---
 
@@ -14,18 +14,19 @@ npm install
 ```
 
 ### 2. Configure Firebase
-Copy the env template and fill in your Firebase credentials:
 ```bash
 cp .env.example .env
 ```
+Fill in Firebase project values from **Firebase Console → Project Settings → Your Apps**.
 
-Open `.env` and paste your Firebase project values from **Firebase Console → Project Settings → Your Apps**.
-
-### 3. Configure Paystack
-Add your Paystack public key to `.env`:
+### 3. Configure Monnify
+Add your Monnify credentials to `.env`:
 ```
-VITE_PAYSTACK_PUBLIC_KEY=pk_test_xxxxxxxxxxxx
+VITE_MONNIFY_API_KEY=MK_PROD_xxxxxxxxxx
+VITE_MONNIFY_CONTRACT=xxxxxxxxxx
+VITE_MONNIFY_TEST=false
 ```
+Note: `paystackService.js` is a legacy filename. It now calls the Monnify SDK internally so existing `loadPaystack` / `initiatePayment` imports elsewhere in the app keep working unchanged.
 
 ### 4. Run Locally
 ```bash
@@ -38,9 +39,9 @@ Visit `http://localhost:5173`
 ## 🔥 Firebase Setup
 
 ### Enable Services
-1. **Authentication** → Sign-in method → Enable **Email/Password**
-2. **Firestore Database** → Create database (start in test mode, then apply rules)
-3. **Storage** → Get started
+1. **Authentication** → Email/Password
+2. **Firestore Database**
+3. **Storage**
 
 ### Deploy Security Rules
 ```bash
@@ -50,25 +51,25 @@ firebase init   # select Firestore + Storage + your project
 firebase deploy --only firestore:rules,storage
 ```
 
-### Create Admin User
-1. Register normally on the site
-2. Go to **Firebase Console → Firestore → users collection**
-3. Find your user document
-4. Change `role` from `"client"` to `"admin"`
+### Roles
+Roles are resolved in `AuthContext.jsx` on login:
+- **Admin**: hardcoded emails in `ADMIN_EMAILS`, or `isAdmin: true` / `role: 'Admin'` on the user doc
+- **Writer**: `isWriter: true` or `role: 'writer'` on the user doc
+- **Client**: default for everyone else
+
+To promote a user, edit their document in **Firestore → users collection**.
 
 ---
 
 ## 🌐 Deploy to Render
 
 1. Push code to GitHub
-2. Go to [render.com](https://render.com) → New → Static Site
-3. Connect your GitHub repo
-4. Build command: `npm install && npm run build`
-5. Publish directory: `dist`
-6. Add all `VITE_*` environment variables in Render dashboard
-7. Deploy!
+2. [render.com](https://render.com) → New → Static Site → connect repo
+3. Build command: `npm install && npm run build`
+4. Publish directory: `dist`
+5. Add all `VITE_*` environment variables in Render dashboard
 
-The `render.yaml` file handles routing (SPA fallback to `index.html`).
+`render.yaml` handles SPA routing (fallback to `index.html`).
 
 ---
 
@@ -77,50 +78,75 @@ The `render.yaml` file handles routing (SPA fallback to `index.html`).
 ```
 src/
 ├── firebase/
-│   ├── config.js          # Firebase init
-│   └── authService.js     # Auth functions
+│   ├── config.js             # Firebase init
+│   ├── authService.js        # Auth functions
+│   ├── orderService.js       # Orders, topics, messages, order chat
+│   ├── paystackService.js    # Payment SDK (Monnify under the hood)
+│   ├── storageService.js     # File uploads (drafts, finals)
+│   └── notificationService.js
 ├── context/
-│   └── AuthContext.jsx    # Auth state provider
+│   └── AuthContext.jsx       # Auth state + role resolution
 ├── components/
-│   ├── layout/
-│   │   ├── Navbar.jsx
-│   │   └── Footer.jsx
-│   └── auth/
-│       └── ProtectedRoute.jsx
+│   ├── layout/ (Navbar, Footer)
+│   ├── auth/ProtectedRoute.jsx
+│   ├── PWAWrapper.jsx
+│   └── BackButtonProvider.jsx
 ├── pages/
-│   ├── HomePage.jsx       # Landing page
-│   ├── LoginPage.jsx      # Sign in
-│   ├── RegisterPage.jsx   # Sign up
-│   ├── DashboardPage.jsx  # Client portal (next phase)
-│   └── AdminPage.jsx      # Admin panel (next phase)
-├── styles/
-│   └── globals.css        # Design tokens + animations
+│   ├── HomePage, LoginPage, RegisterPage, ForgotPasswordPage
+│   ├── TopicsPage.jsx          # Browse research topics
+│   ├── ServicesPage.jsx        # Browse service categories
+│   ├── services/                # Per-service request pages
+│   ├── RequestPage.jsx          # Submit a service request
+│   ├── DashboardPage.jsx        # Client portal: orders, chat, payment
+│   ├── WriterPage.jsx           # Writer portal: assigned jobs, wallet
+│   ├── AdminPage.jsx            # Admin panel: orders, quotes, users
+│   ├── AdminDashboard.jsx       # Admin overview/stats
+│   ├── WithdrawalsTab.jsx       # Admin approves writer payouts
+│   ├── NMCNAdminView.jsx
+│   └── AIResearchWriterPage.jsx # Chapter-by-chapter AI writing assistant
 └── main.jsx
 ```
 
 ---
 
-## 🔒 Payment Flow
+## 🔒 Order & Payment Flow
+
+Orders live in Firestore's `serviceRequests` collection (the old `orders` collection is unused).
 
 | Status | Description |
 |--------|-------------|
 | `pending` | Order submitted, awaiting admin quote |
 | `quoted` | Admin sent price, awaiting client acceptance |
-| `advance_paid` | 50% received, work starts |
+| `advance_paid` | 50% received via Monnify, work starts |
 | `in_progress` | Writer working on the document |
-| `preview_ready` | Draft uploaded (watermarked) |
-| `final_paid` | Full payment received — **download unlocked** |
+| `preview_ready` | Watermarked draft uploaded |
+| `final_paid` | Full payment received, download unlocked |
 
-Firebase Storage rules enforce that `/orders/{id}/final/` files are **only readable** when `paymentStatus === 'final_paid'`.
+Firebase Storage rules enforce that `/orders/{id}/final/` files are **only readable** when `paymentStatus === 'final_paid'`, this is enforced server-side, not just hidden in the UI.
 
 ---
 
-## 🛠 Next Steps (Phase 2)
+## 💬 Messaging
 
-- [ ] Client Dashboard (order tracking, messaging)
-- [ ] Admin Dashboard (order management, file upload, quote sending)
-- [ ] Topics browse page
-- [ ] Custom request form
-- [ ] Paystack integration (advance + final payment)
-- [ ] Download gate component
-- [ ] Email notifications (Firebase Functions)
+Two separate chat systems:
+- `adminMessages/{userId}/messages`: general client ↔ admin thread
+- `orderChats/{orderId}/messages`: per-order thread for client, writer, and admin
+
+---
+
+## 💸 Writer Payouts
+
+Writers submit withdrawal requests with bank details. Admin reviews them in `WithdrawalsTab.jsx`, marking as paid or rejected. Either action fires a Firestore notification to the writer.
+
+---
+
+## 🤖 AI Research Writer
+
+`AIResearchWriterPage.jsx` walks a client or writer through a project chapter by chapter (Introduction, Literature Review, Methodology, Results, Discussion), with a separate chapter set for Client Care projects (swaps in a Nursing Care Plan chapter). It can also render bar charts to canvas and export them as PNGs for results sections.
+
+---
+
+## 🏗 Architectural Notes
+
+- Firestore queries generally avoid combining `where` with `orderBy` to sidestep composite index requirements; sorting happens client-side instead.
+- `subscribeToClientOrders` runs two parallel listeners (`clientId` and `userId` fields) and merges/dedupes results, since orders have historically been written with either field.
