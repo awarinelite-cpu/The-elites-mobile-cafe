@@ -91,7 +91,7 @@ export default function RegisterPage() {
   return (
     <div style={{
       minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--dark)', padding: '100px 16px 40px',
+      background: 'var(--dark)', padding: '32px 16px 40px',
       position: 'relative', overflow: 'hidden',
     }}>
       {/* Background glow */}

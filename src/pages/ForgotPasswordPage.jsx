@@ -20,7 +20,7 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)', padding: '100px 16px 40px', position: 'relative' }}>
+    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)', padding: '32px 16px 40px', position: 'relative' }}>
       <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(201,168,76,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ width: '100%', maxWidth: 420 }} className="animate-fade-up">
         <div style={{ textAlign: 'center', marginBottom: 36 }}>
