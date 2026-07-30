@@ -1,5 +1,7 @@
 // src/pages/AIResearchWriterPage.jsx
 import { useState, useRef, useEffect } from 'react';
+import { useAuth } from '../context/AuthContext';
+import { saveGuideDocument, listGuideDocuments, deleteGuideDocument } from '../firebase/guideDocService';
 
 const RESEARCH_CHAPTERS = [
   { id: 'ch1', title: 'Chapter One',   subtitle: 'Introduction',                           color: '#2563EB', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.25)'  },
@@ -113,6 +115,62 @@ const parseChapterFourTables = (text) => {
 
 export default function AIResearchWriterPage() {
 
+  const { user, profile } = useAuth();
+  const canManageGuides = !!(profile?.isAdmin || profile?.isWriter);
+  const [savedGuides, setSavedGuides] = useState([]);
+  const [loadingGuides, setLoadingGuides] = useState(false);
+  const [savingGuide, setSavingGuide] = useState(false);
+  const [showGuideLibrary, setShowGuideLibrary] = useState(false);
+  const [showSaveGuideBox, setShowSaveGuideBox] = useState(false);
+  const [saveGuideName, setSaveGuideName] = useState('');
+
+  const refreshGuideLibrary = async () => {
+    if (!user?.uid || !canManageGuides) return;
+    setLoadingGuides(true);
+    try { setSavedGuides(await listGuideDocuments(user.uid)); }
+    catch (e) { console.error('Failed to load guide library', e); }
+    finally { setLoadingGuides(false); }
+  };
+
+  const handleSaveGuide = async () => {
+    if (!user?.uid || !guideDoc.trim()) return;
+    setSavingGuide(true);
+    try {
+      const { truncated } = await saveGuideDocument({
+        ownerId: user.uid,
+        name: saveGuideName.trim() || guideFileName || 'Untitled Guide',
+        content: guideDoc,
+        fileName: guideFileName,
+      });
+      setSaveGuideName('');
+      setShowSaveGuideBox(false);
+      if (truncated) alert('Guide saved, but it was very large and was trimmed to fit storage limits.');
+      await refreshGuideLibrary();
+    } catch (e) {
+      console.error('Failed to save guide', e);
+      alert('Could not save guide document. Please try again.');
+    } finally {
+      setSavingGuide(false);
+    }
+  };
+
+  const handleUseGuide = (g) => {
+    setGuideDoc(g.content || '');
+    setGuideFileName(g.name || '');
+    setShowGuideLibrary(false);
+  };
+
+  const handleDeleteGuide = async (id) => {
+    if (!confirm('Delete this saved guide document? This cannot be undone.')) return;
+    try {
+      await deleteGuideDocument(id);
+      setSavedGuides(prev => prev.filter(g => g.id !== id));
+    } catch (e) {
+      console.error('Failed to delete guide', e);
+      alert('Could not delete guide document. Please try again.');
+    }
+  };
+
   const [topic, setTopic] = useState(() => sessionStorage.getItem('aiw_topic') || '');
   const [objectives, setObjectives] = useState(() => sessionStorage.getItem('aiw_objectives') || '');
   const [level, setLevel] = useState(() => sessionStorage.getItem('aiw_level') || 'BSc / B.Tech');
@@ -153,9 +211,11 @@ export default function AIResearchWriterPage() {
     sessionStorage.setItem('aiw_showguide', showGuide);
   }, [topic,objectives,level,department,citationStyle,chapterPages,mode,chapters,activeChapter,guideDoc,guideFileName,showGuide]);
 
+  useEffect(() => { refreshGuideLibrary(); }, [user?.uid, canManageGuides]);
+
   const activeChapters = mode === 'clientcare' ? CLIENT_CARE_CHAPTERS : RESEARCH_CHAPTERS;
   const totalChapters  = activeChapters.length;
-  const canGenerate    = topic.trim().length >= 10 && objectives.trim().length >= 20;
+  const canGenerate    = topic.trim().length >= 10;
   const generatedCount = activeChapters.filter(c => chapters[c.id]).length;
 
   const handleGuideFile = (e) => {
@@ -459,7 +519,7 @@ Write ${ch.title.toUpperCase()}: ${ch.subtitle.toUpperCase()} for the following 
 ${topicLbl}: ${topic}
 
 ${objLbl}:
-${objectives.trim()}
+${objectives.trim() ? objectives.trim() : `(Not provided by the user — derive clear, appropriate ${isCC ? 'care study' : 'research'} objectives yourself based on the topic above, and use them consistently across all chapters.)`}
 
 ACADEMIC LEVEL: ${level}
 DEPARTMENT: ${department || 'Nursing Science'}
@@ -928,9 +988,9 @@ ${ch.subtitle.toUpperCase()}`;
               <div style={{fontSize:11,color:topic.length>=10?'#16A34A':'var(--text-muted,#718096)',marginTop:4}}>{topic.length>=10?'✅ Good':`${topic.length}/10 min`}</div>
             </div>
             <div>
-              <label style={lbl}>{mode==='clientcare'?'Care Study Objectives *':'Research Objectives *'}</label>
-              <textarea value={objectives} onChange={e=>setObjectives(e.target.value)} rows={5} placeholder={'1. To assess the level of knowledge...\n2. To determine the practice...\n3. To identify factors influencing...\n4. To examine the relationship between...'} style={{...inp,resize:'vertical',lineHeight:1.7}}/>
-              <div style={{fontSize:11,color:objectives.length>=20?'#16A34A':'var(--text-muted,#718096)',marginTop:4}}>{objectives.length>=20?'✅ Set':`${objectives.length}/20 min`}</div>
+              <label style={lbl}>{mode==='clientcare'?'Care Study Objectives':'Research Objectives'} <span style={{fontSize:11,fontWeight:400,color:'var(--text-muted,#718096)'}}>(optional)</span></label>
+              <textarea value={objectives} onChange={e=>setObjectives(e.target.value)} rows={5} placeholder={'Leave blank and the AI will draft objectives from your topic, or list your own:\n1. To assess the level of knowledge...\n2. To determine the practice...\n3. To identify factors influencing...\n4. To examine the relationship between...'} style={{...inp,resize:'vertical',lineHeight:1.7}}/>
+              <div style={{fontSize:11,color:'var(--text-muted,#718096)',marginTop:4}}>{objectives.trim()?`✅ Set — ${objectives.length} characters`:'Optional — AI will generate objectives from your topic if left blank'}</div>
             </div>
             <div style={{display:'grid',gridTemplateColumns:'1fr 1fr',gap:12}}>
               <div>
@@ -976,7 +1036,7 @@ ${ch.subtitle.toUpperCase()}`;
               <div style={{background:'rgba(37,99,235,0.07)',border:'1px solid rgba(37,99,235,0.2)',borderRadius:8,padding:'10px 14px',margin:'14px 0',fontSize:13,color:'#60A5FA'}}>
                 ℹ️ The AI will treat this as the <strong>mandatory format authority</strong> — strictly following its structure, headings, and depth for every chapter.
               </div>
-              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12}}>
+              <div style={{display:'flex',alignItems:'center',gap:10,marginBottom:12,flexWrap:'wrap'}}>
                 <label style={{display:'inline-flex',alignItems:'center',gap:6,background:accentColor,color:'#fff',borderRadius:8,padding:'8px 16px',cursor:'pointer',fontWeight:600,fontSize:13,flexShrink:0}}>
                   📎 Upload File<input type="file" accept=".txt,.doc,.docx,.pdf" style={{display:'none'}} onChange={handleGuideFile}/>
                 </label>
@@ -985,6 +1045,47 @@ ${ch.subtitle.toUpperCase()}`;
               </div>
               <label style={lbl}>Or paste document text directly</label>
               <textarea value={guideDoc} onChange={e=>{setGuideDoc(e.target.value);setGuideFileName('');sessionStorage.setItem('aiw_guide',e.target.value);}} rows={8} placeholder="Paste chapters 1–5 here. AI will strictly follow this format." style={{...inp,resize:'vertical',lineHeight:1.7,fontSize:13}}/>
+
+              {canManageGuides && (
+                <div style={{marginTop:16,paddingTop:16,borderTop:'1px solid var(--border,#2d3748)'}}>
+                  <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
+                    <button type="button" onClick={()=>{setShowGuideLibrary(v=>!v);setShowSaveGuideBox(false);if(!showGuideLibrary)refreshGuideLibrary();}} style={{background:'transparent',color:accentColor,border:`1px solid ${accentColor}60`,borderRadius:8,padding:'7px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
+                      📚 My Saved Guides {savedGuides.length>0?`(${savedGuides.length})`:''}
+                    </button>
+                    {guideDoc.trim() && (
+                      <button type="button" onClick={()=>{setShowSaveGuideBox(v=>!v);setShowGuideLibrary(false);setSaveGuideName(guideFileName||'');}} style={{background:'transparent',color:'#16A34A',border:'1px solid rgba(22,163,74,0.4)',borderRadius:8,padding:'7px 14px',cursor:'pointer',fontSize:12,fontWeight:700}}>
+                        💾 Save This Guide
+                      </button>
+                    )}
+                  </div>
+
+                  {showSaveGuideBox && (
+                    <div style={{display:'flex',gap:8,marginTop:10,flexWrap:'wrap'}}>
+                      <input value={saveGuideName} onChange={e=>setSaveGuideName(e.target.value)} placeholder="Name this guide, e.g. NACON Diabetes Care Study Format" style={{...inp,flex:1,minWidth:200}}/>
+                      <button type="button" disabled={savingGuide} onClick={handleSaveGuide} style={{background:'#16A34A',color:'#fff',border:'none',borderRadius:8,padding:'0 16px',cursor:savingGuide?'default':'pointer',fontWeight:700,fontSize:13,opacity:savingGuide?0.7:1}}>
+                        {savingGuide?'Saving…':'Save'}
+                      </button>
+                    </div>
+                  )}
+
+                  {showGuideLibrary && (
+                    <div style={{marginTop:10,display:'flex',flexDirection:'column',gap:8,maxHeight:260,overflowY:'auto'}}>
+                      {loadingGuides && <div style={{fontSize:12,color:'var(--text-muted,#718096)'}}>Loading saved guides…</div>}
+                      {!loadingGuides && savedGuides.length===0 && <div style={{fontSize:12,color:'var(--text-muted,#718096)'}}>No saved guides yet. Load or paste a guide above, then tap "Save This Guide".</div>}
+                      {savedGuides.map(g=>(
+                        <div key={g.id} style={{display:'flex',alignItems:'center',gap:8,background:'var(--bg-secondary,#151b2c)',border:'1px solid var(--border,#2d3748)',borderRadius:8,padding:'8px 10px'}}>
+                          <div style={{flex:1,minWidth:0}}>
+                            <div style={{fontSize:13,fontWeight:700,color:'var(--text-primary,#e2e8f0)',whiteSpace:'nowrap',overflow:'hidden',textOverflow:'ellipsis'}}>{g.name}</div>
+                            <div style={{fontSize:11,color:'var(--text-muted,#718096)'}}>{(g.wordCount||0).toLocaleString()} words{g.truncated?' · trimmed':''}</div>
+                          </div>
+                          <button type="button" onClick={()=>handleUseGuide(g)} style={{background:accentColor,color:'#fff',border:'none',borderRadius:6,padding:'6px 12px',cursor:'pointer',fontSize:12,fontWeight:700,flexShrink:0}}>Use</button>
+                          <button type="button" onClick={()=>handleDeleteGuide(g.id)} style={{background:'transparent',color:'#EF4444',border:'1px solid rgba(239,68,68,0.4)',borderRadius:6,padding:'6px 10px',cursor:'pointer',fontSize:12,fontWeight:700,flexShrink:0}}>✕</button>
+                        </div>
+                      ))}
+                    </div>
+                  )}
+                </div>
+              )}
             </div>
           )}
         </div>

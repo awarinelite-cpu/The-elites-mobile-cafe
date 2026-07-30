@@ -146,6 +146,19 @@ service cloud.firestore {
         resource.data.userId == request.auth.uid;
     }
 
+    // ── AI WRITER GUIDE DOCUMENTS ────────────────────────────────────────
+    // Admins/writers save reusable format guides for the AI Research Writer.
+    match /guideDocuments/{docId} {
+      allow create: if request.auth != null && (isAdmin() || isWriter()) &&
+        request.resource.data.ownerId == request.auth.uid;
+      allow read, list: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+      allow update, delete: if request.auth != null && (
+        resource.data.ownerId == request.auth.uid || isAdmin()
+      );
+    }
+
     // ── HELPER FUNCTIONS ─────────────────────────────────────────────────
     function isAdmin() {
       let data = get(/databases/$(database)/documents/users/$(request.auth.uid)).data;
