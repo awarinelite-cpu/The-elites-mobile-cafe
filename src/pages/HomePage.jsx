@@ -61,8 +61,8 @@ export default function HomePage() {
                 Submit a Request <ArrowRight size={16} />
               </Link>
             ) : (
-              <Link to="/register" className="ec-btn ec-btn-primary">
-                Create Free Account <ArrowRight size={16} />
+              <Link to="/login" className="ec-btn ec-btn-primary">
+                Sign In to Submit Request <ArrowRight size={16} />
               </Link>
             )}
             <Link to="/services" className="ec-btn ec-btn-ghost">Browse Services</Link>
@@ -120,8 +120,8 @@ export default function HomePage() {
         <div className="ec-cta-block">
           <h2>Ready to Get Started?</h2>
           <p>Join students across Nigeria who trust Elite Mobile Cafe for their academic success.</p>
-          <Link to={profile ? '/request' : '/register'} className="ec-btn ec-btn-light">
-            {profile ? 'Submit a Request Now' : 'Create Free Account'} <ArrowRight size={16} />
+          <Link to={profile ? '/request' : '/login'} className="ec-btn ec-btn-light">
+            {profile ? 'Submit a Request Now' : 'Sign In to Submit Request'} <ArrowRight size={16} />
           </Link>
         </div>
       </section>
