@@ -182,8 +182,8 @@ export default function AIResearchWriterPage() {
   const [department, setDepartment] = useState(() => sessionStorage.getItem('aiw_department') || '');
   const [citationStyle, setCitationStyle] = useState(() => sessionStorage.getItem('aiw_citation') || 'APA');
   const [chapterPages, setChapterPages] = useState(() => {
-    try { return JSON.parse(sessionStorage.getItem('aiw_pages')) || { ch1:'10-15',ch2:'15-20',ch3:'15-20',ch4:'15-20',ch5:'10-15' }; }
-    catch { return { ch1:'10-15',ch2:'15-20',ch3:'15-20',ch4:'15-20',ch5:'10-15' }; }
+    try { return JSON.parse(sessionStorage.getItem('aiw_pages')) || {}; }
+    catch { return {}; }
   });
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [downloadingPdf,  setDownloadingPdf]  = useState(false);
@@ -1068,7 +1068,7 @@ ${ch.subtitle.toUpperCase()}`;
                 {activeChapters.map(ch=>(
                   <div key={ch.id}>
                     <label style={{display:'block',fontSize:11,fontWeight:600,color:ch.color,marginBottom:4}}>{ch.title.replace('Chapter ','Ch.')}</label>
-                    <input type="text" value={chapterPages[ch.id]||'10-15'} onChange={e=>setChapterPages(p=>({...p,[ch.id]:e.target.value}))} placeholder="e.g. 10-15" style={{...inp,padding:'8px 10px',fontSize:13}}/>
+                    <input type="text" value={chapterPages[ch.id]||''} onChange={e=>setChapterPages(p=>({...p,[ch.id]:e.target.value}))} placeholder="e.g. 10-15" style={{...inp,padding:'8px 10px',fontSize:13}}/>
                   </div>
                 ))}
               </div>
