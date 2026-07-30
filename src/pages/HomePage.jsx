@@ -56,15 +56,9 @@ export default function HomePage() {
             Or use our AI Research Writer for an instant chapter-by-chapter draft.
           </p>
           <div className="ec-cta-row">
-            {profile ? (
-              <Link to="/request" className="ec-btn ec-btn-primary">
-                Submit a Request <ArrowRight size={16} />
-              </Link>
-            ) : (
-              <Link to="/login" className="ec-btn ec-btn-primary">
-                Sign In to Submit Request <ArrowRight size={16} />
-              </Link>
-            )}
+            <Link to={profile ? dashboardHref : '/login'} className="ec-btn ec-btn-primary">
+              Sign In <ArrowRight size={16} />
+            </Link>
             <Link to="/services" className="ec-btn ec-btn-ghost">Browse Services</Link>
           </div>
         </div>
