@@ -988,18 +988,6 @@ export default function AdminPage() {
 
         {/* Nav groups */}
         <nav style={{ padding: '12px 8px', flex: 1 }}>
-          <a href="/"
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', textDecoration: 'none', marginBottom: 10, boxSizing: 'border-box', transition: 'color 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--teal)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-            🏠 Home
-          </a>
-          <a href="/services"
-            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', textDecoration: 'none', marginBottom: 10, boxSizing: 'border-box', transition: 'color 0.2s' }}
-            onMouseEnter={e => e.currentTarget.style.color = 'var(--teal)'}
-            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
-            🛍️ Services
-          </a>
           {navGroups.map(grp => {
             const items = NAV.filter(n => grp.keys.includes(n.key));
             if (!items.length) return null;
