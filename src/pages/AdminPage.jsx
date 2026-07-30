@@ -1130,7 +1130,22 @@ export default function AdminPage() {
                   <button onClick={() => { setSelectedRequest(null); setOrderChatMessages([]); if (orderChatUnsub) { orderChatUnsub(); setOrderChatUnsub(null); } }} style={s.btn('#eee', '#333')}>✕ Close</button>
                 </div>
 
-                {[['Service', selectedRequest.serviceTitle],['Client', selectedRequest.name],['Email', selectedRequest.email],['Phone', selectedRequest.phone],['Description', selectedRequest.description],['Deadline', selectedRequest.deadline]].map(([label, val]) => val ? (
+                {selectedRequest.serviceTitle && (
+                  <div style={{ marginBottom: 12 }}>
+                    <div style={s.lbl}>Service</div>
+                    <div style={{ fontSize: 14, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: 8 }}>{selectedRequest.serviceTitle}</div>
+                    <button
+                      onClick={() => {
+                        sessionStorage.setItem('aiw_topic', selectedRequest.serviceTitle || selectedRequest.topicTitle || '');
+                        setTab('ai_writer');
+                      }}
+                      style={{ marginTop: 8, display: 'inline-flex', alignItems: 'center', gap: 6, background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', fontSize: 12, fontWeight: 700 }}>
+                      🤖 Send to AI Writer
+                    </button>
+                  </div>
+                )}
+
+                {[['Client', selectedRequest.name],['Email', selectedRequest.email],['Phone', selectedRequest.phone],['Description', selectedRequest.description],['Deadline', selectedRequest.deadline]].map(([label, val]) => val ? (
                   <div key={label} style={{ marginBottom: 12 }}>
                     <div style={s.lbl}>{label}</div>
                     <div style={{ fontSize: 14, color: 'var(--text-secondary)', background: 'var(--bg-tertiary)', padding: '8px 12px', borderRadius: 8 }}>{val}</div>
