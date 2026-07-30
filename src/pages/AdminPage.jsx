@@ -948,7 +948,7 @@ export default function AdminPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', paddingTop: 64, position: 'relative' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', position: 'relative' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes fadeIn{from{opacity:0;transform:translateY(6px)}to{opacity:1;transform:translateY(0)}}
@@ -993,6 +993,12 @@ export default function AdminPage() {
             onMouseEnter={e => e.currentTarget.style.color = 'var(--teal)'}
             onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
             🏠 Home
+          </a>
+          <a href="/services"
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', textDecoration: 'none', marginBottom: 10, boxSizing: 'border-box', transition: 'color 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.color = 'var(--teal)'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+            🛍️ Services
           </a>
           {navGroups.map(grp => {
             const items = NAV.filter(n => grp.keys.includes(n.key));

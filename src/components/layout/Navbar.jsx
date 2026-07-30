@@ -22,6 +22,12 @@ export default function Navbar({ user, onLogout }) {
   const location = useLocation();
   const avatarRef = useRef(null);
 
+  // Admin/Dashboard/Writer pages have their own built-in sidebar + toggle,
+  // so the top navbar's hamburger would just duplicate it.
+  const hasOwnSidebar = ['/dashboard', '/admin', '/writer'].some(
+    (p) => location.pathname === p || location.pathname.startsWith(p + '/')
+  );
+
   const isActive = (path) => location.pathname === path;
   const doLogout = onLogout || authLogout;
 
@@ -113,17 +119,20 @@ export default function Navbar({ user, onLogout }) {
             </div>
           )}
 
-          {/* Hamburger */}
-          <button onClick={() => setMenuOpen((o) => !o)} className="mobile-menu-btn" aria-label="Menu">
-            {menuOpen ? <X size={22} /> : <Menu size={22} />}
-          </button>
+          {/* Hamburger — hidden on portal pages, they have their own sidebar toggle */}
+          {!hasOwnSidebar && (
+            <button onClick={() => setMenuOpen((o) => !o)} className="mobile-menu-btn" aria-label="Menu">
+              {menuOpen ? <X size={22} /> : <Menu size={22} />}
+            </button>
+          )}
         </div>
       </div>
 
       {/* OVERLAY */}
-      <div onClick={() => setMenuOpen(false)} className={`overlay ${menuOpen ? 'show' : ''}`} />
+      {!hasOwnSidebar && <div onClick={() => setMenuOpen(false)} className={`overlay ${menuOpen ? 'show' : ''}`} />}
 
       {/* SIDEBAR */}
+      {!hasOwnSidebar && (
       <div className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
           <span className="brand-mark"><GraduationCap size={18} /></span>
@@ -153,6 +162,7 @@ export default function Navbar({ user, onLogout }) {
           </>
         )}
       </div>
+      )}
 
       {/* STYLES */}
       <style>{`

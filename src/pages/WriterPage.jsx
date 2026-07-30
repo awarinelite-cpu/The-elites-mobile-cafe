@@ -33,7 +33,7 @@ const STATUS_COLORS = {
 };
 
 export default function WriterPage() {
-  const { user, profile } = useAuth();
+  const { user, profile, logout } = useAuth();
   const navigate = useNavigate();
   const [tab, setTab] = useState('overview');
   const [sidebarOpen, setSidebarOpen] = useState(true);
@@ -173,7 +173,7 @@ export default function WriterPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', paddingTop: 64, position: 'relative', overflow: 'hidden' }}>
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)', display: 'flex', position: 'relative', overflow: 'hidden' }}>
       <style>{`
         @keyframes spin{to{transform:rotate(360deg)}}
         @keyframes pulse{0%,100%{opacity:1}50%{opacity:0.5}}
@@ -201,7 +201,13 @@ export default function WriterPage() {
             {pendingPay > 0 && <span style={{ background: 'rgba(245,158,11,0.15)', color: '#D97706', borderRadius: 20, padding: '2px 10px', fontSize: 11, fontWeight: 700 }}>₦{pendingPay.toLocaleString()} pending</span>}
           </div>
         </div>
-        <nav style={{ padding: '12px 8px', flex: 1 }}>
+        <nav style={{ padding: '12px 8px', flex: 1, display: 'flex', flexDirection: 'column' }}>
+          <a href="/"
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, color: 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', textDecoration: 'none', marginBottom: 10, boxSizing: 'border-box', transition: 'color 0.2s' }}
+            onMouseEnter={e => e.currentTarget.style.color = '#7C3AED'}
+            onMouseLeave={e => e.currentTarget.style.color = 'var(--text-secondary)'}>
+            🏠 Home
+          </a>
           {NAV.map(n => {
             const active = tab === n.id;
             const badge = n.id === 'new_orders' && newOrders.length > 0 ? newOrders.length
@@ -221,6 +227,13 @@ export default function WriterPage() {
               </button>
             );
           })}
+          <button
+            onClick={async () => { await logout(); navigate('/login'); }}
+            style={{ width: '100%', display: 'flex', alignItems: 'center', gap: 8, padding: '9px 12px', borderRadius: 8, background: 'rgba(239,68,68,0.1)', border: '1px solid rgba(239,68,68,0.25)', color: '#FCA5A5', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginTop: 10, textAlign: 'left', fontWeight: 600, transition: 'all 0.2s' }}
+            onMouseEnter={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.2)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.5)'; }}
+            onMouseLeave={e => { e.currentTarget.style.background = 'rgba(239,68,68,0.1)'; e.currentTarget.style.borderColor = 'rgba(239,68,68,0.25)'; }}>
+            🚪 Logout
+          </button>
         </nav>
       </aside>
 
