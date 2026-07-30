@@ -156,7 +156,8 @@ export default function HomePage() {
           background:
             radial-gradient(circle at 15% 20%, var(--teal-glow), transparent 45%),
             radial-gradient(circle at 85% 0%, var(--gold-glow), transparent 40%),
-            linear-gradient(180deg, var(--blue-deep) 0%, #1B2C4F 60%, var(--teal-dark) 100%);
+            linear-gradient(180deg, rgba(22,35,63,0.93) 0%, rgba(27,44,79,0.90) 55%, rgba(11,93,84,0.93) 100%),
+            url('https://images.unsplash.com/photo-1523240795612-9a054b0db644?w=1400&q=80') center 30% / cover no-repeat;
           padding: 74px 20px 60px;
           text-align: center;
         }
