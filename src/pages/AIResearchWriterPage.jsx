@@ -2,6 +2,7 @@
 import { useState, useRef, useEffect } from 'react';
 import { useAuth } from '../context/AuthContext';
 import { saveGuideDocument, listGuideDocuments, deleteGuideDocument } from '../firebase/guideDocService';
+import mammoth from 'mammoth';
 
 const RESEARCH_CHAPTERS = [
   { id: 'ch1', title: 'Chapter One',   subtitle: 'Introduction',                           color: '#2563EB', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.25)'  },
@@ -148,7 +149,10 @@ export default function AIResearchWriterPage() {
       await refreshGuideLibrary();
     } catch (e) {
       console.error('Failed to save guide', e);
-      alert('Could not save guide document. Please try again.');
+      const permissionIssue = e?.code === 'permission-denied' || /permission/i.test(e?.message || '');
+      alert(permissionIssue
+        ? 'Could not save guide document: permission denied. The Firestore security rules for guideDocuments may not be deployed yet — ask your developer to run "firebase deploy --only firestore:rules".'
+        : `Could not save guide document: ${e?.message || 'please try again.'}`);
     } finally {
       setSavingGuide(false);
     }
@@ -157,6 +161,7 @@ export default function AIResearchWriterPage() {
   const handleUseGuide = (g) => {
     setGuideDoc(g.content || '');
     setGuideFileName(g.name || '');
+    setGuideIsFile(true);
     setShowGuideLibrary(false);
   };
 
@@ -186,6 +191,7 @@ export default function AIResearchWriterPage() {
   const [aiProvider, setAiProvider] = useState(() => sessionStorage.getItem('aiw_provider') || 'claude');
   const [guideDoc, setGuideDoc] = useState(() => sessionStorage.getItem('aiw_guide') || '');
   const [guideFileName, setGuideFileName] = useState(() => sessionStorage.getItem('aiw_guidename') || '');
+  const [guideIsFile, setGuideIsFile] = useState(() => sessionStorage.getItem('aiw_guideisfile') === 'true');
   const [showGuide, setShowGuide] = useState(() => sessionStorage.getItem('aiw_showguide') === 'true');
   const [activeChapter, setActiveChapter] = useState(() => sessionStorage.getItem('aiw_activechapter') || null);
   const [chapters, setChapters] = useState(() => {
@@ -210,8 +216,9 @@ export default function AIResearchWriterPage() {
     sessionStorage.setItem('aiw_activechapter', activeChapter || '');
     sessionStorage.setItem('aiw_guide', guideDoc);
     sessionStorage.setItem('aiw_guidename', guideFileName);
+    sessionStorage.setItem('aiw_guideisfile', guideIsFile);
     sessionStorage.setItem('aiw_showguide', showGuide);
-  }, [topic,objectives,level,department,citationStyle,chapterPages,mode,aiProvider,chapters,activeChapter,guideDoc,guideFileName,showGuide]);
+  }, [topic,objectives,level,department,citationStyle,chapterPages,mode,aiProvider,chapters,activeChapter,guideDoc,guideFileName,guideIsFile,showGuide]);
 
   useEffect(() => { refreshGuideLibrary(); }, [user?.uid, canManageGuides]);
 
@@ -220,14 +227,32 @@ export default function AIResearchWriterPage() {
   const canGenerate    = topic.trim().length >= 10;
   const generatedCount = activeChapters.filter(c => chapters[c.id]).length;
 
-  const handleGuideFile = (e) => {
+  const handleGuideFile = async (e) => {
     const file = e.target.files?.[0];
+    e.target.value = '';
     if (!file) return;
     if (file.size > 5000000) { alert('Guide document must be under 5MB.'); return; }
-    setGuideFileName(file.name);
-    const reader = new FileReader();
-    reader.onloadend = () => { const t = reader.result || ''; setGuideDoc(t); sessionStorage.setItem('aiw_guide', t); };
-    reader.readAsText(file);
+    const ext = (file.name.split('.').pop() || '').toLowerCase();
+    try {
+      let text = '';
+      if (ext === 'txt') {
+        text = await file.text();
+      } else if (ext === 'docx') {
+        const buf = await file.arrayBuffer();
+        const result = await mammoth.extractRawText({ arrayBuffer: buf });
+        text = result.value || '';
+      } else {
+        alert('Only .txt and .docx files can be read directly right now. For .doc or .pdf files, please open the document and paste its text into the box below instead.');
+        return;
+      }
+      if (!text.trim()) { alert('Could not find any readable text in this file.'); return; }
+      setGuideDoc(text);
+      setGuideFileName(file.name);
+      setGuideIsFile(true);
+    } catch (err) {
+      console.error('Guide file read failed', err);
+      alert('Could not read this file. Please try pasting the text directly instead.');
+    }
   };
 
   // ── Build prompt ─────────────────────────────────────────────
@@ -1072,10 +1097,10 @@ ${ch.subtitle.toUpperCase()}`;
                   📎 Upload File<input type="file" accept=".txt,.doc,.docx,.pdf" style={{display:'none'}} onChange={handleGuideFile}/>
                 </label>
                 <span style={{fontSize:12,color:'var(--text-muted,#718096)'}}>max 5MB</span>
-                {guideDoc.trim()&&<button onClick={()=>{setGuideDoc('');setGuideFileName('');sessionStorage.removeItem('aiw_guide');sessionStorage.removeItem('aiw_guidename');}} style={{marginLeft:'auto',background:'#EF4444',color:'#fff',border:'none',borderRadius:6,padding:'5px 12px',cursor:'pointer',fontSize:12,fontWeight:700}}>✕ Clear</button>}
+                {guideDoc.trim()&&<button onClick={()=>{setGuideDoc('');setGuideFileName('');setGuideIsFile(false);sessionStorage.removeItem('aiw_guide');sessionStorage.removeItem('aiw_guidename');sessionStorage.removeItem('aiw_guideisfile');}} style={{marginLeft:'auto',background:'#EF4444',color:'#fff',border:'none',borderRadius:6,padding:'5px 12px',cursor:'pointer',fontSize:12,fontWeight:700}}>✕ Clear</button>}
               </div>
-              <label style={lbl}>Or paste document text directly</label>
-              <textarea value={guideDoc} onChange={e=>{setGuideDoc(e.target.value);setGuideFileName('');sessionStorage.setItem('aiw_guide',e.target.value);}} rows={8} placeholder="Paste chapters 1–5 here. AI will strictly follow this format." style={{...inp,resize:'vertical',lineHeight:1.7,fontSize:13}}/>
+              <label style={lbl}>{guideIsFile ? 'Document loaded — type below to replace with pasted text instead' : 'Or paste document text directly'}</label>
+              <textarea value={guideIsFile ? '' : guideDoc} onChange={e=>{setGuideDoc(e.target.value);setGuideFileName('');setGuideIsFile(false);sessionStorage.setItem('aiw_guide',e.target.value);}} rows={8} placeholder={guideIsFile ? 'File content loaded and hidden. Start typing here to override it with pasted text.' : 'Paste chapters 1–5 here. AI will strictly follow this format.'} style={{...inp,resize:'vertical',lineHeight:1.7,fontSize:13}}/>
 
               {canManageGuides && (
                 <div style={{marginTop:16,paddingTop:16,borderTop:'1px solid var(--border,#2d3748)'}}>
