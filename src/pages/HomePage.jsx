@@ -20,7 +20,7 @@ const SERVICES = [
 ];
 
 const FEATURES = [
-  { icon: Sparkles,     title: 'AI Research Writer',  desc: 'Chapter-by-chapter AI assistance for Introduction through Discussion, tailored to your project type.' },
+  { icon: Sparkles,     title: 'AI Research Writer',  desc: 'Chapter-by-chapter AI assistance for Introduction through Discussion, tailored to your project type.', adminOnly: true },
   { icon: Users,        title: 'Expert Writers',      desc: 'Skilled Nigerian academic writers matched to your subject area.' },
   { icon: Clock,        title: 'Fast Turnaround',     desc: "We work around your deadline, most requests are reviewed within hours." },
   { icon: ShieldCheck,  title: 'Secure Payments',     desc: 'Pay only 50% upfront via Monnify, the balance is due on delivery.' },
@@ -82,7 +82,7 @@ export default function HomePage() {
           <p>From AI-powered writing to expert human support</p>
         </div>
         <div className="ec-feature-grid">
-          {FEATURES.map((f) => (
+          {FEATURES.filter(f => !f.adminOnly || profile?.isAdmin).map((f) => (
             <div key={f.title} className="ec-feature-card">
               <div className="ec-feature-icon"><f.icon size={20} /></div>
               <h3>{f.title}</h3>
