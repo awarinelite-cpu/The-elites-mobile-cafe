@@ -183,6 +183,7 @@ export default function AIResearchWriterPage() {
   const [downloadingDocx, setDownloadingDocx] = useState(false);
   const [downloadingPdf,  setDownloadingPdf]  = useState(false);
   const [mode, setMode] = useState(() => sessionStorage.getItem('aiw_mode') || 'research');
+  const [aiProvider, setAiProvider] = useState(() => sessionStorage.getItem('aiw_provider') || 'claude');
   const [guideDoc, setGuideDoc] = useState(() => sessionStorage.getItem('aiw_guide') || '');
   const [guideFileName, setGuideFileName] = useState(() => sessionStorage.getItem('aiw_guidename') || '');
   const [showGuide, setShowGuide] = useState(() => sessionStorage.getItem('aiw_showguide') === 'true');
@@ -204,12 +205,13 @@ export default function AIResearchWriterPage() {
     sessionStorage.setItem('aiw_citation', citationStyle);
     sessionStorage.setItem('aiw_pages', JSON.stringify(chapterPages));
     sessionStorage.setItem('aiw_mode', mode);
+    sessionStorage.setItem('aiw_provider', aiProvider);
     sessionStorage.setItem('aiw_chapters', JSON.stringify(chapters));
     sessionStorage.setItem('aiw_activechapter', activeChapter || '');
     sessionStorage.setItem('aiw_guide', guideDoc);
     sessionStorage.setItem('aiw_guidename', guideFileName);
     sessionStorage.setItem('aiw_showguide', showGuide);
-  }, [topic,objectives,level,department,citationStyle,chapterPages,mode,chapters,activeChapter,guideDoc,guideFileName,showGuide]);
+  }, [topic,objectives,level,department,citationStyle,chapterPages,mode,aiProvider,chapters,activeChapter,guideDoc,guideFileName,showGuide]);
 
   useEffect(() => { refreshGuideLibrary(); }, [user?.uid, canManageGuides]);
 
@@ -547,19 +549,45 @@ Begin now with: ${ch.title.toUpperCase()}
 ${ch.subtitle.toUpperCase()}`;
   };
 
-  const generateChapter = async (chapterId) => {
-    if (!canGenerate) return;
-    setLoading(chapterId); setError('');
-    if (!import.meta.env.VITE_ANTHROPIC_API_KEY) { setError('VITE_ANTHROPIC_API_KEY not set in Vercel.'); setLoading(null); return; }
-    try {
-      const res = await fetch('https://api.anthropic.com/v1/messages', {
+  // ── AI provider call (Claude or Gemini) ────────────────────────
+  const callAI = async (prompt) => {
+    if (aiProvider === 'gemini') {
+      const key = import.meta.env.VITE_GEMINI_API_KEY;
+      if (!key) throw new Error('VITE_GEMINI_API_KEY not set in Vercel.');
+      const res = await fetch(`https://generativelanguage.googleapis.com/v1beta/models/gemini-3.6-flash:generateContent?key=${key}`, {
         method: 'POST',
-        headers: { 'Content-Type':'application/json', 'x-api-key':import.meta.env.VITE_ANTHROPIC_API_KEY, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
-        body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:6000, messages:[{role:'user',content:buildPrompt(chapterId)}] }),
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          contents: [{ role: 'user', parts: [{ text: prompt }] }],
+          generationConfig: { maxOutputTokens: 8000, temperature: 0.9 },
+        }),
       });
       const data = await res.json();
       if (data.error) throw new Error(data.error.message);
-      const text = data.content?.find(b => b.type==='text')?.text || '';
+      const candidate = data.candidates?.[0];
+      if (!candidate) throw new Error('No response from Gemini.');
+      if (candidate.finishReason === 'MAX_TOKENS' && !candidate.content?.parts?.length) {
+        throw new Error('Gemini ran out of output tokens before writing any text — try a shorter target length.');
+      }
+      return (candidate.content?.parts || []).map(p => p.text || '').join('');
+    }
+    const key = import.meta.env.VITE_ANTHROPIC_API_KEY;
+    if (!key) throw new Error('VITE_ANTHROPIC_API_KEY not set in Vercel.');
+    const res = await fetch('https://api.anthropic.com/v1/messages', {
+      method: 'POST',
+      headers: { 'Content-Type':'application/json', 'x-api-key':key, 'anthropic-version':'2023-06-01', 'anthropic-dangerous-direct-browser-access':'true' },
+      body: JSON.stringify({ model:'claude-sonnet-4-20250514', max_tokens:6000, messages:[{role:'user',content:prompt}] }),
+    });
+    const data = await res.json();
+    if (data.error) throw new Error(data.error.message);
+    return data.content?.find(b => b.type==='text')?.text || '';
+  };
+
+  const generateChapter = async (chapterId) => {
+    if (!canGenerate) return;
+    setLoading(chapterId); setError('');
+    try {
+      const text = await callAI(buildPrompt(chapterId));
       setChapters(prev => ({...prev,[chapterId]:text}));
       setActiveChapter(chapterId);
     } catch(e) { setError(`Failed: ${e.message}`); }
@@ -572,14 +600,7 @@ ${ch.subtitle.toUpperCase()}`;
     for (const ch of activeChapters) {
       setLoading(ch.id);
       try {
-        const res = await fetch('https://api.anthropic.com/v1/messages', {
-          method:'POST',
-          headers:{'Content-Type':'application/json','x-api-key':import.meta.env.VITE_ANTHROPIC_API_KEY,'anthropic-version':'2023-06-01','anthropic-dangerous-direct-browser-access':'true'},
-          body:JSON.stringify({model:'claude-sonnet-4-20250514',max_tokens:6000,messages:[{role:'user',content:buildPrompt(ch.id)}]}),
-        });
-        const data = await res.json();
-        if (data.error) throw new Error(data.error.message);
-        const text = data.content?.find(b=>b.type==='text')?.text||'';
+        const text = await callAI(buildPrompt(ch.id));
         setChapters(prev=>({...prev,[ch.id]:text}));
       } catch(e) { setError(`Error on ${ch.title}: ${e.message}`); break; }
       setLoading(null);
@@ -974,6 +995,16 @@ ${ch.subtitle.toUpperCase()}`;
                 style={{padding:'7px 13px',borderRadius:9,border:'none',cursor:'pointer',fontWeight:700,fontSize:12,fontFamily:'var(--font-body,inherit)',transition:'all 0.2s',whiteSpace:'nowrap',background:mode===m?'#fff':'transparent',color:mode===m?col:'rgba(255,255,255,0.75)'}}>{label}</button>
             ))}
           </div>
+        </div>
+      </div>
+
+      <div style={{maxWidth:900,margin:'0 auto',padding:'14px 16px 0',display:'flex',alignItems:'center',justifyContent:'flex-end',gap:8}}>
+        <span style={{fontSize:11,fontWeight:600,color:'var(--text-muted,#718096)'}}>AI Engine:</span>
+        <div style={{background:'var(--bg-card,#1a2236)',border:'1px solid var(--border-card,#2d3748)',borderRadius:10,padding:3,display:'flex',gap:3}}>
+          {[['claude','✦ Claude'],['gemini','✧ Gemini']].map(([p,label])=>(
+            <button key={p} type="button" onClick={()=>setAiProvider(p)}
+              style={{padding:'5px 12px',borderRadius:7,border:'none',cursor:'pointer',fontWeight:700,fontSize:11,fontFamily:'var(--font-body,inherit)',transition:'all 0.2s',background:aiProvider===p?accentColor:'transparent',color:aiProvider===p?'#fff':'var(--text-muted,#718096)'}}>{label}</button>
+          ))}
         </div>
       </div>
 
