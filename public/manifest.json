@@ -4,8 +4,8 @@
   "description": "Professional research, writing, and academic services",
   "start_url": "/",
   "display": "standalone",
-  "background_color": "#0a0a0f",
-  "theme_color": "#C9A84C",
+  "background_color": "#16233F",
+  "theme_color": "#0F766E",
   "orientation": "portrait-primary",
   "icons": [
     { "src": "/icons/icon-72.png",   "sizes": "72x72",   "type": "image/png", "purpose": "any maskable" },

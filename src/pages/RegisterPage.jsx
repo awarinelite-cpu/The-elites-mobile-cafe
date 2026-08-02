@@ -2,10 +2,11 @@
 import { useState } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
-import { Eye, EyeOff, BookOpen, ArrowRight } from 'lucide-react';
+import { Eye, EyeOff, ArrowRight } from 'lucide-react';
 import { registerUser } from '../firebase/authService';
 import { db } from '../firebase/config';               // ← your Firestore instance
 import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
+import BrandMark from '../components/BrandMark';
 import toast from 'react-hot-toast';
 
 export default function RegisterPage() {
@@ -107,13 +108,11 @@ export default function RegisterPage() {
         <div style={{ textAlign: 'center', marginBottom: 40 }}>
           <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
             <div style={{
-              width: 48, height: 48, borderRadius: '50%',
-              border: '1.5px solid var(--gold)', display: 'flex',
-              alignItems: 'center', justifyContent: 'center',
-              background: 'var(--gold-glow)',
-              boxShadow: '0 0 30px rgba(201,168,76,0.2)',
+              width: 52, height: 52,
+              boxShadow: '0 0 30px rgba(15,118,110,0.25)',
+              borderRadius: '50%',
             }}>
-              <BookOpen size={20} color="var(--gold)" />
+              <BrandMark size={52} />
             </div>
             <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--gold)', fontWeight: 600, letterSpacing: 0.5 }}>
               The Elites Mobile Cafe

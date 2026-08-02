@@ -1,11 +1,12 @@
 // src/components/layout/Navbar.jsx
 
 import { Link, useLocation, useNavigate } from 'react-router-dom';
-import { Sun, Moon, Menu, X, GraduationCap, ChevronDown, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
+import { Sun, Moon, Menu, X, ChevronDown, LogOut, LayoutDashboard, ShieldCheck } from 'lucide-react';
 import { useState, useEffect, useRef } from 'react';
 import useDarkMode from '../../hooks/useDarkMode';
 import { useAuth } from '../../context/AuthContext';
 import NotificationBell from '../NotificationBell';
+import BrandMark from '../BrandMark';
 
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
@@ -67,7 +68,7 @@ export default function Navbar({ user, onLogout }) {
 
         {/* Brand */}
         <Link to="/" className="navbar-brand">
-          <span className="brand-mark"><GraduationCap size={20} /></span>
+          <span className="brand-mark"><BrandMark size={34} /></span>
           <span className="brand-word">Elite<span>Cafe</span></span>
         </Link>
 
@@ -129,7 +130,7 @@ export default function Navbar({ user, onLogout }) {
       {!hasOwnSidebar && (
       <div className={`sidebar ${menuOpen ? 'open' : ''}`}>
         <div className="sidebar-brand">
-          <span className="brand-mark"><GraduationCap size={18} /></span>
+          <span className="brand-mark"><BrandMark size={30} /></span>
           <span className="brand-word">Elite<span>Cafe</span></span>
         </div>
 
@@ -189,10 +190,6 @@ export default function Navbar({ user, onLogout }) {
         }
 
         .brand-mark {
-          width: 34px; height: 34px;
-          border-radius: 9px;
-          background: var(--teal);
-          color: #fff;
           display: flex; align-items: center; justify-content: center;
           flex-shrink: 0;
         }
