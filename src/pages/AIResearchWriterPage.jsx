@@ -203,6 +203,8 @@ export default function AIResearchWriterPage() {
   const [error, setError] = useState('');
   const [verifyingRefs, setVerifyingRefs] = useState(false);
   const [refResults, setRefResults] = useState(null);
+  const [checkingOriginality, setCheckingOriginality] = useState(false);
+  const [originalityResults, setOriginalityResults] = useState(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -275,8 +277,18 @@ CITATION & REFERENCE RULES (STRICTLY ENFORCED):
 - Every reference must resemble a real, findable journal article, thesis, or report indexed on one of the above archives, not an invented or generic-sounding citation
 - Do NOT add references at end of Chapters 1, 2, 3, or 4
 - ALL references appear ONLY at the end of Chapter 5, combined, alphabetical, minimum 25-30 entries
-- Reference format (APA 7th): Author, A. A. (Year). Title of article. Journal Name, Volume(Issue), pages. https://doi.org/xxx
-- Anti-plagiarism: write entirely in your own words, 0-5% similarity target`;
+- Reference format (APA 7th): Author, A. A. (Year). Title of article. Journal Name, Volume(Issue), pages. https://doi.org/xxx`;
+
+    const originalityRules = `
+ORIGINALITY & ANTI-PLAGIARISM RULES (STRICTLY ENFORCED):
+- Never copy a sentence, clause, or distinctive phrase from any real source, book, article, or the guide document, even a short one. If you cannot recall the exact wording of a real source, that is expected: express the idea in new words instead of guessing at wording.
+- Do not "lightly edit" a source. Swapping a few words while keeping the original sentence structure and order is still plagiarism. Fully rebuild each idea in a new sentence structure: change the order of clauses, the sentence length, and the framing, not just the vocabulary.
+- Synthesize: when drawing on a finding, restate its meaning in your own analytical voice rather than following the shape of how a source would phrase it.
+- Vary sentence length and rhythm throughout, mix short and long sentences. Do not repeat the same sentence-opening pattern (e.g., starting every paragraph with "According to...", "Studies have shown...", "It is evident that...").
+- Do not reuse the same sentence or phrase in more than one place across the whole document, including between chapters.
+- Avoid stock AI-writing phrases and filler transitions such as "In today's world", "It is important to note that", "In conclusion", "Moreover, it is worth mentioning", "This underscores the importance of", "plays a crucial/vital role", "delve into", "In summary". Write plainly and specifically instead.
+- If a MANDATORY FORMAT GUIDE was provided above, follow its structure, headings, and formatting exactly as instructed, but do not copy its sentences. Write fresh sentences that fit the same structure.
+- Target: a same-source similarity score under 5% if checked by a plagiarism detector such as Turnitin or Quetext, achieved through genuine paraphrasing and original sentence construction, not through synonym substitution.`;
 
     const researchInstructions = {
       ch1: `Write CHAPTER ONE: INTRODUCTION.
@@ -565,6 +577,8 @@ ${instructions[chapterId]}
 
 ${citationRules}
 
+${originalityRules}
+
 STANDARDS:
 - Formal academic English, third person
 - Nigerian healthcare context
@@ -660,6 +674,68 @@ ${ch.subtitle.toUpperCase()}`;
       setRefResults(prev => { const next = [...prev]; next[i] = res; return next; });
     });
     setVerifyingRefs(false);
+  };
+
+  // ── Originality check: guide-document overlap + repeated sentences ──
+  const normWords = t => String(t).toLowerCase().replace(/[^a-z0-9'\s]/g, ' ').split(/\s+/).filter(Boolean);
+
+  const shingles = (text, n = 8) => {
+    const words = normWords(text);
+    const set = new Set();
+    for (let i = 0; i + n <= words.length; i++) set.add(words.slice(i, i + n).join(' '));
+    return set;
+  };
+
+  const stripNonProse = (text) => {
+    if (!text) return '';
+    return text.split('\n')
+      .filter(l => { const t = l.trim(); return t && !t.startsWith('|') && !/^Table\s+\d/i.test(t) && !/^Figure\s+\d/i.test(t); })
+      .join('\n');
+  };
+
+  const splitSentences = (text) => {
+    if (!text) return [];
+    return stripNonProse(text)
+      .replace(/\n+/g, ' ')
+      .split(/(?<=[.!?])\s+(?=[A-Z(])/)
+      .map(s => s.trim())
+      .filter(s => s.split(/\s+/).length >= 15);
+  };
+
+  const handleCheckOriginality = () => {
+    const genChapters = activeChapters.filter(c => chapters[c.id]);
+    if (!genChapters.length) { alert('Generate at least one chapter first.'); return; }
+    setCheckingOriginality(true);
+
+    // 1) Overlap against the uploaded guide document (8-word shingle match)
+    const guideMatches = [];
+    if (guideDoc.trim()) {
+      const guideShingles = shingles(guideDoc);
+      genChapters.forEach(ch => {
+        const text = stripNonProse(chapters[ch.id]);
+        const chShingles = shingles(text);
+        const shared = [...chShingles].filter(s => guideShingles.has(s));
+        if (shared.length) guideMatches.push({ chapter: ch.title, count: shared.length, examples: shared.slice(0, 3) });
+      });
+    }
+
+    // 2) Long sentences repeated verbatim across the generated document
+    const sentenceMap = new Map();
+    const dupeCounts = new Map();
+    genChapters.forEach(ch => {
+      splitSentences(chapters[ch.id]).forEach(s => {
+        const key = s.toLowerCase().replace(/\s+/g, ' ').trim();
+        if (!sentenceMap.has(key)) sentenceMap.set(key, { text: s, chapters: new Set() });
+        sentenceMap.get(key).chapters.add(ch.title);
+        dupeCounts.set(key, (dupeCounts.get(key) || 0) + 1);
+      });
+    });
+    const repeatedSentences = [...sentenceMap.entries()]
+      .filter(([key]) => dupeCounts.get(key) > 1)
+      .map(([, v]) => ({ text: v.text, chapters: [...v.chapters] }));
+
+    setOriginalityResults({ guideMatches, repeatedSentences, checkedChapters: genChapters.length });
+    setCheckingOriginality(false);
   };
 
   // ── AI provider call (Claude or Gemini) ────────────────────────
@@ -1278,6 +1354,11 @@ ${ch.subtitle.toUpperCase()}`;
                     {verifyingRefs?<><div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Checking…</>:'🔎 Verify References'}
                   </button>
                 )}
+                {generatedCount>0&&(
+                  <button onClick={handleCheckOriginality} disabled={checkingOriginality} style={{background:'#D97706',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
+                    🧬 Check Originality
+                  </button>
+                )}
                 <button onClick={downloadDocx} disabled={downloadingDocx} style={{background:downloadingDocx?'rgba(13,148,136,0.5)':'#0D9488',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:downloadingDocx?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
                   {downloadingDocx?<><div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Building…</>:'⬇️ Word (.docx)'}
                 </button>
@@ -1326,6 +1407,46 @@ ${ch.subtitle.toUpperCase()}`;
                   </div>
                   <div style={{fontSize:11,color:'var(--text-muted,#718096)',marginTop:8,lineHeight:1.5}}>
                     "Not found" or "likely match" doesn't automatically mean the reference is fake, CrossRef doesn't index every journal. It means you should open the link (or search the title yourself) before trusting it. Anything marked not found should be replaced or manually confirmed before submission.
+                  </div>
+                </div>
+              );
+            })()}
+            {originalityResults&&(()=>{
+              const { guideMatches, repeatedSentences, checkedChapters } = originalityResults;
+              const clean = guideMatches.length===0 && repeatedSentences.length===0;
+              return (
+                <div style={{marginTop:14,paddingTop:14,borderTop:'1px solid var(--border,#2d3748)'}}>
+                  <div style={{fontSize:12,fontWeight:700,color:'var(--text-primary,#e2e8f0)',marginBottom:10}}>
+                    Originality check across {checkedChapters} chapter{checkedChapters>1?'s':''}
+                    {clean&&<span style={{marginLeft:8,fontWeight:400,color:'#16A34A'}}>✅ No copied phrases or repeated sentences found</span>}
+                  </div>
+                  {guideMatches.length>0&&(
+                    <div style={{marginBottom:12}}>
+                      <div style={{fontSize:12,fontWeight:700,color:'#EF4444',marginBottom:6}}>⚠️ Phrases matching your uploaded guide document word-for-word</div>
+                      <div style={{display:'flex',flexDirection:'column',gap:6}}>
+                        {guideMatches.map((m,i)=>(
+                          <div key={i} style={{background:'var(--bg-tertiary,#1a2236)',borderRadius:8,padding:'8px 10px',fontSize:11,color:'var(--text-muted,#718096)'}}>
+                            <strong style={{color:'var(--text-primary,#e2e8f0)'}}>{m.chapter}</strong>: {m.count} matching 8-word sequence{m.count>1?'s':''}. Example: "{m.examples[0]}…"
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  {repeatedSentences.length>0&&(
+                    <div>
+                      <div style={{fontSize:12,fontWeight:700,color:'#D97706',marginBottom:6}}>🟡 Sentences repeated verbatim in the document</div>
+                      <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:260,overflowY:'auto'}}>
+                        {repeatedSentences.map((r,i)=>(
+                          <div key={i} style={{background:'var(--bg-tertiary,#1a2236)',borderRadius:8,padding:'8px 10px',fontSize:11,color:'var(--text-muted,#718096)'}}>
+                            <span style={{color:'var(--text-primary,#e2e8f0)'}}>"{r.text.slice(0,150)}{r.text.length>150?'…':''}"</span><br/>
+                            in {r.chapters.join(', ')}
+                          </div>
+                        ))}
+                      </div>
+                    </div>
+                  )}
+                  <div style={{fontSize:11,color:'var(--text-muted,#718096)',marginTop:8,lineHeight:1.5}}>
+                    This checks two things only: whether the AI copied word sequences straight from your uploaded guide document, and whether it repeated the exact same sentence more than once (some repetition, like restating a hypothesis, is expected and fine to leave). It does not check against the open internet, only your own uploaded material and this document, so a clean result here is not the same as a clean Turnitin or Quetext report.
                   </div>
                 </div>
               );
