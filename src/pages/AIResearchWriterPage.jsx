@@ -205,6 +205,7 @@ export default function AIResearchWriterPage() {
   const [refResults, setRefResults] = useState(null);
   const [checkingOriginality, setCheckingOriginality] = useState(false);
   const [originalityResults, setOriginalityResults] = useState(null);
+  const [fixingOriginality, setFixingOriginality] = useState(false);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -715,7 +716,7 @@ ${ch.subtitle.toUpperCase()}`;
         const text = stripNonProse(chapters[ch.id]);
         const chShingles = shingles(text);
         const shared = [...chShingles].filter(s => guideShingles.has(s));
-        if (shared.length) guideMatches.push({ chapter: ch.title, count: shared.length, examples: shared.slice(0, 3) });
+        if (shared.length) guideMatches.push({ chapterId: ch.id, chapter: ch.title, count: shared.length, examples: shared.slice(0, 3), phrases: shared.slice(0, 12) });
       });
     }
 
@@ -736,6 +737,45 @@ ${ch.subtitle.toUpperCase()}`;
 
     setOriginalityResults({ guideMatches, repeatedSentences, checkedChapters: genChapters.length });
     setCheckingOriginality(false);
+  };
+
+  const buildFixPrompt = (chapterText, phrases) => `You are revising a section of academic writing for plagiarism avoidance.
+
+The following exact word sequences were found to match text in another document too closely. Find each one inside the chapter text below and rewrite the FULL SENTENCE containing it in completely original wording: different sentence structure, different phrasing, same meaning. Do not just swap a few words, restructure the sentence.
+
+FLAGGED SEQUENCES TO ELIMINATE (do not let any of these exact word sequences appear in your output):
+${phrases.map((p, i) => `${i + 1}. "${p}"`).join('\n')}
+
+RULES:
+- Only change the sentences containing the flagged sequences above. Leave every other sentence, heading, table, and citation exactly as it is, character for character.
+- Keep the same citations and facts, just re-express them in new wording.
+- Return ONLY the complete revised chapter text in the same format as given, with no preamble, no explanation, no markdown fences.
+
+CHAPTER TEXT:
+"""
+${chapterText}
+"""`;
+
+  const handleFixGuideOverlaps = async () => {
+    if (!originalityResults?.guideMatches?.length) return;
+    setFixingOriginality(true);
+    setError('');
+    try {
+      for (const m of originalityResults.guideMatches) {
+        const original = chapters[m.chapterId];
+        if (!original) continue;
+        const revised = await callAI(buildFixPrompt(original, m.phrases));
+        if (revised && revised.trim().length > 200) {
+          setChapters(prev => ({ ...prev, [m.chapterId]: revised.trim() }));
+        }
+        await new Promise(r => setTimeout(r, 500));
+      }
+      toast('✅ Overlapping phrases rewritten. Re-checking…', '#0D9488');
+      setTimeout(() => handleCheckOriginality(), 300);
+    } catch (e) {
+      setError(`Auto-fix failed: ${e.message}`);
+    }
+    setFixingOriginality(false);
   };
 
   // ── AI provider call (Claude or Gemini) ────────────────────────
@@ -1422,7 +1462,12 @@ ${ch.subtitle.toUpperCase()}`;
                   </div>
                   {guideMatches.length>0&&(
                     <div style={{marginBottom:12}}>
-                      <div style={{fontSize:12,fontWeight:700,color:'#EF4444',marginBottom:6}}>⚠️ Phrases matching your uploaded guide document word-for-word</div>
+                      <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:6,flexWrap:'wrap',gap:8}}>
+                        <div style={{fontSize:12,fontWeight:700,color:'#EF4444'}}>⚠️ Phrases matching your uploaded guide document word-for-word</div>
+                        <button onClick={handleFixGuideOverlaps} disabled={fixingOriginality} style={{background:fixingOriginality?'rgba(217,119,6,0.5)':'#D97706',color:'#fff',border:'none',borderRadius:8,padding:'6px 12px',cursor:fixingOriginality?'not-allowed':'pointer',fontWeight:700,fontSize:11,display:'flex',alignItems:'center',gap:6}}>
+                          {fixingOriginality?<><div style={{width:11,height:11,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Rewriting…</>:'🔧 Rewrite These'}
+                        </button>
+                      </div>
                       <div style={{display:'flex',flexDirection:'column',gap:6}}>
                         {guideMatches.map((m,i)=>(
                           <div key={i} style={{background:'var(--bg-tertiary,#1a2236)',borderRadius:8,padding:'8px 10px',fontSize:11,color:'var(--text-muted,#718096)'}}>
@@ -1434,7 +1479,7 @@ ${ch.subtitle.toUpperCase()}`;
                   )}
                   {repeatedSentences.length>0&&(
                     <div>
-                      <div style={{fontSize:12,fontWeight:700,color:'#D97706',marginBottom:6}}>🟡 Sentences repeated verbatim in the document</div>
+                      <div style={{fontSize:12,fontWeight:700,color:'#D97706',marginBottom:6}}>🟡 Sentences repeated verbatim in the document (review manually — the format deliberately restates hypotheses and research questions in multiple chapters, so not all of these are mistakes)</div>
                       <div style={{display:'flex',flexDirection:'column',gap:6,maxHeight:260,overflowY:'auto'}}>
                         {repeatedSentences.map((r,i)=>(
                           <div key={i} style={{background:'var(--bg-tertiary,#1a2236)',borderRadius:8,padding:'8px 10px',fontSize:11,color:'var(--text-muted,#718096)'}}>
