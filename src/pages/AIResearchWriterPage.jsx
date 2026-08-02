@@ -201,6 +201,8 @@ export default function AIResearchWriterPage() {
   const [loading, setLoading] = useState(null);
   const [generatingAll, setGeneratingAll] = useState(false);
   const [error, setError] = useState('');
+  const [verifyingRefs, setVerifyingRefs] = useState(false);
+  const [refResults, setRefResults] = useState(null);
   const contentRef = useRef(null);
 
   useEffect(() => {
@@ -574,6 +576,90 @@ STANDARDS:
 
 Begin now with: ${ch.title.toUpperCase()}
 ${ch.subtitle.toUpperCase()}`;
+  };
+
+  // ── Reference verification against CrossRef ────────────────────
+  const extractReferences = (text) => {
+    if (!text) return [];
+    const idx = text.search(/^\s*REFERENCES\s*$/im);
+    if (idx === -1) return [];
+    const block = text.slice(idx).replace(/^\s*REFERENCES\s*$/im, '').trim();
+    const rawEntries = block.split(/\n(?=[A-Z][A-Za-z'’.\-]+,\s)/g);
+    return rawEntries.map(e => e.replace(/\s+/g, ' ').trim()).filter(e => e.length > 20);
+  };
+
+  const extractDOI = (ref) => {
+    const m = ref.match(/10\.\d{4,9}\/[^\s)]+/i);
+    return m ? m[0].replace(/[.,]+$/, '') : null;
+  };
+
+  const extractTitleGuess = (ref) => {
+    const m = ref.match(/\)\.\s*([^.]+)\./);
+    return m ? m[1].trim() : ref.slice(0, 90);
+  };
+
+  const wordSet = s => new Set(String(s).toLowerCase().replace(/[^a-z0-9\s]/g, '').split(/\s+/).filter(Boolean));
+  const titleSimilarity = (a, b) => {
+    const A = wordSet(a), B = wordSet(b);
+    if (!A.size || !B.size) return 0;
+    let inter = 0;
+    A.forEach(w => { if (B.has(w)) inter++; });
+    return inter / Math.max(A.size, B.size);
+  };
+
+  const verifyOneReference = async (ref) => {
+    const doi = extractDOI(ref);
+    try {
+      if (doi) {
+        const res = await fetch(`https://api.crossref.org/works/${encodeURIComponent(doi)}?mailto=support@theelitenurses.com`);
+        if (res.ok) {
+          const data = await res.json();
+          const title = data.message?.title?.[0] || '';
+          return { ref, doi, status: 'verified_doi', matchedTitle: title, url: data.message?.URL || `https://doi.org/${doi}` };
+        }
+        return { ref, doi, status: 'doi_not_found' };
+      }
+      const titleGuess = extractTitleGuess(ref);
+      const res = await fetch(`https://api.crossref.org/works?query.bibliographic=${encodeURIComponent(titleGuess)}&rows=1&mailto=support@theelitenurses.com`);
+      if (!res.ok) return { ref, status: 'error' };
+      const data = await res.json();
+      const item = data.message?.items?.[0];
+      if (!item) return { ref, status: 'not_found', titleGuess };
+      const matchedTitle = item.title?.[0] || '';
+      const sim = titleSimilarity(titleGuess, matchedTitle);
+      return {
+        ref, titleGuess, status: sim >= 0.5 ? 'likely_match' : 'not_found',
+        matchedTitle, similarity: Math.round(sim * 100), doi: item.DOI,
+        url: item.URL || (item.DOI ? `https://doi.org/${item.DOI}` : null),
+      };
+    } catch (e) {
+      return { ref, status: 'error', error: e.message };
+    }
+  };
+
+  const runWithConcurrency = async (items, worker, limit, onEach) => {
+    const results = new Array(items.length);
+    let idx = 0;
+    const lane = async () => {
+      while (idx < items.length) {
+        const cur = idx++;
+        results[cur] = await worker(items[cur]);
+        onEach && onEach(cur, results[cur]);
+      }
+    };
+    await Promise.all(Array.from({ length: Math.min(limit, items.length) }, lane));
+    return results;
+  };
+
+  const handleVerifyReferences = async () => {
+    const refs = extractReferences(chapters.ch5);
+    if (!refs.length) { alert('No references found. Generate Chapter Five first — that is where all references live.'); return; }
+    setVerifyingRefs(true);
+    setRefResults(refs.map(r => ({ ref: r, status: 'pending' })));
+    await runWithConcurrency(refs, verifyOneReference, 3, (i, res) => {
+      setRefResults(prev => { const next = [...prev]; next[i] = res; return next; });
+    });
+    setVerifyingRefs(false);
   };
 
   // ── AI provider call (Claude or Gemini) ────────────────────────
@@ -1187,6 +1273,11 @@ ${ch.subtitle.toUpperCase()}`;
               <span style={{fontSize:13,fontWeight:700,color:'var(--text-primary,#e2e8f0)'}}>{generatedCount}/{totalChapters} chapter{generatedCount>1?'s':''} generated {generatedCount===totalChapters&&<span style={{marginLeft:8,color:'#16A34A'}}>✅ Complete</span>}</span>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                 <button onClick={copyAll} style={{background:'#1E3A8A',color:'#fff',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',fontWeight:700,fontSize:12}}>📋 Copy All</button>
+                {chapters.ch5&&(
+                  <button onClick={handleVerifyReferences} disabled={verifyingRefs} style={{background:verifyingRefs?'rgba(124,58,237,0.5)':'#7C3AED',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:verifyingRefs?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
+                    {verifyingRefs?<><div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Checking…</>:'🔎 Verify References'}
+                  </button>
+                )}
                 <button onClick={downloadDocx} disabled={downloadingDocx} style={{background:downloadingDocx?'rgba(13,148,136,0.5)':'#0D9488',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:downloadingDocx?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
                   {downloadingDocx?<><div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Building…</>:'⬇️ Word (.docx)'}
                 </button>
@@ -1198,7 +1289,49 @@ ${ch.subtitle.toUpperCase()}`;
             <div style={{background:'var(--bg-tertiary,#2d3748)',borderRadius:20,height:8,overflow:'hidden'}}>
               <div style={{height:'100%',width:`${(generatedCount/totalChapters)*100}%`,background:`linear-gradient(90deg,${mode==='clientcare'?'#7C3AED':'#1E3A8A'},#0D9488)`,borderRadius:20,transition:'width 0.5s ease'}}/>
             </div>
+            {refResults&&(()=>{
+              const counts = refResults.reduce((a,r)=>{a[r.status]=(a[r.status]||0)+1;return a;},{});
+              const done = refResults.filter(r=>r.status!=='pending').length;
+              const badge = (status) => {
+                const map = {
+                  verified_doi:{label:'✅ Verified',bg:'rgba(22,163,74,0.15)',color:'#16A34A'},
+                  likely_match:{label:'🟡 Likely match',bg:'rgba(217,119,6,0.15)',color:'#D97706'},
+                  not_found:{label:'🔴 Not found',bg:'rgba(220,38,38,0.15)',color:'#EF4444'},
+                  doi_not_found:{label:'🔴 DOI not found',bg:'rgba(220,38,38,0.15)',color:'#EF4444'},
+                  error:{label:'⚪ Check failed',bg:'rgba(148,163,184,0.15)',color:'#94A3B8'},
+                  pending:{label:'⏳ Checking…',bg:'rgba(148,163,184,0.15)',color:'#94A3B8'},
+                };
+                const s = map[status]||map.error;
+                return <span style={{background:s.bg,color:s.color,fontSize:11,fontWeight:700,padding:'2px 8px',borderRadius:12,whiteSpace:'nowrap'}}>{s.label}</span>;
+              };
+              return (
+                <div style={{marginTop:14,paddingTop:14,borderTop:'1px solid var(--border,#2d3748)'}}>
+                  <div style={{fontSize:12,fontWeight:700,color:'var(--text-primary,#e2e8f0)',marginBottom:10}}>
+                    Reference check: {done}/{refResults.length} done
+                    {done===refResults.length&&<span style={{marginLeft:8,fontWeight:400,color:'var(--text-muted,#718096)'}}>
+                      · {counts.verified_doi||0} verified · {counts.likely_match||0} likely match · {(counts.not_found||0)+(counts.doi_not_found||0)} not found{counts.error?` · ${counts.error} failed`:''}
+                    </span>}
+                  </div>
+                  <div style={{display:'flex',flexDirection:'column',gap:8,maxHeight:320,overflowY:'auto'}}>
+                    {refResults.map((r,i)=>(
+                      <div key={i} style={{background:'var(--bg-tertiary,#1a2236)',borderRadius:8,padding:'8px 10px'}}>
+                        <div style={{display:'flex',justifyContent:'space-between',alignItems:'flex-start',gap:8}}>
+                          <span style={{fontSize:11,color:'var(--text-muted,#718096)',lineHeight:1.5}}>{r.ref.slice(0,140)}{r.ref.length>140?'…':''}</span>
+                          {badge(r.status)}
+                        </div>
+                        {r.matchedTitle&&<div style={{fontSize:11,color:'var(--text-muted,#718096)',marginTop:4}}>Closest match: "{r.matchedTitle}"{r.similarity!=null?` (${r.similarity}% title overlap)`:''}</div>}
+                        {r.url&&<a href={r.url} target="_blank" rel="noopener noreferrer" style={{fontSize:11,color:accentColor,marginTop:2,display:'inline-block'}}>{r.url}</a>}
+                      </div>
+                    ))}
+                  </div>
+                  <div style={{fontSize:11,color:'var(--text-muted,#718096)',marginTop:8,lineHeight:1.5}}>
+                    "Not found" or "likely match" doesn't automatically mean the reference is fake, CrossRef doesn't index every journal. It means you should open the link (or search the title yourself) before trusting it. Anything marked not found should be replaced or manually confirmed before submission.
+                  </div>
+                </div>
+              );
+            })()}
           </div>
+
         )}
 
         {activeChapter&&chapters[activeChapter]&&(()=>{
