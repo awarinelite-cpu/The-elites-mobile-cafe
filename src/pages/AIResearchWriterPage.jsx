@@ -267,12 +267,14 @@ export default function AIResearchWriterPage() {
 CITATION & REFERENCE RULES (STRICTLY ENFORCED):
 - EVERY paragraph must contain at least ONE in-text citation
 - EVERY factual statement, statistic, or claim needs an in-text citation
-- Format: (Author, Year) or Author (Year) — ${citationStyle} 7th edition
-- Use ONLY real verifiable sources 2021–2025
+- In-text format: (Author, Year) or Author (Year), strictly ${citationStyle} 7th edition
+- Use ONLY real, verifiable, peer-reviewed sources published 2021 or later. No source older than 2021. No fabricated authors, titles, or DOIs.
+- Sources must be the kind of work actually indexed on open, checkable research archives such as: Google Scholar, PubMed, PubMed Central (PMC), the Directory of Open Access Journals (DOAJ), CORE, Semantic Scholar, OpenAlex, ERIC, arXiv, Zenodo, SSRN, and Internet Archive Scholar. Favor PubMed, PMC, Google Scholar, DOAJ, and CORE for nursing and health topics.
+- Every reference must resemble a real, findable journal article, thesis, or report indexed on one of the above archives, not an invented or generic-sounding citation
 - Do NOT add references at end of Chapters 1, 2, 3, or 4
-- ALL references appear ONLY at the end of Chapter 5 — combined, alphabetical, minimum 25–30 entries
-- Format: Author, A. A. (Year). Title. Journal, Vol(Issue), pages. https://doi.org/xxx
-- Anti-plagiarism: write entirely in your own words, 0–5% similarity target`;
+- ALL references appear ONLY at the end of Chapter 5, combined, alphabetical, minimum 25-30 entries
+- Reference format (APA 7th): Author, A. A. (Year). Title of article. Journal Name, Volume(Issue), pages. https://doi.org/xxx
+- Anti-plagiarism: write entirely in your own words, 0-5% similarity target`;
 
     const researchInstructions = {
       ch1: `Write CHAPTER ONE: INTRODUCTION.
@@ -843,7 +845,7 @@ ${ch.subtitle.toUpperCase()}`;
         bodyXML += ch.id==='ch4' ? buildChapterFourXML(chapters[ch.id], ch4Tables, chartImages) : textToXML(chapters[ch.id]);
       }
 
-      const sectProps = `<w:sectPr><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="2160" w:footer="720" w:header="0" w:gutter="0"/><w:pgNumType w:fmt="decimal" w:start="1"/></w:sectPr>`;
+      const sectProps = `<w:sectPr><w:footerReference w:type="default" r:id="rId3"/><w:pgSz w:w="11906" w:h="16838"/><w:pgMar w:top="1440" w:right="1440" w:bottom="1440" w:left="1440" w:footer="720" w:header="0" w:gutter="0"/><w:pgNumType w:fmt="decimal" w:start="1"/></w:sectPr>`;
 
       const documentXML =
         `<?xml version="1.0" encoding="UTF-8" standalone="yes"?>` +
@@ -907,7 +909,7 @@ ${ch.subtitle.toUpperCase()}`;
       const {jsPDF}=window.jspdf;
       const doc=new jsPDF({orientation:'portrait',unit:'mm',format:'a4'});
       const PW=doc.internal.pageSize.getWidth(), PH=doc.internal.pageSize.getHeight();
-      const mL=25,mR=20,mT=25,mB=20,uW=PW-mL-mR;
+      const mL=25.4,mR=25.4,mT=25.4,mB=25.4,uW=PW-mL-mR;
       let y=mT, pageNum=1;
       const addPN=()=>{doc.setFontSize(10);doc.setFont('times','normal');doc.text(String(pageNum),PW/2,PH-10,{align:'center'});};
       const chkPg=(n=10)=>{if(y+n>PH-mB){addPN();doc.addPage();pageNum++;y=mT;}};
