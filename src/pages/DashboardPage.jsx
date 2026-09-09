@@ -29,6 +29,77 @@ const SERVICES = [
   { icon: '🎫', key: 'waec_neco', title: 'WAEC / NECO Scratch Cards', desc: 'Affordable scratch cards for result checking.' },
 ];
 
+// ── Extra per-service fields shown in the request form ─────
+// (was referenced but never defined — this is what made every
+// service card in the dashboard crash to a blank page on click)
+const SERVICE_FIELDS = {
+  research_projects: [
+    { name: 'topic', label: 'Research Topic / Area', type: 'text', placeholder: 'e.g. Effect of malaria on under-5 children in Lagos', required: true },
+    { name: 'level', label: 'Academic Level', type: 'select', required: true,
+      options: ['OND', 'HND', 'BSc / B.Tech', 'PGD', 'MSc / MBA', 'PhD', 'Other'] },
+    { name: 'chapters', label: 'Chapters Needed', type: 'select', required: false,
+      options: ['Chapter 1 only', 'Chapters 1–3', 'Chapters 1–5 (Full)', 'Data Analysis only', 'Full Project + Defence Slides'] },
+    { name: 'subject', label: 'Course / Department', type: 'text', placeholder: 'e.g. Nursing Science, Public Health', required: false },
+  ],
+  data_analysis: [
+    { name: 'software', label: 'Preferred Software', type: 'select', required: false,
+      options: ['SPSS', 'Microsoft Excel', 'R', 'Stata', 'Any / Not Sure'] },
+    { name: 'dataType', label: 'Type of Data', type: 'select', required: true,
+      options: ['Questionnaire / Survey data', 'Secondary / Existing data', 'Clinical / Lab data', 'Financial data', 'Other'] },
+    { name: 'sampleSize', label: 'Sample Size (approx.)', type: 'text', placeholder: 'e.g. 150 respondents', required: false },
+    { name: 'analysisType', label: 'Analysis Needed', type: 'textarea', placeholder: 'e.g. Frequency tables, chi-square, regression, charts', required: false },
+  ],
+  client_care: [
+    { name: 'supportType', label: 'Type of Support Needed', type: 'select', required: true,
+      options: ['School registration guidance', 'Document processing', 'Academic counselling', 'Form filling assistance', 'Result checking', 'Other'] },
+    { name: 'institution', label: 'School / Institution', type: 'text', placeholder: 'e.g. UNILAG, LASU, Polytechnic Yaba', required: false },
+  ],
+  academic_assignments: [
+    { name: 'assignmentType', label: 'Assignment Type', type: 'select', required: true,
+      options: ['Essay', 'Term Paper', 'Case Study', 'Lab Report', 'Course Work', 'Other'] },
+    { name: 'course', label: 'Course / Subject', type: 'text', placeholder: 'e.g. Community Health Nursing', required: true },
+    { name: 'wordCount', label: 'Word / Page Count', type: 'text', placeholder: 'e.g. 1500 words or 5 pages', required: false },
+    { name: 'level', label: 'Academic Level', type: 'select', required: false,
+      options: ['OND', 'HND', 'BSc / B.Tech', 'PGD', 'MSc / MBA', 'PhD', 'Other'] },
+  ],
+  online_registration: [
+    { name: 'regType', label: 'Registration Type', type: 'select', required: true,
+      options: ['JAMB / UTME', 'WAEC', 'NECO', 'Post-UTME', 'School Portal', 'NIN / BVN', 'Professional Body', 'Other'] },
+    { name: 'candidateName', label: "Candidate's Full Name (if different)", type: 'text', placeholder: 'Leave blank if same as above', required: false },
+  ],
+  powerpoint: [
+    { name: 'topic', label: 'Presentation Topic', type: 'text', placeholder: 'e.g. Effect of hypertension in elderly patients', required: true },
+    { name: 'slideCount', label: 'Number of Slides (approx.)', type: 'text', placeholder: 'e.g. 20 slides', required: false },
+    { name: 'purpose', label: 'Purpose', type: 'select', required: true,
+      options: ['Project Defence', 'Seminar / Class presentation', 'Conference', 'Business Pitch', 'Teaching / Lecture', 'Other'] },
+    { name: 'hasContent', label: 'Do you have existing content?', type: 'select', required: false,
+      options: ['Yes — I will provide the write-up', 'Partial — some notes available', 'No — please research and create'] },
+  ],
+  proofreading: [
+    { name: 'docType', label: 'Document Type', type: 'select', required: true,
+      options: ['Research Project / Thesis', 'Essay / Assignment', 'CV / Cover Letter', 'Business Document', 'Article / Blog', 'Other'] },
+    { name: 'pageCount', label: 'Approximate Number of Pages', type: 'text', placeholder: 'e.g. 30 pages', required: false },
+    { name: 'editingLevel', label: 'Level of Editing Needed', type: 'select', required: false,
+      options: ['Light proofread (grammar & spelling only)', 'Standard edit (grammar + clarity)', 'Deep edit (structure + rewrite where needed)'] },
+  ],
+  survey_design: [
+    { name: 'surveyTopic', label: 'Survey Topic / Research Area', type: 'text', placeholder: 'e.g. Patient satisfaction in primary health centres', required: true },
+    { name: 'service', label: 'What Do You Need?', type: 'select', required: true,
+      options: ['Design questionnaire only', 'Analyse existing data only', 'Both design & analysis', 'Google Form setup', 'Full survey package'] },
+    { name: 'targetGroup', label: 'Target Respondents', type: 'text', placeholder: 'e.g. Final year nursing students', required: false },
+    { name: 'sampleSize', label: 'Expected Sample Size', type: 'text', placeholder: 'e.g. 100–200', required: false },
+  ],
+  waec_neco: [
+    { name: 'cardType', label: 'Card Type', type: 'select', required: true,
+      options: ['WAEC Result Checker', 'NECO Result Checker', 'Both WAEC & NECO'] },
+    { name: 'quantity', label: 'Number of Cards', type: 'select', required: true,
+      options: ['1 card', '2 cards', '3 cards', '4 cards', '5+ cards'] },
+    { name: 'examYear', label: 'Exam Year', type: 'text', placeholder: 'e.g. 2024', required: false },
+    { name: 'deliveryMethod', label: 'Delivery Method', type: 'select', required: true,
+      options: ['WhatsApp (image)', 'Email', 'Pick up in person (Yaba, Lagos)'] },
+  ],
+};
+
 const STATUS_COLORS = {
   pending: { bg: 'rgba(245,158,11,0.12)', color: '#D97706' },
   reviewing: { bg: 'rgba(37,99,235,0.12)', color: '#2563EB' },
