@@ -559,6 +559,23 @@ export default function AdminPage() {
   };
 
   // ── Bulk topic upload ───────────────────────────────────
+  // ── Download a starter CSV template for bulk topic upload ──
+  const downloadTopicTemplate = () => {
+    const header = 'Title,Category,Pages,Price,Description,Badge';
+    const example1 = '"Effect of malaria on under-5 children in Lagos","Nursing Science",65,15000,"A study on malaria prevalence and its effects on children under five in Lagos State.","Popular"';
+    const example2 = '"Impact of social media on academic performance of secondary school students","Education",50,12000,"Examines how social media usage affects study habits and academic outcomes.",""';
+    const csv = [header, example1, example2].join('\n');
+    const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
+    const url = URL.createObjectURL(blob);
+    const a = document.createElement('a');
+    a.href = url;
+    a.download = 'topics-template.csv';
+    document.body.appendChild(a);
+    a.click();
+    document.body.removeChild(a);
+    URL.revokeObjectURL(url);
+  };
+
   const parseBulkFile = async (file) => {
     const ext = file.name.split('.').pop().toLowerCase();
     let rows = [];
@@ -1722,6 +1739,13 @@ export default function AdminPage() {
                   • <strong>Plain .txt</strong> — one topic title per line (fill details in preview table below)<br />
                   • Word docs (.docx) — save as .txt or .csv first
                 </div>
+
+                <button
+                  type="button"
+                  onClick={downloadTopicTemplate}
+                  style={{ ...s.btn('#0D9488'), width: '100%', marginBottom: 16, padding: '10px', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  ⬇️ Download CSV Template
+                </button>
 
                 {/* Drop zone */}
                 <label style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', border: '2px dashed var(--border)', borderRadius: 10, padding: '32px 20px', cursor: 'pointer', marginBottom: 16, background: 'var(--bg-secondary)', gap: 8 }}>
