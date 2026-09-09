@@ -64,13 +64,13 @@ export default function HomePage() {
         </div>
       </section>
 
-      {/* ── SERVICE PILLS ── */}
+      {/* ── SERVICE PILLS (display only — not clickable) ── */}
       <section className="ec-pills-wrap">
         <div className="ec-pills">
           {SERVICES.map((s) => (
-            <Link key={s.path} to={s.path} className="ec-pill">
+            <span key={s.path} className="ec-pill ec-pill-static">
               <s.icon size={15} /> {s.title}
-            </Link>
+            </span>
           ))}
         </div>
       </section>
@@ -217,6 +217,8 @@ export default function HomePage() {
           transition: var(--transition);
         }
         .ec-pill:hover { background: rgba(255,255,255,0.20); }
+        .ec-pill-static { cursor: default; }
+        .ec-pill-static:hover { background: rgba(255,255,255,0.10); }
 
         .ec-section { max-width: 1100px; margin: 0 auto; padding: 64px 20px; }
         .ec-section-head { text-align: center; margin-bottom: 40px; }
