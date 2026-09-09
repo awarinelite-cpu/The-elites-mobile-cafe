@@ -1068,6 +1068,12 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
   const service = SERVICES.find(sv => sv.key === selected);
   const fields = selected ? (SERVICE_FIELDS[selected] || []) : [];
 
+  // ── Field styles used throughout the request form below ──
+  // (also referenced but never defined — the second cause of the
+  // blank-page crash after clicking a service card)
+  const labelSt = { display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 5 };
+  const inputSt = { width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', boxSizing: 'border-box' };
+
   const handle = e => setForm(p => ({ ...p, [e.target.name]: e.target.value }));
 
   const requiredFilled = () => {
