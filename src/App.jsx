@@ -72,25 +72,16 @@ function Layout() {
           <Route path="/writer"    element={<ProtectedRoute><WriterPage /></ProtectedRoute>} />
           <Route path="/ai-writer" element={<ProtectedRoute><AIResearchWriterPage /></ProtectedRoute>} />
 
-          {/* Service sub-pages (protected) */}
-          <Route path="/services/research-projects"
-            element={<ProtectedRoute><ResearchProjectsPage /></ProtectedRoute>} />
-          <Route path="/services/data-analysis"
-            element={<ProtectedRoute><DataAnalysisPage /></ProtectedRoute>} />
-          <Route path="/services/client-care"
-            element={<ProtectedRoute><ClientCarePage /></ProtectedRoute>} />
-          <Route path="/services/academic-assignments"
-            element={<ProtectedRoute><AcademicAssignmentsPage /></ProtectedRoute>} />
-          <Route path="/services/online-registration"
-            element={<ProtectedRoute><OnlineRegistrationPage /></ProtectedRoute>} />
-          <Route path="/services/powerpoint"
-            element={<ProtectedRoute><PowerPointPage /></ProtectedRoute>} />
-          <Route path="/services/proofreading"
-            element={<ProtectedRoute><ProofreadingPage /></ProtectedRoute>} />
-          <Route path="/services/survey-design"
-            element={<ProtectedRoute><SurveyDesignPage /></ProtectedRoute>} />
-          <Route path="/services/waec-neco"
-            element={<ProtectedRoute><WaecNecoPage /></ProtectedRoute>} />
+          {/* Service sub-pages (public, read-only for guests — see ServiceRequestPage) */}
+          <Route path="/services/research-projects"     element={<ResearchProjectsPage />} />
+          <Route path="/services/data-analysis"          element={<DataAnalysisPage />} />
+          <Route path="/services/client-care"            element={<ClientCarePage />} />
+          <Route path="/services/academic-assignments"   element={<AcademicAssignmentsPage />} />
+          <Route path="/services/online-registration"    element={<OnlineRegistrationPage />} />
+          <Route path="/services/powerpoint"              element={<PowerPointPage />} />
+          <Route path="/services/proofreading"            element={<ProofreadingPage />} />
+          <Route path="/services/survey-design"           element={<SurveyDesignPage />} />
+          <Route path="/services/waec-neco"               element={<WaecNecoPage />} />
 
           <Route path="*" element={<NotFound />} />
         </Routes>
