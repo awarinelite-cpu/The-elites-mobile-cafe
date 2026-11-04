@@ -121,7 +121,6 @@ export default function TopicsPage() {
           <span className="serif">Elite<i>Cafe</i></span>
         </Link>
         <div className="tp-bar-r">
-          {!profile && <Link to="/register" className="tp-gold">Get Started <ArrowRight size={16} /></Link>}
           {profile && <Link to={dash} className="tp-gold">Dashboard</Link>}
           <button className="tp-burger" onClick={() => setMenu(true)} aria-label="Menu"><Menu size={26} /></button>
         </div>
