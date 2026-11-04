@@ -4,7 +4,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import {
   Search, ArrowLeft, ArrowRight, ChevronDown, LayoutGrid, Star, RotateCcw, Filter,
   FileText, Users, Eye, BookOpen, Menu, X, Stethoscope, ClipboardPlus, FlaskConical,
-  HeartPulse, Baby, Brain, Pill, Microscope, Scale, GraduationCap, Cpu, Briefcase,
+  HeartPulse, Baby, Brain, Pill, Microscope, Scale, GraduationCap, Cpu, Briefcase, Copy, Check,
 } from 'lucide-react';
 import { subscribeToTopics, createOrder } from '../firebase/orderService';
 import { useAuth } from '../context/AuthContext';
@@ -222,7 +222,30 @@ export default function TopicsPage() {
   );
 }
 
+async function copyText(text) {
+  try {
+    await navigator.clipboard.writeText(text);
+  } catch {
+    const ta = document.createElement('textarea');
+    ta.value = text;
+    ta.style.position = 'fixed';
+    ta.style.opacity = '0';
+    document.body.appendChild(ta);
+    ta.select();
+    document.execCommand('copy');
+    document.body.removeChild(ta);
+  }
+}
+
 function TopicCard({ topic, onView }) {
+  const [copied, setCopied] = useState(false);
+  const handleCopy = async (e) => {
+    e.stopPropagation();
+    await copyText(topic.title || '');
+    setCopied(true);
+    toast.success('Topic copied');
+    setTimeout(() => setCopied(false), 1500);
+  };
   const { t, Icon } = styleFor(topic.category);
   const views = fmtViews(topic.views);
   const rating = Number(topic.rating);
@@ -237,6 +260,9 @@ function TopicCard({ topic, onView }) {
           {topic.popular && views && <i />}
           {views && <span><Eye size={18} /> {views} views</span>}
           {!topic.popular && !views && topic.pages && <span><FileText size={16} /> {topic.pages} pages</span>}
+          <button type="button" className="copy-btn" onClick={handleCopy} aria-label="Copy research topic" title="Copy topic">
+            {copied ? <Check size={16} /> : <Copy size={16} />}
+          </button>
         </div>
       </div>
       <div className="side">
@@ -310,6 +336,9 @@ const CSS = `
 .card .meta { display:flex; align-items:center; gap:10px; margin-top:8px; font-size:.9rem; font-weight:700; color:#33504A; flex-wrap:wrap; }
 .card .meta span { display:inline-flex; align-items:center; gap:6px; } .card .meta i { width:1px; height:16px; background:#9AB5AC; }
 .card .side { align-self:stretch; display:flex; flex-direction:column; align-items:flex-end; justify-content:space-between; gap:10px; }
+.card .meta .copy-btn { display:inline-flex; align-items:center; justify-content:center; width:30px; height:30px; padding:0; margin-left:4px; background:#DDF3EC; color:var(--g800); border:1px solid #BFE2D6; border-radius:8px; cursor:pointer; box-shadow:none; }
+.card .meta .copy-btn:hover { background:#CFF1E6; }
+[data-theme="dark"] .card .meta .copy-btn { background:#10302A; color:#7FD1BA; border-color:var(--line); }
 .card .rate { display:inline-flex; align-items:center; gap:6px; background:#DDF3EC; color:var(--g800); font-weight:700; padding:6px 14px; border-radius:999px; }
 .card .side button { display:inline-flex; align-items:center; gap:8px; margin-top:auto; background:var(--g800); color:#fff; border:0; border-radius:999px; padding:12px 20px; font-size:1rem; cursor:pointer; box-shadow:0 4px 10px rgba(6,52,44,.3); white-space:nowrap; }
 .card .side button:hover { background:var(--g700); }
