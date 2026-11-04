@@ -4,7 +4,7 @@ import {
   Sun, Moon, ChevronDown, ArrowRight, Users, ShieldCheck, Zap,
   FileSearch, BarChart3, Cpu, UserRound, ClipboardCheck, PencilLine,
   CheckCircle2, ClipboardList, Headset, PackageCheck, Facebook, Twitter,
-  MessageCircle, Youtube, Star, ShieldCheck as Shield,
+  MessageCircle, Youtube, Star, ShieldCheck as Shield, Phone,
 } from 'lucide-react';
 import useDarkMode from '../hooks/useDarkMode';
 import { useAuth } from '../context/AuthContext';
@@ -193,6 +193,11 @@ export default function HomePage() {
             <a href="#" aria-label="YouTube"><Youtube size={20} /></a>
           </div>
         </div>
+        <div className="lp-contact">
+          <span>Need help? Contact us:</span>
+          <a href="tel:+2348134106745"><Phone size={15} /> 0813 410 6745</a>
+          <a href="https://wa.me/2348134106745" target="_blank" rel="noopener noreferrer"><MessageCircle size={15} /> WhatsApp</a>
+        </div>
         <div className="lp-footer-base">
           <hr /><p>© {new Date().getFullYear()} EliteCafe. All rights reserved.</p><hr />
           <span className="secure"><Shield size={15} fill="#2BB673" color="#2BB673" /> Secure Payments Powered by Monnify</span>
@@ -342,6 +347,9 @@ const CSS = `
 .lp-footer nav i { width:1px; height:14px; background:rgba(255,255,255,.4); }
 .lp-footer .follow { display:flex; align-items:center; gap:10px; font-size:.82rem; }
 .lp-footer .follow a { width:32px; height:32px; border-radius:50%; background:#fff; color:var(--g800); display:flex; align-items:center; justify-content:center; }
+.lp-contact { max-width:1200px; margin:14px auto 0; display:flex; align-items:center; justify-content:center; gap:16px; flex-wrap:wrap; font-size:.85rem; }
+.lp-contact a { display:inline-flex; align-items:center; gap:6px; color:#fff; font-weight:700; text-decoration:none; background:rgba(255,255,255,.12); padding:7px 14px; border-radius:999px; }
+.lp-contact a:hover { background:rgba(255,255,255,.22); }
 .lp-footer-base { max-width:1200px; margin:12px auto 0; display:flex; align-items:center; gap:14px; font-size:.8rem; position:relative; }
 .lp-footer-base hr { flex:1; border:0; height:1px; background:rgba(255,255,255,.25); }
 .lp-footer-base .secure { position:absolute; right:0; top:22px; display:flex; align-items:center; gap:5px; font-size:.72rem; }

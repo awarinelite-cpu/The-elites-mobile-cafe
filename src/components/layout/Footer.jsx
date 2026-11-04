@@ -1,6 +1,6 @@
 // src/components/layout/Footer.jsx
 import { Link } from 'react-router-dom';
-import { BookOpen, Mail, Phone } from 'lucide-react';
+import { BookOpen, Mail, Phone, MessageCircle } from 'lucide-react';
 
 export default function Footer() {
   return (
@@ -68,8 +68,11 @@ export default function Footer() {
               <a href="mailto:info@elitesmobilecafe.com" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Mail size={13} color="var(--gold)" /> info@elitesmobilecafe.com
               </a>
-              <a href="tel:+1234567890" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
-                <Phone size={13} color="var(--gold)" /> +1 (234) 567-890
+              <a href="tel:+2348134106745" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <Phone size={13} color="var(--gold)" /> 0813 410 6745
+              </a>
+              <a href="https://wa.me/2348134106745" target="_blank" rel="noopener noreferrer" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
+                <MessageCircle size={13} color="var(--gold)" /> Chat on WhatsApp
               </a>
             </div>
           </div>
