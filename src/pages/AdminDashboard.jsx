@@ -10,6 +10,16 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
   const pendingPayouts  = paymentSplits.filter(p => p.status !== 'paid').reduce((sum, p) => sum + (p.writerAmount || 0), 0);
   const pendingWithdraw = withdrawalRequests.filter(w => w.status === 'pending').length;
 
+  const activeTopics = topics.filter(x => x.badge !== 'Hidden').length;
+  // Revenue growth: last 30 days vs the 30 days before (null when not computable)
+  const dayMs = 86400000, now = Date.now();
+  const sumBetween = (from, to) => paymentSplits.reduce((sum, p) => {
+    const ts = p.createdAt?.toDate?.()?.getTime?.();
+    return ts && ts >= from && ts < to ? sum + (p.totalAmount || 0) : sum;
+  }, 0);
+  const curRev = sumBetween(now - 30 * dayMs, now + dayMs), prevRev = sumBetween(now - 60 * dayMs, now - 30 * dayMs);
+  const growth = prevRev > 0 ? Math.round(((curRev - prevRev) / prevRev) * 100) : null;
+
   // Recent activity — last 5 requests
   const recent = [...requests].slice(0, 5);
 
@@ -20,29 +30,79 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>🏠 Dashboard</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 28 }}>Live overview of Elite Mobile Cafe operations.</p>
+      <style>{`
+        .db-live { display:flex; align-items:center; justify-content:space-between; gap:10px; background:#fff; border:1px solid var(--border); border-radius:20px; padding:12px 14px 12px 18px; box-shadow:0 4px 14px rgba(6,52,44,.07); margin-bottom:18px; }
+        .db-live .dot { width:16px; height:16px; border-radius:50%; background:#0F8A5F; box-shadow:0 0 0 4px rgba(15,138,95,.18); flex:0 0 auto; }
+        .db-live b { display:block; font-size:1rem; color:#06342C; }
+        .db-live small { color:var(--text-secondary); font-size:.82rem; }
+        .db-date { display:flex; align-items:center; gap:8px; padding:9px 14px; border-radius:14px; background:#EEF3F2; border:1px solid var(--border); font-weight:600; font-size:.88rem; color:#06342C; white-space:nowrap; }
+        .db-grid { display:grid; grid-template-columns:1fr 1fr; gap:14px; margin-bottom:20px; }
+        @media (min-width:900px) { .db-grid { grid-template-columns:repeat(3,1fr); } }
+        .db-k { position:relative; overflow:hidden; text-align:left; cursor:pointer; border-radius:22px; padding:16px 14px 16px 14px; min-height:150px; border:1px solid rgba(255,255,255,.7); box-shadow:0 8px 20px rgba(6,52,44,.1); display:flex; gap:10px; font-family:var(--font-body); transition:transform .15s; }
+        .db-k:hover { transform:translateY(-2px); }
+        .db-k .ic { flex:0 0 auto; font-size:2.6rem; line-height:1; width:56px; display:flex; align-items:flex-start; justify-content:center; padding-top:22px; }
+        .db-k .body { position:relative; z-index:1; min-width:0; flex:1; padding-top:2px; }
+        .db-k .lbl { font-size:.9rem; font-weight:500; color:#1F2937; padding-right:24px; line-height:1.2; }
+        .db-k .val { font-family:var(--font-display); font-size:1.75rem; font-weight:800; line-height:1.15; margin:4px 0 8px; }
+        .db-k .chip { display:inline-flex; align-items:center; gap:6px; padding:5px 11px; border-radius:999px; font-size:.78rem; font-weight:700; background:rgba(255,255,255,.65); }
+        .db-k .go { position:absolute; top:10px; right:10px; width:28px; height:28px; border-radius:50%; background:rgba(255,255,255,.75); display:flex; align-items:center; justify-content:center; font-size:1rem; font-weight:800; z-index:2; }
+        .db-k .wave { position:absolute; left:0; right:0; bottom:0; height:46%; opacity:.45; pointer-events:none; }
+        .db-more { display:flex; gap:10px; margin-bottom:20px; flex-wrap:wrap; }
+        .db-more button { flex:1 1 90px; background:#fff; border:1px solid var(--border); border-radius:16px; padding:10px 12px; text-align:left; cursor:pointer; font-family:var(--font-body); }
+        .db-more b { display:block; font-family:var(--font-display); font-size:1.2rem; color:#06342C; }
+        .db-more small { font-size:.72rem; color:var(--text-muted); text-transform:uppercase; letter-spacing:.4px; }
+        .db-foot { display:flex; align-items:center; gap:14px; margin-top:22px; padding:14px 16px; border-radius:24px; color:#fff; background:linear-gradient(120deg,#06342C,#0F5C4D); box-shadow:0 8px 20px rgba(6,52,44,.2); flex-wrap:wrap; }
+        .db-foot .tro { font-size:2.4rem; }
+        .db-foot .tx { flex:1 1 160px; border-left:1.5px solid rgba(245,184,46,.7); padding-left:14px; }
+        .db-foot .tx i { font-family:var(--font-display); font-size:1.05rem; font-weight:700; }
+        .db-foot .tx i em { color:#F5B82E; }
+        .db-foot .tx small { display:block; font-size:.82rem; opacity:.9; margin-top:2px; }
+        .db-foot button { border:none; cursor:pointer; padding:11px 18px; border-radius:999px; background:linear-gradient(135deg,#FFC93C,#E9A60F); color:#06342C; font-weight:800; font-size:.88rem; font-family:var(--font-body); }
+      `}</style>
 
-      {/* KPI cards */}
-      <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 28 }}>
+      <div className="db-live">
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12 }}>
+          <span className="dot" />
+          <div><b>Live Overview</b><small>Elite Mobile Cafe Operations</small></div>
+        </div>
+        <div className="db-date">📅 {new Date().toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' })} <span style={{ fontSize: 11 }}>⌄</span></div>
+      </div>
+
+      <div className="db-grid">
         {[
-          { label: 'Total Revenue',    value: `₦${totalRevenue.toLocaleString()}`,  color: '#16A34A', bg: 'rgba(22,163,74,0.07)',   icon: '💰', nav: 'payments' },
-          { label: 'Pending Payouts',  value: `₦${pendingPayouts.toLocaleString()}`,color: '#D97706', bg: 'rgba(217,119,6,0.07)',   icon: '⏳', nav: 'payments' },
-          { label: 'Pending Requests', value: pendingReqs,                           color: '#EF4444', bg: 'rgba(239,68,68,0.07)',   icon: '📋', nav: 'requests' },
-          { label: 'In Progress',      value: inProgress,                            color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', icon: '⚙️', nav: 'requests' },
-          { label: 'Completed',        value: completed,                             color: '#16836D', bg: 'rgba(22,131,109,0.07)', icon: '✅', nav: 'requests' },
-          { label: 'Total Clients',    value: totalClients,                          color: '#2563EB', bg: 'rgba(37,99,235,0.07)',  icon: '🎓', nav: 'users'    },
-          { label: 'Writers',          value: totalWriters,                          color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', icon: '✍️', nav: 'users'    },
-          { label: 'Payout Requests',  value: pendingWithdraw,                      color: '#D97706', bg: 'rgba(217,119,6,0.07)',   icon: '💸', nav: 'withdrawals' },
-        ].map(kpi => (
-          <button key={kpi.label} onClick={() => onNav(kpi.nav)}
-            style={{ ...s.card, textAlign: 'left', cursor: 'pointer', background: kpi.bg, border: `1px solid ${kpi.color}22`, marginBottom: 0, transition: 'all 0.18s' }}
-            onMouseEnter={e => { e.currentTarget.style.transform = 'translateY(-2px)'; e.currentTarget.style.borderColor = kpi.color+'55'; }}
-            onMouseLeave={e => { e.currentTarget.style.transform = 'none'; e.currentTarget.style.borderColor = kpi.color+'22'; }}>
-            <div style={{ fontSize: 22, marginBottom: 8 }}>{kpi.icon}</div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: kpi.color }}>{kpi.value}</div>
-            <div style={{ fontSize: 11, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginTop: 4 }}>{kpi.label}</div>
+          { label: 'Total Revenue',      value: `₦${totalRevenue.toLocaleString()}`,   color: '#15803D', bg: 'linear-gradient(135deg,#D9F5E6,#A7E6C8)', icon: '💰', nav: 'payments',
+            chip: growth !== null ? `${growth >= 0 ? '↑' : '↓'} ${Math.abs(growth)}%` : 'All time', chipColor: '#15803D', wave: '#34D399' },
+          { label: 'Pending Payouts',    value: `₦${pendingPayouts.toLocaleString()}`, color: '#B45309', bg: 'linear-gradient(135deg,#FFF1D6,#FFD98F)', icon: '⏳', nav: 'payments',
+            chip: pendingPayouts === 0 ? 'All Clear! ✔' : 'Needs payout', chipColor: '#B45309', wave: '#FBBF24' },
+          { label: 'Pending Requests',   value: pendingReqs,                            color: '#DC2626', bg: 'linear-gradient(135deg,#E3F0FF,#C7DCFB)', icon: '📋', nav: 'requests',
+            chip: pendingReqs === 0 ? '✔ No Pending Requests' : 'Needs attention', chipColor: '#1E3A8A', wave: '#60A5FA' },
+          { label: 'In Progress',        value: inProgress,                             color: '#6D28D9', bg: 'linear-gradient(135deg,#EFE7FF,#D3C2FA)', icon: '⚙️', nav: 'requests',
+            chip: '✔ On Track', chipColor: '#6D28D9', wave: '#A78BFA' },
+          { label: 'Completed Projects', value: completed,                              color: '#0F766E', bg: 'linear-gradient(135deg,#DDF7EF,#B3EBDB)', icon: '✅', nav: 'requests',
+            chip: 'View Details →', chipColor: '#0F766E', wave: '#34D399' },
+          { label: 'Active Topics',      value: activeTopics,                           color: '#1D4ED8', bg: 'linear-gradient(135deg,#E4EEFF,#BFD6FA)', icon: '🎓', nav: 'topics',
+            chip: 'Browse Topics →', chipColor: '#1D4ED8', wave: '#60A5FA' },
+        ].map(k => (
+          <button key={k.label} className="db-k" style={{ background: k.bg }} onClick={() => onNav(k.nav)}>
+            <svg className="wave" viewBox="0 0 200 60" preserveAspectRatio="none"><path d="M0 40 C40 10 80 60 120 30 S180 20 200 10 V60 H0 Z" fill={k.wave} /></svg>
+            <span className="go" style={{ color: k.color }}>›</span>
+            <span className="ic">{k.icon}</span>
+            <span className="body">
+              <span className="lbl" style={{ display: 'block' }}>{k.label}</span>
+              <span className="val" style={{ display: 'block', color: k.color }}>{k.value}</span>
+              <span className="chip" style={{ color: k.chipColor }}>{k.chip}</span>
+            </span>
           </button>
+        ))}
+      </div>
+
+      <div className="db-more">
+        {[
+          { l: 'Total Clients', v: totalClients, nav: 'users' },
+          { l: 'Writers', v: totalWriters, nav: 'users' },
+          { l: 'Payout Requests', v: pendingWithdraw, nav: 'withdrawals' },
+        ].map(x => (
+          <button key={x.l} onClick={() => onNav(x.nav)}><b>{x.v}</b><small>{x.l}</small></button>
         ))}
       </div>
 
@@ -119,6 +179,12 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
             );
           })
         )}
+      </div>
+
+      <div className="db-foot">
+        <span className="tro">🏆</span>
+        <div className="tx"><i>Excellence in <em>Academic Support</em></i><small>Together, we make research easier.</small></div>
+        <button onClick={() => onNav('messages')}>Visit Help Center →</button>
       </div>
     </div>
   );
