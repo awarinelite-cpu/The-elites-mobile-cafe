@@ -47,12 +47,13 @@ function Layout() {
     }
   }, []);
 
+  const isHome = loc.pathname === '/';
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(loc.pathname);
   const isDash = loc.pathname.startsWith('/dashboard') || loc.pathname.startsWith('/admin') || loc.pathname.startsWith('/writer');
 
   return (
     <div style={{ display: 'flex', flexDirection: 'column', minHeight: '100vh' }}>
-      <Navbar />
+      {!isHome && <Navbar />}
       <main style={{ flex: 1 }}>
         <Routes>
           {/* Core */}
@@ -86,7 +87,7 @@ function Layout() {
           <Route path="*" element={<NotFound />} />
         </Routes>
       </main>
-      {!isAuthPage && !isDash && <Footer />}
+      {!isAuthPage && !isDash && !isHome && <Footer />}
     </div>
   );
 }
