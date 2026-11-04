@@ -300,7 +300,7 @@ const CSS = `
 .tp-filters .reset { display:inline-flex; align-items:center; gap:8px; background:transparent; border:1.5px solid var(--g800); color:var(--g800); border-radius:999px; padding:11px 22px; font-size:1.05rem; cursor:pointer; }
 [data-theme="dark"] .tp-filters .reset { color:#7FD1BA; border-color:#7FD1BA; }
 
-.tp-count { display:inline-flex; align-items:center; gap:10px; background:var(--g800); color:#fff; border-radius:999px; padding:12px 24px; font-size:1.05rem; font-weight:700; margin:18px 0 0 max(16px,calc((100vw - 1060px)/2)); }
+.tp-count { display:inline-flex; align-items:center; gap:10px; background:var(--g800); color:#fff; border-radius:999px; padding:12px 24px; font-size:1.05rem; font-weight:700; margin:18px 0 0 max(16px,calc((100% - 1060px)/2)); }
 
 .tp-list { max-width:1060px; margin:14px auto 0; padding:0 16px; display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,460px),1fr)); gap:16px; }
 .card { display:grid; grid-template-columns:auto minmax(0,1fr) auto; gap:16px; align-items:center; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--bar); border-radius:16px; padding:16px 16px 16px 14px; box-shadow:0 4px 14px rgba(15,92,77,.10); }
