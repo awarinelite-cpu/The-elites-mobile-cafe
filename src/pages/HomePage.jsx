@@ -96,11 +96,11 @@ export default function HomePage() {
         <p className="lp-lead">Professional, reliable and affordable academic support.</p>
         <div className="lp-services">
           {SERVICES.map(s => (
-            <Link to={s.to} key={s.title} className="lp-service">
+            <div key={s.title} className="lp-service">
               <span className="ico"><s.icon size={34} strokeWidth={1.7} /></span>
               <span className="txt"><b>{s.title}</b><small>{s.desc}</small></span>
               <span className="go"><ArrowRight size={14} /></span>
-            </Link>
+            </div>
           ))}
         </div>
       </section>
@@ -279,8 +279,7 @@ const CSS = `
 .lp-h2 em { color:#13A58B; }
 .lp-lead { color:var(--ink); font-size:.98rem; margin:2px 0 12px; }
 .lp-services { display:grid; grid-template-columns:repeat(3,1fr); gap:10px 14px; max-width:1000px; margin:0 auto; padding:0 6px; text-align:left; }
-.lp-service { display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; box-shadow:0 3px 10px rgba(15,92,77,.08); transition:.2s; min-height:84px; }
-.lp-service:hover { transform:translateY(-2px); box-shadow:0 8px 20px rgba(15,92,77,.16); }
+.lp-service { display:flex; align-items:center; gap:12px; background:var(--card); border:1px solid var(--line); border-radius:14px; padding:12px 14px; box-shadow:0 3px 10px rgba(15,92,77,.08); transition:.2s; min-height:84px; cursor:default; pointer-events:none; user-select:none; }
 .lp-service .ico { color:var(--g700); flex-shrink:0; width:56px; display:flex; justify-content:center; }
 .lp-service .txt { flex:1; display:flex; flex-direction:column; line-height:1.2; }
 .lp-service b { font-size:.9rem; color:var(--ink); }
