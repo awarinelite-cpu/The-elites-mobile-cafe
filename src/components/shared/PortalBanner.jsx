@@ -1,13 +1,17 @@
 // src/components/shared/PortalBanner.jsx — compact green banner for dashboard-style pages
-import { BookOpen } from 'lucide-react';
+import { BookOpen, Settings } from 'lucide-react';
 
-export default function PortalBanner({ eyebrow, title, subtitle }) {
+export default function PortalBanner({ eyebrow, title, subtitle, pill = false }) {
+  const words = String(title).split(' ');
+  const last = words.pop();
   return (
     <div className="pb">
       <div className="pb-img"><img src="/landing/topics-hero.png" alt="" /></div>
       <div className="pb-in">
-        <div className="pb-eyebrow"><BookOpen size={18} strokeWidth={1.8} /><span>{eyebrow}</span><i /></div>
-        <h1>{title}</h1>
+        {pill
+          ? <div className="pb-pill"><Settings size={16} strokeWidth={2.2} /><span>{eyebrow}</span></div>
+          : <div className="pb-eyebrow"><BookOpen size={18} strokeWidth={1.8} /><span>{eyebrow}</span><i /></div>}
+        <h1>{pill ? <>{words.join(' ')} <em>{last}</em></> : title}</h1>
         {subtitle && <p>{subtitle}</p>}
       </div>
       <style>{`
@@ -19,6 +23,9 @@ export default function PortalBanner({ eyebrow, title, subtitle }) {
         .pb-eyebrow span { font-family:var(--font-display); font-weight:700; font-size:.78rem; letter-spacing:2.5px; text-transform:uppercase; }
         .pb-eyebrow i { flex:0 0 46px; height:2px; background:#F5B82E; }
         .pb h1 { font-family:var(--font-display); font-weight:700; font-size:clamp(1.5rem,5vw,2.2rem); line-height:1.12; color:#fff; margin:6px 0 0; }
+        .pb-pill { display:inline-flex; align-items:center; gap:7px; padding:6px 14px; border:1.5px solid #F5B82E; border-radius:999px; color:#F5B82E; background:rgba(0,0,0,.18); }
+        .pb-pill span { font-weight:800; font-size:.78rem; letter-spacing:.5px; text-transform:uppercase; font-family:var(--font-body); }
+        .pb h1 em { font-style:normal; color:#FFD60A; }
         .pb p { max-width:340px; margin:6px 0 0; font-size:.9rem; line-height:1.4; color:rgba(255,255,255,.9); font-weight:400; }
       `}</style>
     </div>

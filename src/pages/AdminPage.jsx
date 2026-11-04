@@ -1,6 +1,7 @@
 // src/pages/AdminPage.jsx
 import { useState, useEffect, useRef } from 'react';
 import PortalBanner from '../components/shared/PortalBanner';
+import { Search, BookOpen, GraduationCap, FileText, ChevronRight, FolderUp, ClipboardList, Plus, Trash2, Star, LayoutGrid } from 'lucide-react';
 import { useAuth } from '../context/AuthContext';
 import AIResearchWriterPage from './AIResearchWriterPage';
 import {
@@ -43,6 +44,8 @@ export default function AdminPage() {
   const [confirmingPayment, setConfirmingPayment] = useState(false);
   const [toast, setToast]                     = useState('');
   const [selectedTopics, setSelectedTopics]   = useState(new Set());
+  const [topicSearch, setTopicSearch]         = useState('');
+  const [topicView, setTopicView]             = useState('all'); // all | popular | category | pages
   const [orderChatMessages, setOrderChatMessages] = useState([]);
   const [orderChatText, setOrderChatText]     = useState('');
   const [orderChatSending, setOrderChatSending] = useState(false);
@@ -1053,7 +1056,7 @@ export default function AdminPage() {
       {/* ── Main content ────────────────────────────────── */}
       <main className="admin-main" style={{ flex: 1, padding: 'clamp(18px,3vw,32px)', overflowY: 'auto', minWidth: 0, animation: 'fadeIn 0.25s ease' }}>
 
-        <PortalBanner eyebrow="Admin Panel" title={(NAV.find(n => n.key === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Manage orders, writers, topics and payments." />
+        <PortalBanner eyebrow="Admin Panel" title={(NAV.find(n => n.key === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Manage orders, writers, topics and payments." pill={tab === 'topics'} />
         {/* Mobile top bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
           <button className="admin-menu-btn" onClick={() => setSidebarOpen(o => !o)}
@@ -1480,36 +1483,78 @@ export default function AdminPage() {
         {/* ══════════════ RESEARCH TOPICS ══════════════ */}
         {tab === 'topics' && (
           <div>
-            <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 20, flexWrap: 'wrap', gap: 10 }}>
-              <h2 style={{ fontFamily: 'var(--font-display)', color: 'var(--text-primary)' }}>Research Topics ({topics.length})</h2>
-              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center' }}>
-                {selectedTopics.size > 0 && (
-                  <>
-                    <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>{selectedTopics.size} selected</span>
-                    <button style={s.btn('#EF4444')} onClick={deleteSelectedTopics} disabled={saving}>
-                      🗑️ Delete Selected ({selectedTopics.size})
-                    </button>
-                    <button style={s.btn('#6B7280')} onClick={() => setSelectedTopics(new Set())}>
-                      ✕ Clear
-                    </button>
-                  </>
-                )}
-                <button style={s.btn('var(--blue-deep)')} onClick={() => { setBulkMode(true); setPasteMode(false); setTopicForm(null); }}>
-                  📂 Bulk Upload
-                </button>
-                <button style={{ ...s.btn(pasteMode ? '#7C3AED' : '#4F46E5') }} onClick={() => { setPasteMode(p => !p); setBulkMode(false); setTopicForm(null); setBulkParsed([]); }}>
-                  📋 Paste Topics
-                </button>
-                <button style={s.btn('var(--teal)')}
-                  onClick={() => { setTopicForm({ title: '', category: 'Nursing Science', pages: '', price: '', description: '', badge: '' }); setBulkMode(false); setPasteMode(false); }}>
-                  ＋ Add New Topic
-                </button>
-                {topics.length > 0 && (
-                  <button style={s.btn('#EF4444')} onClick={deleteAllTopics} disabled={saving}>
-                    🗑️ Delete All ({topics.length})
-                  </button>
-                )}
+            <style>{`
+              .tp-search { display:flex; align-items:center; gap:10px; background:#fff; border:1px solid var(--border); border-radius:18px; padding:6px 6px 6px 16px; box-shadow:0 4px 14px rgba(6,52,44,.08); margin-bottom:16px; }
+              .tp-search input { flex:1; min-width:0; border:none; outline:none; background:transparent; font-size:.95rem; color:var(--text-primary); font-family:var(--font-body); }
+              .tp-search button { display:flex; align-items:center; gap:8px; border:none; cursor:pointer; color:#fff; font-weight:700; font-size:.95rem; padding:11px 20px; border-radius:14px; background:linear-gradient(135deg,#0F6B58,#06342C); font-family:var(--font-body); }
+              .tp-actions { display:grid; grid-template-columns:1fr 1fr; gap:12px; margin-bottom:18px; }
+              .tp-act { display:flex; align-items:center; gap:12px; text-align:left; border:none; cursor:pointer; padding:14px 16px; border-radius:18px; font-family:var(--font-body); box-shadow:0 6px 16px rgba(6,52,44,.14); min-width:0; }
+              .tp-act b { display:block; font-size:1.02rem; font-weight:800; line-height:1.15; }
+              .tp-act small { display:block; font-size:.78rem; opacity:.9; margin-top:2px; }
+              .tp-act:disabled { opacity:.6; cursor:not-allowed; }
+              .tp-act.bulk { background:linear-gradient(135deg,#0F5C4D,#06342C); color:#fff; }
+              .tp-act.paste { background:linear-gradient(135deg,#8B5CF6,#4F46E5); color:#fff; }
+              .tp-act.add { background:#C9F0DE; color:#06342C; }
+              .tp-act.del { background:linear-gradient(135deg,#F87171,#DC2626); color:#fff; }
+              .tp-ico { flex:0 0 auto; width:38px; height:38px; display:flex; align-items:center; justify-content:center; }
+              .tp-ico.circ { border-radius:50%; background:#06342C; color:#fff; width:34px; height:34px; }
+              .tp-card { background:#fff; border:1px solid var(--border); border-radius:22px; box-shadow:0 6px 20px rgba(6,52,44,.08); overflow:hidden; }
+              .tp-tabs { display:flex; overflow-x:auto; border-bottom:1px solid var(--border); scrollbar-width:none; }
+              .tp-tabs::-webkit-scrollbar { display:none; }
+              .tp-tab { flex:1 0 auto; display:flex; align-items:center; justify-content:center; gap:7px; padding:15px 14px; border:none; background:none; cursor:pointer; font-weight:600; font-size:.92rem; color:var(--text-secondary); white-space:nowrap; border-bottom:3px solid transparent; font-family:var(--font-body); }
+              .tp-tab.on { color:#06342C; font-weight:800; border-bottom-color:#0F5C4D; }
+              .tp-row { display:flex; align-items:center; gap:12px; padding:14px 14px; border-bottom:1px solid var(--border); }
+              .tp-row:last-child { border-bottom:none; }
+              .tp-row.sel { background:rgba(239,68,68,.06); }
+              .tp-row.hid { opacity:.5; }
+              .tp-chk { width:20px; height:20px; flex:0 0 auto; cursor:pointer; accent-color:#EF4444; }
+              .tp-book { flex:0 0 auto; width:54px; height:54px; border-radius:50%; background:#D5F2E4; color:#0F5C4D; display:flex; align-items:center; justify-content:center; }
+              .tp-mid { flex:1; min-width:0; }
+              .tp-title { font-weight:800; font-size:1rem; line-height:1.25; color:#06342C; word-break:break-word; }
+              .tp-chip { display:inline-flex; align-items:center; gap:5px; margin-top:6px; padding:3px 10px; border-radius:999px; background:#E3F4EC; color:#0F5C4D; font-size:.74rem; font-weight:700; }
+              .tp-badge { margin-left:6px; font-size:.7rem; font-weight:800; padding:2px 8px; border-radius:999px; background:#FEF3C7; color:#92400E; }
+              .tp-pages { flex:0 0 auto; display:flex; align-items:center; gap:7px; background:#D5F2E4; color:#0F5C4D; border-radius:14px; padding:8px 12px; }
+              .tp-pages small { display:block; font-size:.74rem; font-weight:600; line-height:1; }
+              .tp-pages b { display:block; font-size:1.2rem; font-weight:800; line-height:1.1; }
+              .tp-go { flex:0 0 auto; width:38px; height:38px; border-radius:50%; border:none; background:#D5F2E4; color:#06342C; display:flex; align-items:center; justify-content:center; cursor:pointer; }
+              .tp-group { padding:8px 16px; font-size:.72rem; font-weight:800; letter-spacing:1px; text-transform:uppercase; color:#0F5C4D; background:#F1F8F5; }
+              .tp-empty { text-align:center; padding:40px 16px; color:var(--text-muted); }
+              @media (max-width:420px) { .tp-pages small { display:none; } .tp-book { width:44px; height:44px; } .tp-act b { font-size:.92rem; } }
+            `}</style>
+
+            {selectedTopics.size > 0 && (
+              <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap', alignItems: 'center', marginBottom: 12 }}>
+                <span style={{ fontSize: 13, color: 'var(--text-muted)', fontWeight: 600 }}>{selectedTopics.size} selected</span>
+                <button style={s.btn('#EF4444')} onClick={deleteSelectedTopics} disabled={saving}>🗑️ Delete Selected ({selectedTopics.size})</button>
+                <button style={s.btn('#6B7280')} onClick={() => setSelectedTopics(new Set())}>✕ Clear</button>
               </div>
+            )}
+
+            <div className="tp-search">
+              <Search size={20} color="#06342C" />
+              <input value={topicSearch} onChange={e => setTopicSearch(e.target.value)} placeholder="Search for a topic, category or keyword…" />
+              <button type="button" onClick={() => {}}><Search size={18} /> Search</button>
+            </div>
+
+            <div className="tp-actions">
+              <button className="tp-act bulk" onClick={() => { setBulkMode(true); setPasteMode(false); setTopicForm(null); }}>
+                <span className="tp-ico"><FolderUp size={32} color="#F5B82E" /></span>
+                <span><b>Bulk Upload</b><small>Upload multiple topics</small></span>
+              </button>
+              <button className="tp-act paste" onClick={() => { setPasteMode(p => !p); setBulkMode(false); setTopicForm(null); setBulkParsed([]); }}>
+                <span className="tp-ico"><ClipboardList size={32} /></span>
+                <span><b>Paste Topics</b><small>Paste from text</small></span>
+              </button>
+              <button className="tp-act add" onClick={() => { setTopicForm({ title: '', category: 'Nursing Science', pages: '', price: '', description: '', badge: '' }); setBulkMode(false); setPasteMode(false); }}>
+                <span className="tp-ico circ"><Plus size={20} /></span>
+                <span><b>Add New Topic</b><small>Create a new topic</small></span>
+              </button>
+              {topics.length > 0 && (
+                <button className="tp-act del" onClick={deleteAllTopics} disabled={saving}>
+                  <span className="tp-ico"><Trash2 size={30} /></span>
+                  <span><b>Delete All ({topics.length})</b><small>Remove all topics</small></span>
+                </button>
+              )}
             </div>
 
             {/* ── Paste Topics Panel ── */}
@@ -1883,61 +1928,55 @@ export default function AdminPage() {
               </div>
             )}
 
-            <div style={{ overflowX: 'auto', borderRadius: 12, border: '1px solid var(--border)' }}>
-              <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 14 }}>
-                <thead style={{ background: 'var(--bg-secondary)' }}>
-                  <tr>
-                    <th style={{ padding: '12px 16px', borderBottom: '1px solid var(--border)', width: 40 }}>
-                      <input type="checkbox"
-                        style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#EF4444' }}
-                        checked={topics.length > 0 && selectedTopics.size === topics.length}
-                        onChange={() => {
-                          if (selectedTopics.size === topics.length) setSelectedTopics(new Set());
-                          else setSelectedTopics(new Set(topics.map(t => t.id)));
-                        }}
-                        title="Select all"
-                      />
-                    </th>
-                    {['Title','Category','Pages','Price','Badge','Actions'].map(h => (
-                      <th key={h} style={{ padding: '12px 16px', textAlign: 'left', fontSize: 11, fontWeight: 700, textTransform: 'uppercase', letterSpacing: 0.8, color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
+            {(() => {
+              const q = topicSearch.trim().toLowerCase();
+              let list = topics.filter(t => !q || [t.title, t.category, t.description].some(v => String(v || '').toLowerCase().includes(q)));
+              if (topicView === 'popular') list = list.filter(t => t.badge === 'Popular');
+              if (topicView === 'pages') list = [...list].sort((x, y) => (parseInt(y.pages) || 0) - (parseInt(x.pages) || 0));
+              if (topicView === 'category') list = [...list].sort((x, y) => String(x.category || '').localeCompare(String(y.category || '')));
+              const toggle = id => setSelectedTopics(prev => { const n = new Set(prev); n.has(id) ? n.delete(id) : n.add(id); return n; });
+              const tabs = [
+                { k: 'all', label: `All Topics (${topics.length})`, icon: <FileText size={20} /> },
+                { k: 'popular', label: 'Popular', icon: <Star size={20} fill="#F5B82E" color="#F5B82E" /> },
+                { k: 'category', label: 'By Category', icon: <LayoutGrid size={20} /> },
+                { k: 'pages', label: 'By Pages', icon: <FileText size={20} /> },
+              ];
+              let lastCat = null;
+              return (
+                <div className="tp-card">
+                  <div className="tp-tabs">
+                    {tabs.map(x => (
+                      <button key={x.k} className={`tp-tab${topicView === x.k ? ' on' : ''}`} onClick={() => setTopicView(x.k)}>{x.icon}{x.label}</button>
                     ))}
-                  </tr>
-                </thead>
-                <tbody>
-                  {topics.map(t => (
-                    <tr key={t.id} style={{ opacity: t.badge === 'Hidden' ? 0.5 : 1, background: selectedTopics.has(t.id) ? 'rgba(239,68,68,0.06)' : 'transparent' }}>
-                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
-                        <input type="checkbox"
-                          style={{ width: 16, height: 16, cursor: 'pointer', accentColor: '#EF4444' }}
-                          checked={selectedTopics.has(t.id)}
-                          onChange={() => {
-                            setSelectedTopics(prev => {
-                              const next = new Set(prev);
-                              next.has(t.id) ? next.delete(t.id) : next.add(t.id);
-                              return next;
-                            });
-                          }}
-                        />
-                      </td>
-                      <td style={{ padding: '13px 16px', color: 'var(--text-primary)', fontWeight: 600, borderBottom: '1px solid var(--border)', maxWidth: 300 }}>{t.title}</td>
-                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{t.category}</td>
-                      <td style={{ padding: '13px 16px', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{t.pages}</td>
-                      <td style={{ padding: '13px 16px', color: 'var(--gold)', fontWeight: 700, borderBottom: '1px solid var(--border)' }}>{t.price}</td>
-                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
-                        {t.badge && <span style={{ ...s.badge(t.badge === 'Popular' ? 'accepted' : t.badge === 'New' ? 'reviewing' : 'rejected'), textTransform: 'none' }}>{t.badge}</span>}
-                      </td>
-                      <td style={{ padding: '13px 16px', borderBottom: '1px solid var(--border)' }}>
-                        <div style={{ display: 'flex', gap: 6 }}>
-                          <button style={{ ...s.btn('var(--blue-deep)'), padding: '5px 12px' }} onClick={() => setTopicForm({ ...t })}>✏️ Edit</button>
-                          <button style={{ ...s.btn('#EF4444'), padding: '5px 12px' }} onClick={() => deleteTopic(t.id)}>🗑️</button>
+                  </div>
+                  {list.length === 0 && <div className="tp-empty">{topics.length === 0 ? 'No topics yet.' : 'No topics match.'}</div>}
+                  {list.map(t => {
+                    const head = topicView === 'category' && t.category !== lastCat ? (lastCat = t.category, <div key={'g' + t.id} className="tp-group">{t.category}</div>) : null;
+                    return (
+                      <div key={t.id}>
+                        {head}
+                        <div className={`tp-row${selectedTopics.has(t.id) ? ' sel' : ''}${t.badge === 'Hidden' ? ' hid' : ''}`}>
+                          <input type="checkbox" className="tp-chk" checked={selectedTopics.has(t.id)} onChange={() => toggle(t.id)} />
+                          <div className="tp-book"><BookOpen size={30} strokeWidth={1.8} /></div>
+                          <div className="tp-mid">
+                            <div className="tp-title">{t.title}</div>
+                            <span className="tp-chip"><GraduationCap size={14} />{t.category}</span>
+                            {t.badge && <span className="tp-badge">{t.badge}</span>}
+                          </div>
+                          <div className="tp-pages">
+                            <FileText size={22} strokeWidth={1.6} />
+                            <div><small>Pages</small><b>{t.pages || '—'}</b></div>
+                          </div>
+                          <button className="tp-go" title="Edit topic" onClick={() => { setTopicForm({ ...t }); setBulkMode(false); setPasteMode(false); window.scrollTo({ top: 0, behavior: 'smooth' }); }}>
+                            <ChevronRight size={20} />
+                          </button>
                         </div>
-                      </td>
-                    </tr>
-                  ))}
-                </tbody>
-              </table>
-              {topics.length === 0 && <div style={{ textAlign: 'center', padding: 40, color: 'var(--text-muted)' }}>No topics yet.</div>}
-            </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              );
+            })()}
           </div>
         )}
 
