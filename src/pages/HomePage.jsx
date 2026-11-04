@@ -79,7 +79,7 @@ export default function HomePage() {
           <h1>Get Your Research<br />Done <em>Right &amp;<br />On Time</em></h1>
           <p>Connect with expert Nigerian writers for projects, data analysis, and more. From research proposals to NMCN CBT preparation — we've got you covered!</p>
           <div className="lp-hero-cta">
-            <Link to="/topics" className="lp-btn lp-btn-gold lp-btn-lg">Browse Projects <ArrowRight size={16} /></Link>
+            <Link to="/topics" className="lp-btn lp-btn-gold lp-btn-lg">Browse Research Topics <ArrowRight size={16} /></Link>
           </div>
           <div className="lp-stats">
             <div><Users size={34} /><span><b>10K+</b>Happy Clients</span></div>
