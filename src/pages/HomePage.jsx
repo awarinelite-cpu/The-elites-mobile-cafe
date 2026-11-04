@@ -1,8 +1,7 @@
 // src/pages/HomePage.jsx — EliteCafe landing page (matches design mockup)
-import { useState } from 'react';
 import { Link } from 'react-router-dom';
 import {
-  Sun, Moon, ChevronDown, ArrowRight, Play, Users, ShieldCheck, Zap, Menu, X,
+  Sun, Moon, ChevronDown, ArrowRight, Users, ShieldCheck, Zap,
   FileSearch, BarChart3, Cpu, UserRound, ClipboardCheck, PencilLine,
   CheckCircle2, ClipboardList, Headset, PackageCheck, Facebook, Twitter,
   MessageCircle, Youtube, Star, ShieldCheck as Shield,
@@ -46,7 +45,6 @@ const Logo = ({ light }) => (
 export default function HomePage() {
   const { dark, toggle } = useDarkMode();
   const { profile } = useAuth();
-  const [open, setOpen] = useState(false);
   const dash = profile?.isAdmin ? '/admin' : profile?.isWriter ? '/writer' : '/dashboard';
   const start = profile ? dash : '/register';
 
@@ -56,7 +54,7 @@ export default function HomePage() {
       <header className="lp-header">
         <div className="lp-header-in">
           <Logo />
-          <nav className={`lp-nav ${open ? 'open' : ''}`}>
+          <nav className="lp-nav">
             <a href="#top" className="active">Home</a>
             <Link to="/services">Services <ChevronDown size={13} /></Link>
             <a href="#why">About</a>
@@ -70,8 +68,6 @@ export default function HomePage() {
               <span className="track"><span className={`thumb ${dark ? 'on' : ''}`}><Moon size={10} /></span></span>
             </button>
             <Link to={profile ? dash : '/login'} className="lp-btn lp-btn-outline">{profile ? 'Dashboard' : 'Sign In'}</Link>
-            <Link to={start} className="lp-btn lp-btn-gold">Get Started <ArrowRight size={14} /></Link>
-            <button className="lp-burger" onClick={() => setOpen(o => !o)} aria-label="Menu">{open ? <X size={22} /> : <Menu size={22} />}</button>
           </div>
         </div>
       </header>
@@ -83,8 +79,7 @@ export default function HomePage() {
           <h1>Get Your Research<br />Done <em>Right &amp;<br />On Time</em></h1>
           <p>Connect with expert Nigerian writers for projects, data analysis, and more. From research proposals to NMCN CBT preparation — we've got you covered!</p>
           <div className="lp-hero-cta">
-            <Link to={start} className="lp-btn lp-btn-gold lp-btn-lg">Start Your Project <ArrowRight size={16} /></Link>
-            <Link to="/services" className="lp-btn lp-btn-dark lp-btn-lg"><span className="play"><Play size={11} fill="currentColor" /></span> Watch Demo</Link>
+            <Link to="/topics" className="lp-btn lp-btn-gold lp-btn-lg">Browse Projects <ArrowRight size={16} /></Link>
           </div>
           <div className="lp-stats">
             <div><Users size={34} /><span><b>10K+</b>Happy Clients</span></div>
@@ -262,7 +257,9 @@ const CSS = `
 .lp-hero-text { padding:0 0 46px max(26px, calc((100vw - 1280px)/2 + 26px)); position:relative; z-index:2; }
 .lp-chip { display:inline-block; background:#52E0B5; color:#06342C; font-weight:600; font-size:.88rem; padding:6px 16px; border-radius:999px; margin-bottom:12px; }
 .lp-hero h1 { font-size:clamp(2.2rem,4.6vw,3.35rem); line-height:1.05; font-weight:800; letter-spacing:-1px; margin-bottom:14px; }
+.lp-hero h1 { color:#fff; }
 .lp-hero h1, .lp-hero h1 em { font-weight:800; }
+.lp-hero h1 em { color:var(--gold); }
 .lp-hero p { max-width:380px; font-size:.95rem; line-height:1.4; margin-bottom:20px; color:#fff; }
 .lp-hero-cta { display:flex; gap:14px; flex-wrap:wrap; margin-bottom:26px; }
 .lp-stats { display:flex; align-items:center; gap:0; flex-wrap:wrap; }
@@ -354,7 +351,7 @@ const CSS = `
   .lp-nav { display:none; position:absolute; top:100%; left:0; right:0; background:var(--card); flex-direction:column; align-items:stretch; padding:10px 20px 16px; margin:0; box-shadow:0 12px 24px rgba(0,0,0,.12); }
   .lp-nav.open { display:flex; }
   .lp-burger { display:block; }
-  .lp-btn-outline, .lp-toggle { display:none; }
+  .lp-toggle { display:none; }
   .lp-hero { grid-template-columns:1fr; padding-top:80px; }
   .lp-hero-text { padding:0 20px 20px; }
   .lp-hero-img { height:340px; }
@@ -368,7 +365,11 @@ const CSS = `
 @media (max-width: 520px) {
   .portal { flex-direction:column; align-items:flex-start; }
   .portal img { width:100%; }
-  .lp-stats > div { padding:0 12px; }
+  .lp-stats { flex-wrap:nowrap; }
+  .lp-stats > div { padding:0 8px; gap:6px; }
+  .lp-stats > div svg { width:24px; height:24px; }
+  .lp-stats b { font-size:1rem; }
+  .lp-stats span { font-size:.68rem; }
   .lp-logo b { font-size:1.4rem; }
   .lp-header-in { padding:8px 14px 14px; gap:10px; }
   .lp-actions .lp-btn-gold { padding:8px 14px; }
