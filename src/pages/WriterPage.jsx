@@ -26,7 +26,7 @@ const NAV = [
 const STATUS_COLORS = {
   pending:     { bg: 'rgba(245,158,11,0.12)',  color: '#D97706' },
   reviewing:   { bg: 'rgba(37,99,235,0.12)',   color: '#2563EB' },
-  accepted:    { bg: 'rgba(13,148,136,0.12)',  color: '#0D9488' },
+  accepted:    { bg: 'rgba(22,131,109,0.12)',  color: '#16836D' },
   in_progress: { bg: 'rgba(139,92,246,0.12)', color: '#7C3AED' },
   completed:   { bg: 'rgba(22,163,74,0.12)',   color: '#16A34A' },
   rejected:    { bg: 'rgba(239,68,68,0.12)',   color: '#DC2626' },
@@ -297,7 +297,7 @@ function Overview({ stats, projects, newOrders, notifications, user, s, onTabCha
           { label: 'Total Earned',    value: `₦${stats.totalEarned.toLocaleString()}`, color: '#16A34A', icon: '💰', tab: 'wallet' },
           { label: 'Pending Pay',     value: `₦${stats.pendingPay.toLocaleString()}`,  color: '#D97706', icon: '⏳', tab: 'wallet' },
           { label: 'Active Projects', value: stats.activeCount,                         color: '#7C3AED', icon: '📋', tab: 'projects' },
-          { label: 'Completed',       value: stats.doneCount,                           color: '#0D9488', icon: '✅', tab: 'performance' },
+          { label: 'Completed',       value: stats.doneCount,                           color: '#16836D', icon: '✅', tab: 'performance' },
         ].map(stat => (
           <button key={stat.label} onClick={() => onTabChange(stat.tab)}
             style={{ ...s.card, textAlign: 'left', cursor: 'pointer', border: '1px solid var(--border-card)', transition: 'all 0.2s', width: '100%' }}
@@ -351,7 +351,7 @@ function Overview({ stats, projects, newOrders, notifications, user, s, onTabCha
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 10 }}>
         {[
           { label: '📥 New Orders', tab: 'new_orders', color: '#D97706' },
-          { label: '🤖 AI Writer',  tab: 'ai_writer',  color: '#1E3A8A' },
+          { label: '🤖 AI Writer',  tab: 'ai_writer',  color: '#0A4A3E' },
           { label: '💳 My Wallet',  tab: 'wallet',     color: '#16A34A' },
           { label: '✅ My Tasks',   tab: 'tasks',      color: '#7C3AED' },
         ].map(a => (
@@ -396,7 +396,7 @@ function NewOrdersTab({ newOrders, user, writerProfile, s }) {
     <div>
       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>📥 New Client Orders</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 8 }}>{newOrders.length} unassigned order{newOrders.length !== 1 ? 's' : ''} from clients.</p>
-      <div style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(13,148,136,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 24, fontSize: 13, color: '#0D9488' }}>
+      <div style={{ background: 'rgba(22,131,109,0.08)', border: '1px solid rgba(22,131,109,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 24, fontSize: 13, color: '#16836D' }}>
         💡 Press <strong>Express Interest</strong> on any order — admin will be notified and will assign it to you.
       </div>
       {newOrders.length === 0 ? (
@@ -513,7 +513,7 @@ function ProjectsTab({ projects, user, allWriters, s }) {
         <div style={{ display: 'flex', gap: 10, alignItems: 'center', flexWrap: 'wrap', justifyContent: 'space-between' }}>
           <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
             {p.adminNote && (
-              <div style={{ fontSize: 12, color: '#0D9488', background: 'rgba(13,148,136,0.1)', padding: '4px 10px', borderRadius: 8 }}>
+              <div style={{ fontSize: 12, color: '#16836D', background: 'rgba(22,131,109,0.1)', padding: '4px 10px', borderRadius: 8 }}>
                 📌 {p.adminNote.slice(0, 60)}
               </div>
             )}
@@ -547,7 +547,7 @@ function ProjectsTab({ projects, user, allWriters, s }) {
       {/* ── Column switcher tabs ── */}
       <div style={{ display: 'flex', gap: 0, marginBottom: 24, borderRadius: 10, overflow: 'hidden', border: '1px solid var(--border)' }}>
         {[
-          { id: 'admin',    label: '🛡️ Admin Assigned', count: adminAssigned.length,  activeColor: '#0D9488' },
+          { id: 'admin',    label: '🛡️ Admin Assigned', count: adminAssigned.length,  activeColor: '#16836D' },
           { id: 'referral', label: '🔗 My Referrals',   count: myReferrals.length,    activeColor: '#C9A84C' },
         ].map(col => (
           <button key={col.id} onClick={() => setActiveCol(col.id)}
@@ -573,14 +573,14 @@ function ProjectsTab({ projects, user, allWriters, s }) {
 
       {/* ── Admin Assigned column info banner ── */}
       {activeCol === 'admin' && (
-        <div style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(13,148,136,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#0D9488' }}>
+        <div style={{ background: 'rgba(22,131,109,0.08)', border: '1px solid rgba(22,131,109,0.25)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#16836D' }}>
           🛡️ These are clients sent to you directly by admin, or clients who used your referral link and placed an order.
         </div>
       )}
 
       {/* ── Referral column info banner ── */}
       {activeCol === 'referral' && (
-        <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#C9A84C' }}>
+        <div style={{ background: 'rgba(245,184,46,0.08)', border: '1px solid rgba(245,184,46,0.3)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#C9A84C' }}>
           🔗 These clients came through your referral link but were assigned to another writer. You earn a <strong>10% referral commission</strong> on each completed order.
         </div>
       )}
@@ -680,7 +680,7 @@ function WalletTab({ earnings, stats, user, writerProfile, s }) {
         {[
           { label: 'Total Earned', value: `₦${stats.totalEarned.toLocaleString()}`,                                 color: '#16A34A', bg: 'rgba(22,163,74,0.08)',  icon: '💰' },
           { label: 'Pending',      value: `₦${stats.pendingPay.toLocaleString()}`,                                  color: '#D97706', bg: 'rgba(217,119,6,0.08)',  icon: '⏳' },
-          { label: 'Paid Out',     value: `₦${Math.max(0,stats.totalEarned-stats.pendingPay).toLocaleString()}`,    color: '#0D9488', bg: 'rgba(13,148,136,0.08)', icon: '✅' },
+          { label: 'Paid Out',     value: `₦${Math.max(0,stats.totalEarned-stats.pendingPay).toLocaleString()}`,    color: '#16836D', bg: 'rgba(22,131,109,0.08)', icon: '✅' },
         ].map(c => (
           <div key={c.label} style={{ background: c.bg, border: `1px solid ${c.color}30`, borderRadius: 14, padding: '18px' }}>
             <div style={{ fontSize: 24, marginBottom: 6 }}>{c.icon}</div>
@@ -786,7 +786,7 @@ function PerformanceTab({ projects, earnings, allWriters, user, s }) {
   const streak     = projects.filter(p => p.status === 'completed').length;
   const scores = [
     { label: 'Completion Rate', value: `${rate}%`,      color: rate >= 80 ? '#16A34A' : rate >= 50 ? '#D97706' : '#DC2626', icon: '📊' },
-    { label: 'Projects Done',   value: completed,        color: '#0D9488', icon: '✅' },
+    { label: 'Projects Done',   value: completed,        color: '#16836D', icon: '✅' },
     { label: 'On-Time Rate',    value: `${onTimeRate}%`, color: onTimeRate >= 80 ? '#16A34A' : '#D97706', icon: '⏰' },
     { label: 'Streak',          value: `${streak} 🔥`,   color: '#D97706', icon: '🔥' },
   ];
@@ -809,7 +809,7 @@ function PerformanceTab({ projects, earnings, allWriters, user, s }) {
           <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>Average rating from {ratings.length} rated project{ratings.length > 1 ? 's' : ''}</div>
         </div>
       )}
-      <div style={{ ...s.card, border: '1px solid rgba(13,148,136,0.25)', marginBottom: 24 }}>
+      <div style={{ ...s.card, border: '1px solid rgba(22,131,109,0.25)', marginBottom: 24 }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--teal)', marginBottom: 14 }}>💡 How to Improve Your Score</div>
         {[
           { tip: 'Submit work before the deadline',      impact: '+10% on-time rate',          icon: '⏰' },
@@ -839,7 +839,7 @@ function PerformanceTab({ projects, earnings, allWriters, user, s }) {
           </div>
         );
       })}
-      <div style={{ ...s.card, marginTop: 28, border: '1px solid rgba(201,168,76,0.3)' }}>
+      <div style={{ ...s.card, marginTop: 28, border: '1px solid rgba(245,184,46,0.3)' }}>
         <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--gold)', marginBottom: 4 }}>🏆 Writer Leaderboard</div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 16 }}>Ranked by completed projects. You are highlighted.</div>
         {[
@@ -879,7 +879,7 @@ function TasksTab({ projects, user, s }) {
   const activeTasks = projects.filter(p => ['accepted','in_progress','reviewing'].includes(p.status));
   const now = new Date();
   const getUrgency = p => { if (!p.deadline) return 'normal'; const d = Math.ceil((new Date(p.deadline)-now)/86400000); return d<=0?'overdue':d<=1?'critical':d<=3?'urgent':'normal'; };
-  const cfg = { overdue:{color:'#DC2626',bg:'rgba(220,38,38,0.08)',border:'rgba(220,38,38,0.3)',label:'🔴 Overdue'}, critical:{color:'#DC2626',bg:'rgba(220,38,38,0.05)',border:'rgba(220,38,38,0.2)',label:'🚨 Due Today'}, urgent:{color:'#D97706',bg:'rgba(217,119,6,0.06)',border:'rgba(217,119,6,0.25)',label:'⚠️ Due Soon'}, normal:{color:'#0D9488',bg:'rgba(13,148,136,0.05)',border:'rgba(13,148,136,0.2)',label:'✅ On Track'} };
+  const cfg = { overdue:{color:'#DC2626',bg:'rgba(220,38,38,0.08)',border:'rgba(220,38,38,0.3)',label:'🔴 Overdue'}, critical:{color:'#DC2626',bg:'rgba(220,38,38,0.05)',border:'rgba(220,38,38,0.2)',label:'🚨 Due Today'}, urgent:{color:'#D97706',bg:'rgba(217,119,6,0.06)',border:'rgba(217,119,6,0.25)',label:'⚠️ Due Soon'}, normal:{color:'#16836D',bg:'rgba(22,131,109,0.05)',border:'rgba(22,131,109,0.2)',label:'✅ On Track'} };
   const sorted = [...activeTasks].sort((a,b) => ({overdue:0,critical:1,urgent:2,normal:3})[getUrgency(a)]-({overdue:0,critical:1,urgent:2,normal:3})[getUrgency(b)]);
   return (
     <div>
@@ -963,7 +963,7 @@ function ReferralTab({ referralLink, user, projects, s }) {
           </div>
         ))}
       </div>
-      <div style={{ ...s.card, marginBottom: 24, border: '1px solid rgba(201,168,76,0.3)' }}>
+      <div style={{ ...s.card, marginBottom: 24, border: '1px solid rgba(245,184,46,0.3)' }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gold)', marginBottom: 8 }}>🔗 Your Referral Link</div>
         {/* Link now points to /services?writer=UID so clients pick service first */}
         <div style={{ display: 'flex', gap: 8, alignItems: 'center', flexWrap: 'wrap' }}>
@@ -1152,7 +1152,7 @@ function ProfileTab({ user, writerProfile, projects, earnings, s }) {
       <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 4, color: 'var(--text-primary)' }}>🪪 My Profile</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>Share your link — clients go directly to your service menu.</p>
       <div style={{ ...s.card, marginBottom: 20, padding: 0, overflow: 'hidden', border: '1px solid rgba(139,92,246,0.25)', borderRadius: 16 }}>
-        <div style={{ height: 76, background: 'linear-gradient(90deg,#172554 0%,#1E3A8A 55%,#0F766E 100%)', position: 'relative' }}>
+        <div style={{ height: 76, background: 'linear-gradient(90deg,#06342C 0%,#0A4A3E 55%,#0F5C4D 100%)', position: 'relative' }}>
           <div style={{ position: 'absolute', bottom: -26, left: 22, width: 52, height: 52, borderRadius: '50%', background: 'linear-gradient(135deg,#7C3AED,#4F46E5)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 22, fontWeight: 700, color: '#fff', border: '3px solid var(--bg-card)', boxShadow: '0 4px 12px rgba(0,0,0,0.25)' }}>{initial}</div>
         </div>
         <div style={{ padding: '36px 22px 22px' }}>
@@ -1163,7 +1163,7 @@ function ProfileTab({ user, writerProfile, projects, earnings, s }) {
             <div style={{ marginBottom: 14 }}>
               <div style={{ fontSize: 10, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 7 }}>Specialties</div>
               <div style={{ display: 'flex', gap: 6, flexWrap: 'wrap' }}>
-                {specialties.map(sp => <span key={sp} style={{ background: 'rgba(13,148,136,0.12)', color: '#0D9488', borderRadius: 20, padding: '3px 12px', fontSize: 12, fontWeight: 600 }}>{sp}</span>)}
+                {specialties.map(sp => <span key={sp} style={{ background: 'rgba(22,131,109,0.12)', color: '#16836D', borderRadius: 20, padding: '3px 12px', fontSize: 12, fontWeight: 600 }}>{sp}</span>)}
               </div>
             </div>
           )}
@@ -1181,7 +1181,7 @@ function ProfileTab({ user, writerProfile, projects, earnings, s }) {
           </div>
         </div>
       </div>
-      <div style={{ ...s.card, marginBottom: 20, border: '1px solid rgba(201,168,76,0.25)' }}>
+      <div style={{ ...s.card, marginBottom: 20, border: '1px solid rgba(245,184,46,0.25)' }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gold)', marginBottom: 6 }}>🔗 Share Your Link</div>
         <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 12 }}>When clients use this link, they land on your services menu and their order comes directly to you.</div>
         <div style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
@@ -1189,7 +1189,7 @@ function ProfileTab({ user, writerProfile, projects, earnings, s }) {
           <button onClick={copy} style={{ ...s.btn(copied?'#16A34A':'var(--gold)','#000'), flexShrink: 0 }}>{copied?'✅ Copied!':'📋 Copy Link'}</button>
         </div>
       </div>
-      <div style={{ ...s.card, border: '1px solid rgba(13,148,136,0.2)' }}>
+      <div style={{ ...s.card, border: '1px solid rgba(22,131,109,0.2)' }}>
         <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--teal)', marginBottom: 14 }}>💪 Profile Strength</div>
         <div style={{ display: 'flex', flexDirection: 'column', gap: 2 }}>
           {checks.map((c,i) => (
@@ -1205,7 +1205,7 @@ function ProfileTab({ user, writerProfile, projects, earnings, s }) {
             <span>Profile Strength</span><span>{Math.round((checks.filter(c=>c.done).length/checks.length)*100)}%</span>
           </div>
           <div style={{ background: 'var(--bg-tertiary)', borderRadius: 20, height: 7, overflow: 'hidden' }}>
-            <div style={{ height: '100%', width: `${(checks.filter(c=>c.done).length/checks.length)*100}%`, background: 'linear-gradient(90deg,#7C3AED,#0D9488)', borderRadius: 20, transition: 'width 0.6s ease' }} />
+            <div style={{ height: '100%', width: `${(checks.filter(c=>c.done).length/checks.length)*100}%`, background: 'linear-gradient(90deg,#7C3AED,#16836D)', borderRadius: 20, transition: 'width 0.6s ease' }} />
           </div>
         </div>
       </div>

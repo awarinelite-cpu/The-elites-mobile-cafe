@@ -2,6 +2,7 @@
 import { useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { PenTool, ArrowRight } from 'lucide-react';
+import PageHero from '../components/shared/PageHero';
 import { useAuth } from '../context/AuthContext';
 import { createOrder } from '../firebase/orderService';
 import { Field, inputStyle, textareaStyle, Btn } from '../components/shared/UI';
@@ -56,28 +57,9 @@ export default function RequestPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', background: 'var(--dark)', paddingTop: 80 }}>
-      {/* Back button */}
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '0 clamp(16px,4vw,40px)', paddingTop: 16 }}>
-        <button onClick={() => navigate(-1)}
-          style={{ background: 'transparent', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 16px', cursor: 'pointer', color: 'var(--text-secondary)', fontSize: 14, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 8 }}>
-          ← Back
-        </button>
-      </div>
-      <div style={{ maxWidth: 760, margin: '0 auto', padding: '48px clamp(16px,4vw,40px) 80px' }}>
-
-        {/* Header */}
-        <div style={{ marginBottom: 40 }}>
-          <div style={{ width: 48, height: 48, borderRadius: 'var(--radius)', background: 'var(--gold-glow)', border: '1px solid var(--border-gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', marginBottom: 20 }}>
-            <PenTool size={22} color="var(--gold)" />
-          </div>
-          <div style={{ color: 'var(--gold)', fontSize: 11, letterSpacing: 3, textTransform: 'uppercase', marginBottom: 10 }}>Custom Work</div>
-          <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 'clamp(28px,4vw,46px)', fontWeight: 600, marginBottom: 12 }}>Request a Writer</h1>
-          <p style={{ color: 'var(--text-secondary)', fontSize: 15, lineHeight: 1.7 }}>
-            Tell us about your research topic. Our team will review it and send you a price quote within 24 hours. No commitment until you accept.
-          </p>
-        </div>
-
+    <div style={{ minHeight: '100vh', background: 'var(--bg-primary)' }}>
+      <PageHero eyebrow="Custom Work" title="Request a" accent="Writer" subtitle="Tell us about your research topic. We'll send a price quote within 24 hours. No commitment until you accept." Icon={PenTool} />
+      <div style={{ maxWidth: 760, margin: '-30px auto 0', padding: '0 clamp(16px,4vw,40px) 80px', position: 'relative', zIndex: 3 }}>
         {/* Process reminder */}
         <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 12, marginBottom: 40 }}>
           {[['📝','Submit','Fill the form below'],['💬','Get Quote','We reply in 24h'],['💳','Pay 50%','Kick off the work'],['✅','Download','After final payment']].map(([icon, step, desc]) => (
@@ -92,7 +74,7 @@ export default function RequestPage() {
         {/* Form */}
         <div style={{ background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '36px' }}>
           {!user && (
-            <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid var(--border-gold)', borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 24, fontSize: 13, color: 'var(--gold)' }}>
+            <div style={{ background: 'rgba(245,184,46,0.08)', border: '1px solid var(--border-gold)', borderRadius: 'var(--radius)', padding: '14px 16px', marginBottom: 24, fontSize: 13, color: 'var(--gold)' }}>
               ⚠️ You need to <span onClick={() => navigate('/login')} style={{ textDecoration: 'underline', cursor: 'pointer' }}>sign in</span> or <span onClick={() => navigate('/register')} style={{ textDecoration: 'underline', cursor: 'pointer' }}>create an account</span> to submit a request.
             </div>
           )}

@@ -10,7 +10,7 @@ export const STATUS_COLORS = {
   in_progress: { bg: 'rgba(139,92,246,0.12)', color: '#7C3AED' },
   completed:   { bg: 'rgba(22,163,74,0.12)',   color: '#16A34A' },
   rejected:    { bg: 'rgba(239,68,68,0.12)',   color: '#DC2626' },
-  priced:      { bg: 'rgba(201,168,76,0.12)', color: '#C9A84C' },
+  priced:      { bg: 'rgba(245,184,46,0.12)', color: '#C9A84C' },
 };
 
 export const CATEGORIES = [

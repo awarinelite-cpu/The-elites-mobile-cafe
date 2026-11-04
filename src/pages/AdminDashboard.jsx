@@ -30,7 +30,7 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
           { label: 'Pending Payouts',  value: `₦${pendingPayouts.toLocaleString()}`,color: '#D97706', bg: 'rgba(217,119,6,0.07)',   icon: '⏳', nav: 'payments' },
           { label: 'Pending Requests', value: pendingReqs,                           color: '#EF4444', bg: 'rgba(239,68,68,0.07)',   icon: '📋', nav: 'requests' },
           { label: 'In Progress',      value: inProgress,                            color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', icon: '⚙️', nav: 'requests' },
-          { label: 'Completed',        value: completed,                             color: '#0D9488', bg: 'rgba(13,148,136,0.07)', icon: '✅', nav: 'requests' },
+          { label: 'Completed',        value: completed,                             color: '#16836D', bg: 'rgba(22,131,109,0.07)', icon: '✅', nav: 'requests' },
           { label: 'Total Clients',    value: totalClients,                          color: '#2563EB', bg: 'rgba(37,99,235,0.07)',  icon: '🎓', nav: 'users'    },
           { label: 'Writers',          value: totalWriters,                          color: '#7C3AED', bg: 'rgba(124,58,237,0.07)', icon: '✍️', nav: 'users'    },
           { label: 'Payout Requests',  value: pendingWithdraw,                      color: '#D97706', bg: 'rgba(217,119,6,0.07)',   icon: '💸', nav: 'withdrawals' },
@@ -52,7 +52,7 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
         <div style={{ ...s.card, marginBottom: 0 }}>
           <div style={{ fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', marginBottom: 16 }}>📊 Requests by Status</div>
           {Object.entries(statusCounts).sort((a,b) => b[1]-a[1]).map(([status, count]) => {
-            const cfg = { pending: '#D97706', reviewing: '#2563EB', accepted: '#0D9488', in_progress: '#7C3AED', completed: '#16A34A', rejected: '#EF4444', priced: '#C9A84C' };
+            const cfg = { pending: '#D97706', reviewing: '#2563EB', accepted: '#16836D', in_progress: '#7C3AED', completed: '#16A34A', rejected: '#EF4444', priced: '#C9A84C' };
             const color = cfg[status] || '#94A3B8';
             return (
               <div key={status} style={{ marginBottom: 10 }}>
@@ -76,7 +76,7 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
             {[
               { label: '📋 View Pending Requests', nav: 'requests',    color: '#EF4444', badge: pendingReqs > 0 ? pendingReqs : null },
               { label: '💸 Process Withdrawals',   nav: 'withdrawals', color: '#D97706', badge: pendingWithdraw > 0 ? pendingWithdraw : null },
-              { label: '📚 Add Research Topic',    nav: 'topics',      color: '#0D9488' },
+              { label: '📚 Add Research Topic',    nav: 'topics',      color: '#16836D' },
               { label: '💬 Message a User',         nav: 'messages',   color: '#7C3AED' },
               { label: '👥 Manage Users',           nav: 'users',      color: '#2563EB' },
               { label: '💰 Review Payments',        nav: 'payments',   color: '#16A34A' },
@@ -103,7 +103,7 @@ export default function AdminDashboard({ requests, topics, users, paymentSplits,
           <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>No requests yet.</p>
         ) : (
           recent.map(req => {
-            const sc = { pending: '#D97706', reviewing: '#2563EB', accepted: '#0D9488', in_progress: '#7C3AED', completed: '#16A34A', rejected: '#EF4444' };
+            const sc = { pending: '#D97706', reviewing: '#2563EB', accepted: '#16836D', in_progress: '#7C3AED', completed: '#16A34A', rejected: '#EF4444' };
             const col = sc[req.status] || '#94A3B8';
             return (
               <div key={req.id} style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', padding: '10px 0', borderBottom: '1px solid var(--border)', gap: 12 }}>

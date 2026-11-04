@@ -5,6 +5,7 @@ import { collection, addDoc, serverTimestamp } from 'firebase/firestore';
 import { db } from '../../firebase/config';
 import { useAuth } from '../../context/AuthContext';
 import toast from 'react-hot-toast';
+import PageHero from '../../components/shared/PageHero';
 
 export default function ServiceRequestPage({
   serviceKey,
@@ -107,19 +108,11 @@ export default function ServiceRequestPage({
 
   return (
     <div className="request-page">
+      <PageHero eyebrow="Service Request" title={serviceTitle} subtitle={serviceDesc} />
       <div className="request-card">
-        <button onClick={() => navigate(-1)}
-          style={{ background: 'transparent', border: '1px solid var(--border, #e2e8f0)', borderRadius: 8, padding: '7px 14px', cursor: 'pointer', color: 'var(--text-secondary, #64748b)', fontSize: 13, display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20, fontFamily: 'inherit' }}>
-          ← Back
-        </button>
-
-        <div className="service-icon-badge">{serviceIcon}</div>
-        <h1>{serviceTitle}</h1>
-        <p className="subtitle">{serviceDesc}</p>
-
         {/* Writer attribution notice */}
         {!readOnly && writerUidFromUrl && (
-          <div style={{ background: 'rgba(13,148,136,0.10)', border: '1px solid rgba(13,148,136,0.30)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#0D9488', fontWeight: 600 }}>
+          <div style={{ background: 'rgba(22,131,109,0.10)', border: '1px solid rgba(22,131,109,0.30)', borderRadius: 10, padding: '10px 14px', marginBottom: 20, fontSize: 13, color: '#16836D', fontWeight: 600 }}>
             ✍️ This request will be handled directly by your writer.
           </div>
         )}

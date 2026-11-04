@@ -1,5 +1,6 @@
 // src/pages/RegisterPage.jsx
 import { useState } from 'react';
+import PageHero from '../components/shared/PageHero';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
@@ -90,45 +91,31 @@ export default function RegisterPage() {
   const password = watch('password');
 
   return (
+    <>
+    <PageHero eyebrow="Join EliteCafe" title="Create Your" accent="Account" subtitle="Get started with premium academic support." />
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--dark)', padding: '32px 16px 40px',
+      minHeight: '60vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      background: 'var(--bg-primary)', padding: '0 16px 40px', marginTop: -24,
       position: 'relative', overflow: 'hidden',
     }}>
       {/* Background glow */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(201,168,76,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(245,184,46,0.06) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
       <div className="animate-fade-up" style={{ width: '100%', maxWidth: 440 }}>
 
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 52, height: 52,
-              boxShadow: '0 0 30px rgba(15,118,110,0.25)',
-              borderRadius: '50%',
-            }}>
-              <BrandMark size={52} />
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--gold)', fontWeight: 600, letterSpacing: 0.5 }}>
-              The Elites Mobile Cafe
-            </div>
-          </Link>
-        </div>
-
         {/* Pending request notice */}
         {pendingDraft && (
           <div style={{
-            background: 'rgba(13,148,136,0.15)',
-            border: '1px solid rgba(13,148,136,0.4)',
+            background: 'rgba(22,131,109,0.15)',
+            border: '1px solid rgba(22,131,109,0.4)',
             borderRadius: 10, padding: '14px 18px',
             marginBottom: 24, textAlign: 'center',
           }}>
-            <p style={{ color: '#5EEAD4', fontSize: 13, fontWeight: 600, margin: 0 }}>
+            <p style={{ color: 'var(--teal)', fontSize: 13, fontWeight: 600, margin: 0 }}>
               📋 Your <strong>{pendingDraft.serviceLabel}</strong> request is ready to send.
             </p>
             <p style={{ color: 'rgba(255,255,255,0.55)', fontSize: 12, margin: '6px 0 0' }}>
@@ -143,7 +130,7 @@ export default function RegisterPage() {
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           padding: '40px',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+          boxShadow: '0 18px 46px rgba(6,52,44,0.16)',
         }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, marginBottom: 6 }}>Create account</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 32 }}>
@@ -264,6 +251,7 @@ export default function RegisterPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

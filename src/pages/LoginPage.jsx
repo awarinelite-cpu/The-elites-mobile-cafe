@@ -1,5 +1,6 @@
 // src/pages/LoginPage.jsx
 import { useState } from 'react';
+import PageHero from '../components/shared/PageHero';
 import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { Eye, EyeOff, ArrowRight } from 'lucide-react';
@@ -29,59 +30,45 @@ export default function LoginPage() {
   };
 
   return (
+    <>
+    <PageHero eyebrow="Welcome" title="Sign" accent="In" subtitle="Access your orders, topics and writers." />
     <div style={{
-      minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'var(--dark)', padding: '32px 16px 40px',
+      minHeight: '60vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      background: 'var(--bg-primary)', padding: '0 16px 40px', marginTop: -24,
       position: 'relative', overflow: 'hidden',
     }}>
       {/* Background */}
       <div style={{
         position: 'absolute', inset: 0,
-        background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(201,168,76,0.06) 0%, transparent 70%)',
+        background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(245,184,46,0.06) 0%, transparent 70%)',
         pointerEvents: 'none',
       }} />
 
       <div className="animate-fade-up" style={{ width: '100%', maxWidth: 440 }}>
-
-        {/* Logo */}
-        <div style={{ textAlign: 'center', marginBottom: 40 }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 10 }}>
-            <div style={{
-              width: 52, height: 52,
-              boxShadow: '0 0 30px rgba(15,118,110,0.25)',
-              borderRadius: '50%',
-            }}>
-              <BrandMark size={52} />
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 20, color: 'var(--gold)', fontWeight: 600, letterSpacing: 0.5 }}>
-              The Elites Mobile Cafe
-            </div>
-          </Link>
-        </div>
 
         {/* ── Browse Services Banner ── */}
         <Link
           to="/services"
           style={{
             display: 'flex', alignItems: 'center', justifyContent: 'space-between',
-            background: 'rgba(13,148,136,0.15)',
-            border: '1px solid rgba(13,148,136,0.4)',
+            background: 'rgba(22,131,109,0.15)',
+            border: '1px solid rgba(22,131,109,0.4)',
             borderRadius: 12, padding: '14px 20px',
             marginBottom: 20, textDecoration: 'none',
             transition: 'all 0.2s',
           }}
-          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(13,148,136,0.25)'; e.currentTarget.style.borderColor = 'rgba(13,148,136,0.7)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(13,148,136,0.15)'; e.currentTarget.style.borderColor = 'rgba(13,148,136,0.4)'; }}
+          onMouseEnter={e => { e.currentTarget.style.background = 'rgba(22,131,109,0.25)'; e.currentTarget.style.borderColor = 'rgba(22,131,109,0.7)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background = 'rgba(22,131,109,0.15)'; e.currentTarget.style.borderColor = 'rgba(22,131,109,0.4)'; }}
         >
           <div>
-            <p style={{ color: '#5EEAD4', fontSize: 13, fontWeight: 700, margin: '0 0 2px', fontFamily: 'var(--font-display)' }}>
+            <p style={{ color: 'var(--teal)', fontSize: 13, fontWeight: 700, margin: '0 0 2px', fontFamily: 'var(--font-display)' }}>
               📋 New here? Browse our services first
             </p>
-            <p style={{ color: 'rgba(255,255,255,0.5)', fontSize: 12, margin: 0 }}>
+            <p style={{ color: 'rgba(70,99,91,0.9)', fontSize: 12, margin: 0 }}>
               Submit your request, then create a free account
             </p>
           </div>
-          <span style={{ color: '#5EEAD4', fontSize: 18 }}>→</span>
+          <span style={{ color: 'var(--teal)', fontSize: 18 }}>→</span>
         </Link>
 
         {/* Card */}
@@ -90,7 +77,7 @@ export default function LoginPage() {
           border: '1px solid var(--border)',
           borderRadius: 'var(--radius-lg)',
           padding: '40px',
-          boxShadow: '0 24px 60px rgba(0,0,0,0.4)',
+          boxShadow: '0 18px 46px rgba(6,52,44,0.16)',
         }}>
           <h1 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 600, marginBottom: 6 }}>Welcome back</h1>
           <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 32 }}>Sign in to your account to continue</p>
@@ -160,6 +147,7 @@ export default function LoginPage() {
         </p>
       </div>
     </div>
+    </>
   );
 }
 

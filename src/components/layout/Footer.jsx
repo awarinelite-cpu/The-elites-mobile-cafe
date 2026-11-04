@@ -5,9 +5,11 @@ import { BookOpen, Mail, Phone } from 'lucide-react';
 export default function Footer() {
   return (
     <footer style={{
-      background: 'var(--dark-card)',
-      borderTop: '1px solid var(--border-gold)',
-      padding: '48px clamp(16px, 4vw, 60px) 28px',
+      background: 'linear-gradient(180deg,#0A4A3E,#06342C)',
+      borderTop: '4px solid #16836D',
+      borderTopLeftRadius: '50% 28px', borderTopRightRadius: '50% 28px',
+      padding: '56px clamp(16px, 4vw, 60px) 28px',
+      color: '#fff',
       marginTop: 'auto',
     }}>
       <div style={{ maxWidth: 1200, margin: '0 auto' }}>
@@ -25,22 +27,22 @@ export default function Footer() {
                 <BookOpen size={14} color="var(--gold)" />
               </div>
               <div>
-                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--gold)', fontWeight: 600 }}>The Elites Mobile Cafe</div>
+                <div style={{ fontFamily: 'var(--font-display)', fontSize: 16, color: 'var(--gold)', fontWeight: 700 }}>The Elites Mobile Cafe</div>
               </div>
             </div>
-            <p style={{ color: 'var(--text-muted)', fontSize: 13, lineHeight: 1.7, maxWidth: 220 }}>
+            <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 13, lineHeight: 1.7, maxWidth: 220 }}>
               Premium research writing services. Quality work, delivered with integrity.
             </p>
           </div>
 
           {/* Links */}
           <div>
-            <h4 style={{ color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Services</h4>
+            <h4 style={{ color: '#fff', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Services</h4>
             {['Browse Topics', 'Request Custom Work', 'Pricing', 'How It Works'].map(l => (
               <div key={l} style={{ marginBottom: 10 }}>
-                <Link to="/" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: 13, transition: 'var(--transition)' }}
+                <Link to="/" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, transition: 'var(--transition)' }}
                   onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.72)'}
                 >{l}</Link>
               </div>
             ))}
@@ -48,12 +50,12 @@ export default function Footer() {
 
           {/* Account */}
           <div>
-            <h4 style={{ color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Account</h4>
+            <h4 style={{ color: '#fff', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Account</h4>
             {[['Sign In', '/login'], ['Create Account', '/register'], ['Dashboard', '/dashboard'], ['My Orders', '/dashboard/orders']].map(([l, p]) => (
               <div key={l} style={{ marginBottom: 10 }}>
-                <Link to={p} style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: 13, transition: 'var(--transition)' }}
+                <Link to={p} style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, transition: 'var(--transition)' }}
                   onMouseEnter={e => e.currentTarget.style.color = 'var(--gold)'}
-                  onMouseLeave={e => e.currentTarget.style.color = 'var(--text-muted)'}
+                  onMouseLeave={e => e.currentTarget.style.color = 'rgba(255,255,255,0.72)'}
                 >{l}</Link>
               </div>
             ))}
@@ -61,25 +63,25 @@ export default function Footer() {
 
           {/* Contact */}
           <div>
-            <h4 style={{ color: 'var(--text-secondary)', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Contact</h4>
+            <h4 style={{ color: '#fff', fontSize: 11, letterSpacing: 2, textTransform: 'uppercase', marginBottom: 16 }}>Contact</h4>
             <div style={{ display: 'flex', flexDirection: 'column', gap: 12 }}>
-              <a href="mailto:info@elitesmobilecafe.com" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <a href="mailto:info@elitesmobilecafe.com" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Mail size={13} color="var(--gold)" /> info@elitesmobilecafe.com
               </a>
-              <a href="tel:+1234567890" style={{ color: 'var(--text-muted)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
+              <a href="tel:+1234567890" style={{ color: 'rgba(255,255,255,0.72)', textDecoration: 'none', fontSize: 13, display: 'flex', gap: 8, alignItems: 'center' }}>
                 <Phone size={13} color="var(--gold)" /> +1 (234) 567-890
               </a>
             </div>
           </div>
         </div>
 
-        <div style={{ borderTop: '1px solid var(--border)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
-          <p style={{ color: 'var(--text-muted)', fontSize: 12 }}>
+        <div style={{ borderTop: '1px solid rgba(255,255,255,0.15)', paddingTop: 20, display: 'flex', justifyContent: 'space-between', flexWrap: 'wrap', gap: 12 }}>
+          <p style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12 }}>
             © {new Date().getFullYear()} The Elites Mobile Cafe. All rights reserved.
           </p>
           <div style={{ display: 'flex', gap: 20 }}>
             {['Privacy Policy', 'Terms of Service'].map(l => (
-              <Link key={l} to="/" style={{ color: 'var(--text-muted)', fontSize: 12, textDecoration: 'none' }}>{l}</Link>
+              <Link key={l} to="/" style={{ color: 'rgba(255,255,255,0.72)', fontSize: 12, textDecoration: 'none' }}>{l}</Link>
             ))}
           </div>
         </div>

@@ -162,10 +162,10 @@ export default function Navbar({ user, onLogout }) {
       {/* STYLES */}
       <style>{`
         .navbar {
-          background: rgba(22,35,63,0.94);
-          backdrop-filter: blur(10px);
-          -webkit-backdrop-filter: blur(10px);
-          border-bottom: 1px solid rgba(15,118,110,0.35);
+          background: linear-gradient(180deg,#0A4A3E,#06342C);
+          border-bottom-left-radius: 26px;
+          border-bottom-right-radius: 26px;
+          box-shadow: 0 6px 18px rgba(6,52,44,0.25);
           position: sticky;
           top: 0;
           z-index: 1000;
@@ -196,12 +196,12 @@ export default function Navbar({ user, onLogout }) {
 
         .brand-word {
           font-family: var(--font-display);
-          font-weight: 600;
-          font-size: 1.15rem;
+          font-weight: 700;
+          font-size: 1.5rem;
           color: #fff;
           letter-spacing: 0.2px;
         }
-        .brand-word span { color: var(--teal-light); }
+        .brand-word span { color: var(--gold); }
 
         .navbar-links {
           display: flex;
@@ -218,12 +218,12 @@ export default function Navbar({ user, onLogout }) {
           font-weight: 500;
           font-size: 0.92rem;
           padding: 8px 14px;
-          border-radius: var(--radius-sm);
+          border-radius: 999px;
           transition: var(--transition);
         }
 
         .navbar-links a:hover { color: #fff; background: rgba(255,255,255,0.06); }
-        .navbar-links a.active { color: #fff; background: var(--teal-glow); }
+        .navbar-links a.active { color: #fff; background: rgba(255,255,255,0.14); border-radius: 999px; }
 
         .nav-right {
           display: flex;
@@ -239,7 +239,7 @@ export default function Navbar({ user, onLogout }) {
           display: flex; align-items: center; gap: 6px;
         }
         .toggle-track { width: 30px; height: 16px; border-radius: 999px; background: rgba(255,255,255,0.18); position: relative; }
-        .toggle-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--teal-light); position: absolute; top: 2px; left: 2px; transition: var(--transition); }
+        .toggle-thumb { width: 12px; height: 12px; border-radius: 50%; background: var(--gold); position: absolute; top: 2px; left: 2px; transition: var(--transition); }
 
         .avatar-wrap { position: relative; }
         .avatar-btn {
@@ -254,7 +254,7 @@ export default function Navbar({ user, onLogout }) {
         .avatar-circle {
           width: 26px; height: 26px; border-radius: 50%;
           background: var(--gold);
-          color: #fff; font-weight: 700; font-size: 12px;
+          color: #1B2B14; font-weight: 700; font-size: 12px;
           display: flex; align-items: center; justify-content: center;
         }
         .avatar-name { font-size: 0.85rem; font-weight: 500; max-width: 90px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
@@ -292,14 +292,15 @@ export default function Navbar({ user, onLogout }) {
           padding: 8px 10px;
         }
         .guest-cta {
-          background: var(--gold);
-          color: #fff; text-decoration: none;
+          background: linear-gradient(180deg,#FFC93C,#F0A810);
+          color: #1B2B14; text-decoration: none;
+          box-shadow: 0 4px 12px rgba(240,168,16,0.4);
           font-family: var(--font-body);
           font-weight: 600; font-size: 0.86rem;
           padding: 9px 18px; border-radius: 999px;
           transition: var(--transition);
         }
-        .guest-cta:hover { background: var(--gold-dark); }
+        .guest-cta:hover { filter: brightness(1.06); color: #1B2B14; }
 
         .mobile-menu-btn {
           display: none;
@@ -318,7 +319,7 @@ export default function Navbar({ user, onLogout }) {
         .sidebar {
           position: fixed; top: 0; left: 0;
           width: 270px; height: 100%;
-          background: var(--blue-deep);
+          background: linear-gradient(180deg,#0A4A3E,#06342C);
           padding: 22px 18px;
           display: flex; flex-direction: column; gap: 4px;
           transform: translateX(-100%);
@@ -347,8 +348,9 @@ export default function Navbar({ user, onLogout }) {
         .sidebar-divider { height: 1px; background: rgba(255,255,255,0.12); margin: 10px 0; }
 
         .sidebar-cta {
-          background: var(--gold) !important;
-          color: #fff !important;
+          background: linear-gradient(180deg,#FFC93C,#F0A810) !important;
+          color: #1B2B14 !important;
+          border-radius: 999px !important;
           text-align: center;
           margin-top: 4px;
         }

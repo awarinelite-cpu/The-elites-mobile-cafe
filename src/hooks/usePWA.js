@@ -106,7 +106,7 @@ function showExitToast() {
     fontWeight:   '600',
     zIndex:       '99999',
     backdropFilter: 'blur(10px)',
-    border:       '1px solid rgba(201,168,76,0.4)',
+    border:       '1px solid rgba(245,184,46,0.4)',
     boxShadow:    '0 8px 32px rgba(0,0,0,0.4)',
     whiteSpace:   'nowrap',
     fontFamily:   'system-ui, sans-serif',

@@ -108,11 +108,11 @@ const SERVICE_FIELDS = {
 const STATUS_COLORS = {
   pending: { bg: 'rgba(245,158,11,0.12)', color: '#D97706' },
   reviewing: { bg: 'rgba(37,99,235,0.12)', color: '#2563EB' },
-  accepted: { bg: 'rgba(13,148,136,0.12)', color: '#0D9488' },
+  accepted: { bg: 'rgba(22,131,109,0.12)', color: '#16836D' },
   in_progress: { bg: 'rgba(139,92,246,0.12)', color: '#7C3AED' },
   completed: { bg: 'rgba(22,163,74,0.12)', color: '#16A34A' },
   rejected: { bg: 'rgba(239,68,68,0.12)', color: '#DC2626' },
-  priced: { bg: 'rgba(201,168,76,0.15)', color: '#C9A84C' },
+  priced: { bg: 'rgba(245,184,46,0.15)', color: '#C9A84C' },
   paid: { bg: 'rgba(22,163,74,0.12)', color: '#16A34A' },
 };
 
@@ -478,7 +478,7 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
         </div>
 
         {order.adminNote && (
-          <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '12px 16px' }}>
+          <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(22,131,109,0.3)', borderRadius: 10, padding: '12px 16px' }}>
             <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--teal)', marginBottom: 4 }}>💬 Admin Note</div>
             <div style={{ fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.5 }}>{order.adminNote}</div>
           </div>
@@ -486,7 +486,7 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
 
         {order.status === 'priced' && (order.agreedPrice || order.totalAmount) && (
           <div>
-            <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 10, padding: '16px', marginBottom: 14 }}>
+            <div style={{ background: 'rgba(245,184,46,0.08)', border: '1px solid rgba(245,184,46,0.3)', borderRadius: 10, padding: '16px', marginBottom: 14 }}>
               <div style={{ fontSize: 11, fontWeight: 700, color: 'var(--gold)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>💰 Price Offer from Admin</div>
               <div style={{ fontSize: 28, fontWeight: 800, color: 'var(--gold)', fontFamily: 'var(--font-display)', marginBottom: 4 }}>₦{Number(order.agreedPrice || order.totalAmount).toLocaleString()}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Review this offer and accept or negotiate below.</div>
@@ -509,18 +509,18 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
             )}
             {!order.clientPriceResponse
               ? <ClientPriceResponse order={order} user={user} profile={profile} />
-              : <div style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>⏳ Your response has been sent. Waiting for admin to confirm.</div>
+              : <div style={{ background: 'rgba(22,131,109,0.08)', border: '1px solid rgba(22,131,109,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>⏳ Your response has been sent. Waiting for admin to confirm.</div>
             }
           </div>
         )}
 
         {order.status === 'accepted' && (order.agreedPrice || order.totalAmount) && !(order.advancePaid || order.paymentStatus === 'advance_confirmed') && (
           <div>
-            <div style={{ background: 'rgba(201,168,76,0.08)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 10, padding: '16px', marginBottom: 12 }}>
+            <div style={{ background: 'rgba(245,184,46,0.08)', border: '1px solid rgba(245,184,46,0.3)', borderRadius: 10, padding: '16px', marginBottom: 12 }}>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 4 }}>✅ Price agreed</div>
               <div style={{ fontSize: 24, fontWeight: 800, color: 'var(--gold)', fontFamily: 'var(--font-display)', marginBottom: 2 }}>₦{Number(order.agreedPrice || order.totalAmount).toLocaleString()}</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 8 }}>Total agreed price</div>
-              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(201,168,76,0.08)', borderRadius: 8, padding: '10px 12px', marginBottom: 4 }}>
+              <div style={{ display: 'flex', justifyContent: 'space-between', background: 'rgba(245,184,46,0.08)', borderRadius: 8, padding: '10px 12px', marginBottom: 4 }}>
                 <span style={{ fontSize: 13, color: 'var(--text-secondary)' }}>50% Advance (pay now)</span>
                 <span style={{ fontSize: 15, fontWeight: 800, color: 'var(--gold)' }}>₦{Math.round(Number(order.agreedPrice || order.totalAmount) / 2).toLocaleString()}</span>
               </div>
@@ -550,8 +550,8 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
 
         {order.status === 'completed' && (order.advancePaid || order.paymentStatus === 'advance_confirmed') && !(order.finalPaid || order.paymentStatus === 'final_confirmed') && (
           <div>
-            <div style={{ background: 'var(--bg-card)', border: '2px solid rgba(201,168,76,0.45)', borderRadius: 14, overflow: 'hidden', marginBottom: 14, boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }}>
-              <div style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ background: 'var(--bg-card)', border: '2px solid rgba(245,184,46,0.45)', borderRadius: 14, overflow: 'hidden', marginBottom: 14, boxShadow: '0 4px 24px rgba(0,0,0,0.18)' }}>
+              <div style={{ background: 'linear-gradient(135deg,#0A4A3E,#16836D)', padding: '12px 16px', display: 'flex', alignItems: 'center', gap: 10 }}>
                 <span style={{ fontSize: 20 }}>🎉</span>
                 <div>
                   <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>Your work is ready!</div>
@@ -583,10 +583,10 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
                 }}>
                   <div style={{
                     width: 64, height: 64, borderRadius: '50%',
-                    background: 'linear-gradient(135deg,rgba(201,168,76,0.25),rgba(201,168,76,0.10))',
-                    border: '2px solid rgba(201,168,76,0.5)',
+                    background: 'linear-gradient(135deg,rgba(245,184,46,0.25),rgba(245,184,46,0.10))',
+                    border: '2px solid rgba(245,184,46,0.5)',
                     display: 'flex', alignItems: 'center', justifyContent: 'center',
-                    boxShadow: '0 0 0 8px rgba(201,168,76,0.08)',
+                    boxShadow: '0 0 0 8px rgba(245,184,46,0.08)',
                     animation: 'lockPulse 2.4s ease-in-out infinite',
                   }}>
                     <svg width="30" height="34" viewBox="0 0 30 34" fill="none" xmlns="http://www.w3.org/2000/svg">
@@ -623,7 +623,7 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
             </div>
 
             <ManualPaymentUpload order={order} paymentStage="final" onDone={() => {}} />
-            <style>{`@keyframes lockPulse { 0%,100%{box-shadow:0 0 0 8px rgba(201,168,76,0.08)} 50%{box-shadow:0 0 0 16px rgba(201,168,76,0.04)} }`}</style>
+            <style>{`@keyframes lockPulse { 0%,100%{box-shadow:0 0 0 8px rgba(245,184,46,0.08)} 50%{box-shadow:0 0 0 16px rgba(245,184,46,0.04)} }`}</style>
           </div>
         )}
 
@@ -1007,14 +1007,14 @@ function ClientPriceResponse({ order, user, profile }) {
     setSubmitting(false);
   };
 
-  if (done) return <div style={{ background: 'rgba(13,148,136,0.08)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>✅ Response sent. Waiting for admin to confirm.</div>;
+  if (done) return <div style={{ background: 'rgba(22,131,109,0.08)', border: '1px solid rgba(22,131,109,0.3)', borderRadius: 8, padding: '10px 14px', fontSize: 13, color: 'var(--teal)' }}>✅ Response sent. Waiting for admin to confirm.</div>;
 
   return (
     <div style={{ background: 'var(--bg-tertiary)', border: '1px solid var(--border)', borderRadius: 10, padding: '14px 16px' }}>
       <div style={{ fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', marginBottom: 12, textTransform: 'uppercase', letterSpacing: 0.5 }}>Is this price okay for you?</div>
       <div style={{ display: 'flex', gap: 8, marginBottom: 12 }}>
         <button onClick={() => setResponse('accept')} style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13, border: `2px solid ${response === 'accept' ? '#16A34A' : 'var(--border)'}`, background: response === 'accept' ? 'rgba(22,163,74,0.1)' : 'transparent', color: response === 'accept' ? '#16A34A' : 'var(--text-secondary)' }}>✅ Accept Price</button>
-        <button onClick={() => setResponse('counter')} style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13, border: `2px solid ${response === 'counter' ? 'var(--gold)' : 'var(--border)'}`, background: response === 'counter' ? 'rgba(201,168,76,0.08)' : 'transparent', color: response === 'counter' ? 'var(--gold)' : 'var(--text-secondary)' }}>🔄 Negotiate</button>
+        <button onClick={() => setResponse('counter')} style={{ flex: 1, padding: '10px', borderRadius: 8, cursor: 'pointer', fontWeight: 700, fontSize: 13, border: `2px solid ${response === 'counter' ? 'var(--gold)' : 'var(--border)'}`, background: response === 'counter' ? 'rgba(245,184,46,0.08)' : 'transparent', color: response === 'counter' ? 'var(--gold)' : 'var(--text-secondary)' }}>🔄 Negotiate</button>
       </div>
       {response === 'counter' && <input type="number" placeholder="Your counter price (₦)" value={counterPrice} onChange={e => setCounterPrice(e.target.value)} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 14, marginBottom: 10, boxSizing: 'border-box', outline: 'none' }} />}
       {response && <textarea rows={2} placeholder={response === 'accept' ? 'Any message for admin? (optional)' : 'Explain your counter offer...'} value={message} onChange={e => setMessage(e.target.value)} style={{ width: '100%', padding: '9px 12px', borderRadius: 8, border: '1.5px solid var(--border)', background: 'var(--bg-secondary)', color: 'var(--text-primary)', fontSize: 13, resize: 'none', marginBottom: 10, boxSizing: 'border-box', outline: 'none', fontFamily: 'var(--font-body)' }} />}
@@ -1035,7 +1035,7 @@ function PaymentsTab({ orders, stats }) {
           <h3 style={{ fontFamily: 'var(--font-display)', fontSize: 17, fontWeight: 700, color: '#C9A84C', marginBottom: 12 }}>⏳ Awaiting Payment</h3>
           <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
             {pending.map(o => (
-              <div key={o.id} style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.3)', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
+              <div key={o.id} style={{ background: 'rgba(245,184,46,0.07)', border: '1px solid rgba(245,184,46,0.3)', borderRadius: 12, padding: 16, display: 'flex', justifyContent: 'space-between', alignItems: 'center', flexWrap: 'wrap', gap: 10 }}>
                 <div><div style={{ fontWeight: 600, fontSize: 14, color: 'var(--text-primary)', marginBottom: 4 }}>{o.serviceTitle || o.topicTitle}</div><div style={{ fontSize: 12, color: 'var(--text-muted)' }}>Price set by admin</div></div>
                 <div style={{ color: 'var(--gold)', fontFamily: 'var(--font-display)', fontSize: 20, fontWeight: 700 }}>₦{Number(o.agreedPrice || o.totalAmount).toLocaleString()}</div>
               </div>
@@ -1165,7 +1165,7 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
           <p style={{ color: 'var(--text-muted)', fontSize: 13, margin: '4px 0 0' }}>{service.desc}</p>
         </div>
       </div>
-      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 24, fontSize: 13, color: 'var(--teal)', display: 'flex', gap: 8 }}>
+      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(22,131,109,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 24, fontSize: 13, color: 'var(--teal)', display: 'flex', gap: 8 }}>
         📋 After submitting, our team will review your request, discuss details & pricing with you, then begin work once agreed.
       </div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 16 }}>
@@ -1210,7 +1210,7 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
           </select>
         </div>
         <button onClick={submit} disabled={submitting || !requiredFilled()}
-          style={{ background: 'linear-gradient(135deg, #1E3A8A, #0D9488)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', opacity: requiredFilled() ? 1 : 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+          style={{ background: 'linear-gradient(135deg, #0A4A3E, #16836D)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: submitting ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', opacity: requiredFilled() ? 1 : 0.6, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
           {submitting ? '⏳ Submitting…' : `🚀 Submit Request`}
         </button>
       </div>
@@ -1342,19 +1342,19 @@ function NMCNForm({ regType, user, profile, onBack, onSuccess }) {
   return (
     <div style={{ paddingBottom: 40 }}>
       <button onClick={onBack} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>← Back</button>
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', borderRadius: 12, padding: '18px 20px', marginBottom: 20 }}>
+      <div style={{ background: 'linear-gradient(135deg,#0A4A3E,#16836D)', borderRadius: 12, padding: '18px 20px', marginBottom: 20 }}>
         <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 4 }}>NMCN</div>
         <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: '#fff' }}>{regType} Registration</div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 4 }}>Online Registration and Licensing Platform</div>
       </div>
-      <div style={{ background: 'rgba(201,168,76,0.07)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 10, padding: '14px 16px', marginBottom: 24 }}>
+      <div style={{ background: 'rgba(245,184,46,0.07)', border: '1px solid rgba(245,184,46,0.25)', borderRadius: 10, padding: '14px 16px', marginBottom: 24 }}>
         <label style={{ ...lbl, color: 'var(--gold)' }}>{regType} Type *</label>
         <select value={subType} onChange={e => setSubType(e.target.value)} style={{ ...inp, borderColor: subType ? 'var(--gold)' : 'var(--border)' }}>
           <option value="">-- Select Type --</option>
           {subOptions.map(o => <option key={o} value={o}>{o}</option>)}
         </select>
       </div>
-      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 24, fontSize: 13, color: 'var(--teal)' }}>
+      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(22,131,109,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 24, fontSize: 13, color: 'var(--teal)' }}>
         📋 Fill all sections accurately. Admin will process and provide payment details. Documents can be uploaded as files after submission via the order chat.
       </div>
       <div style={{ display: 'flex', gap: 6, marginBottom: 20, flexWrap: 'wrap' }}>
@@ -1405,7 +1405,7 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
   const [sortBy, setSortBy] = useState('newest');
 
   const CATEGORY_GROUPS = [
-    { group: '🏥 Health Sciences', color: '#0D9488', bg: 'rgba(13,148,136,0.1)', cats: ['Nursing Science','Midwifery','Medicine & Surgery','Public Health','Community Health','Mental Health','Pharmacology','Medical Laboratory Science','Physiotherapy','Radiography','Nutrition & Dietetics','Environmental Health','Health Information Management','Optometry','Dental Surgery','Medical Rehabilitation','Veterinary Medicine'] },
+    { group: '🏥 Health Sciences', color: '#16836D', bg: 'rgba(22,131,109,0.1)', cats: ['Nursing Science','Midwifery','Medicine & Surgery','Public Health','Community Health','Mental Health','Pharmacology','Medical Laboratory Science','Physiotherapy','Radiography','Nutrition & Dietetics','Environmental Health','Health Information Management','Optometry','Dental Surgery','Medical Rehabilitation','Veterinary Medicine'] },
     { group: '🎓 Education', color: '#2563EB', bg: 'rgba(37,99,235,0.1)', cats: ['Education','Educational Management','Guidance & Counselling','Early Childhood Education','Special Education','Curriculum Studies','Educational Psychology'] },
     { group: '💼 Business & Social Sciences', color: '#D97706', bg: 'rgba(217,119,6,0.1)', cats: ['Business Administration','Accounting','Economics','Marketing','Banking & Finance','Public Administration','Sociology','Psychology','Political Science','Mass Communication','Social Work'] },
     { group: '⚙️ Sciences & Technology', color: '#7C3AED', bg: 'rgba(124,58,237,0.1)', cats: ['Computer Science','Information Technology','Electrical Engineering','Civil Engineering','Mechanical Engineering','Agricultural Science','Biochemistry','Microbiology','Chemistry','Physics','Environmental Science'] },
@@ -1478,7 +1478,7 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
   if (selectedTopic) return (
     <div>
       <button onClick={() => { setSelectedTopic(null); setDetails(''); }} style={{ background: 'var(--bg-card)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 14px', cursor: 'pointer', color: 'var(--text-primary)', fontSize: 14, fontWeight: 600, fontFamily: 'var(--font-body)', display: 'inline-flex', alignItems: 'center', gap: 6, marginBottom: 20 }}>← Back to Topics</button>
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', borderRadius: 14, padding: '22px', marginBottom: 22 }}>
+      <div style={{ background: 'linear-gradient(135deg,#0A4A3E,#16836D)', borderRadius: 14, padding: '22px', marginBottom: 22 }}>
         <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 12, flexWrap: 'wrap' }}>
           <div style={{ flex: 1 }}>
             <div style={{ fontSize: 11, color: 'rgba(255,255,255,0.65)', textTransform: 'uppercase', letterSpacing: 1, marginBottom: 6 }}>{selectedTopic.category} · {selectedTopic.pages ? `${selectedTopic.pages} pages` : 'Pages TBD'}</div>
@@ -1491,13 +1491,13 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
           </div>
         </div>
       </div>
-      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(13,148,136,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 20, fontSize: 13, color: 'var(--teal)' }}>📋 After ordering, admin will confirm and send you a final price quote. No payment until you agree.</div>
+      <div style={{ background: 'var(--teal-glow)', border: '1px solid rgba(22,131,109,0.3)', borderRadius: 10, padding: '11px 14px', marginBottom: 20, fontSize: 13, color: 'var(--teal)' }}>📋 After ordering, admin will confirm and send you a final price quote. No payment until you agree.</div>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 14 }}>
         <div>
           <label style={{ display: 'block', fontSize: 12, fontWeight: 700, color: 'var(--text-muted)', textTransform: 'uppercase', letterSpacing: 0.5, marginBottom: 6 }}>Additional Instructions / Details</label>
           <textarea rows={4} value={details} onChange={e => setDetails(e.target.value)} placeholder="Any specific instructions, department, academic level, deadline details, etc." style={{ width: '100%', padding: '10px 12px', background: 'var(--bg-tertiary)', border: '1.5px solid var(--border)', borderRadius: 8, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', resize: 'vertical', boxSizing: 'border-box' }} />
         </div>
-        <button onClick={submitOrder} disabled={ordering} style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: ordering ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: ordering ? 0.7 : 1 }}>
+        <button onClick={submitOrder} disabled={ordering} style={{ background: 'linear-gradient(135deg,#0A4A3E,#16836D)', color: '#fff', border: 'none', borderRadius: 10, padding: '15px', cursor: ordering ? 'not-allowed' : 'pointer', fontSize: 15, fontWeight: 700, fontFamily: 'var(--font-body)', display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8, opacity: ordering ? 0.7 : 1 }}>
           {ordering ? <><div style={{ width: 18, height: 18, border: '2px solid rgba(255,255,255,0.3)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'spin 0.8s linear infinite' }} />Placing Order…</> : '📚 Order This Topic'}
         </button>
       </div>

@@ -7,7 +7,7 @@ import mammoth from 'mammoth';
 const RESEARCH_CHAPTERS = [
   { id: 'ch1', title: 'Chapter One',   subtitle: 'Introduction',                           color: '#2563EB', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.25)'  },
   { id: 'ch2', title: 'Chapter Two',   subtitle: 'Literature Review',                      color: '#7C3AED', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)' },
-  { id: 'ch3', title: 'Chapter Three', subtitle: 'Research Methodology',                   color: '#0D9488', bg: 'rgba(13,148,136,0.08)', border: 'rgba(13,148,136,0.25)' },
+  { id: 'ch3', title: 'Chapter Three', subtitle: 'Research Methodology',                   color: '#16836D', bg: 'rgba(22,131,109,0.08)', border: 'rgba(22,131,109,0.25)' },
   { id: 'ch4', title: 'Chapter Four',  subtitle: 'Results',                                color: '#D97706', bg: 'rgba(217,119,6,0.08)',  border: 'rgba(217,119,6,0.25)'  },
   { id: 'ch5', title: 'Chapter Five',  subtitle: 'Discussion of Findings',                 color: '#16A34A', bg: 'rgba(22,163,74,0.08)',  border: 'rgba(22,163,74,0.25)'  },
 ];
@@ -15,7 +15,7 @@ const RESEARCH_CHAPTERS = [
 const CLIENT_CARE_CHAPTERS = [
   { id: 'ch1', title: 'Chapter One',   subtitle: 'Introduction',                           color: '#2563EB', bg: 'rgba(37,99,235,0.08)',  border: 'rgba(37,99,235,0.25)'  },
   { id: 'ch2', title: 'Chapter Two',   subtitle: 'Literature Review',                      color: '#7C3AED', bg: 'rgba(124,58,237,0.08)', border: 'rgba(124,58,237,0.25)' },
-  { id: 'ch3', title: 'Chapter Three', subtitle: 'Client Assessment & Nursing Care Plan',  color: '#0D9488', bg: 'rgba(13,148,136,0.08)', border: 'rgba(13,148,136,0.25)' },
+  { id: 'ch3', title: 'Chapter Three', subtitle: 'Client Assessment & Nursing Care Plan',  color: '#16836D', bg: 'rgba(22,131,109,0.08)', border: 'rgba(22,131,109,0.25)' },
 ];
 
 // ── Draw bar chart → base64 PNG ──────────────────────────────
@@ -770,7 +770,7 @@ ${chapterText}
         }
         await new Promise(r => setTimeout(r, 500));
       }
-      toast('✅ Overlapping phrases rewritten. Re-checking…', '#0D9488');
+      toast('✅ Overlapping phrases rewritten. Re-checking…', '#16836D');
       setTimeout(() => handleCheckOriginality(), 300);
     } catch (e) {
       setError(`Auto-fix failed: ${e.message}`);
@@ -838,7 +838,7 @@ ${chapterText}
     setLoading(null); setGeneratingAll(false); setActiveChapter('ch1');
   };
 
-  const toast = (msg, bg='#0D9488') => {
+  const toast = (msg, bg='#16836D') => {
     const el = document.createElement('div');
     el.textContent = msg;
     el.style.cssText = `position:fixed;bottom:80px;left:50%;transform:translateX(-50%);background:${bg};color:#fff;padding:10px 24px;border-radius:24px;font-size:14px;font-weight:700;z-index:9999;white-space:nowrap;`;
@@ -846,7 +846,7 @@ ${chapterText}
   };
 
   const copyChapter = (id) => { navigator.clipboard.writeText(chapters[id]||''); toast('📋 Chapter copied!'); };
-  const copyAll = () => { navigator.clipboard.writeText(activeChapters.map(c=>chapters[c.id]||'').filter(Boolean).join('\n\n\n')); toast('📋 Full document copied!','#1E3A8A'); };
+  const copyAll = () => { navigator.clipboard.writeText(activeChapters.map(c=>chapters[c.id]||'').filter(Boolean).join('\n\n\n')); toast('📋 Full document copied!','#0A4A3E'); };
 
   // ── XML escape ───────────────────────────────────────────────
   const esc = t => String(t).replace(/&/g,'&amp;').replace(/</g,'&lt;').replace(/>/g,'&gt;').replace(/"/g,'&quot;');
@@ -1203,13 +1203,13 @@ ${chapterText}
 
   const inp={width:'100%',padding:'11px 14px',background:'var(--bg-tertiary,#1a2236)',border:'1.5px solid var(--border,#2d3748)',borderRadius:8,color:'var(--text-primary,#e2e8f0)',fontFamily:'var(--font-body,inherit)',fontSize:14,outline:'none',boxSizing:'border-box'};
   const lbl={display:'block',fontSize:12,fontWeight:700,color:'var(--text-muted,#718096)',textTransform:'uppercase',letterSpacing:0.5,marginBottom:6};
-  const accentColor=mode==='clientcare'?'#7C3AED':'#0D9488';
+  const accentColor=mode==='clientcare'?'#7C3AED':'#16836D';
 
   return (
     <div style={{minHeight:'100vh',background:'var(--bg-primary,#0f172a)',paddingTop:64,paddingBottom:60}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} .ai-ch-btn{transition:all 0.2s} .ai-ch-btn:hover:not(:disabled){transform:translateY(-2px);opacity:0.9}`}</style>
 
-      <div style={{background:mode==='clientcare'?'linear-gradient(135deg,#7C3AED,#0D9488)':'linear-gradient(135deg,#1E3A8A,#0D9488)',padding:'24px 20px',transition:'background 0.4s'}}>
+      <div style={{background:mode==='clientcare'?'linear-gradient(135deg,#7C3AED,#16836D)':'linear-gradient(135deg,#0A4A3E,#16836D)',padding:'24px 20px',transition:'background 0.4s'}}>
         <div style={{maxWidth:900,margin:'0 auto',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <span style={{fontSize:30}}>{mode==='clientcare'?'🏥':'🤖'}</span>
@@ -1219,7 +1219,7 @@ ${chapterText}
             </div>
           </div>
           <div style={{background:'rgba(0,0,0,0.3)',borderRadius:12,padding:4,display:'flex',gap:3}}>
-            {[['research','🔬 Research','#1E3A8A'],['clientcare','🏥 Client Care','#7C3AED']].map(([m,label,col])=>(
+            {[['research','🔬 Research','#0A4A3E'],['clientcare','🏥 Client Care','#7C3AED']].map(([m,label,col])=>(
               <button key={m} onClick={()=>{setMode(m);setChapters({});setActiveChapter(null);setError('');}}
                 style={{padding:'7px 13px',borderRadius:9,border:'none',cursor:'pointer',fontWeight:700,fontSize:12,fontFamily:'var(--font-body,inherit)',transition:'all 0.2s',whiteSpace:'nowrap',background:mode===m?'#fff':'transparent',color:mode===m?col:'rgba(255,255,255,0.75)'}}>{label}</button>
             ))}
@@ -1363,7 +1363,7 @@ ${chapterText}
 
         <button onClick={generateAll} disabled={!canGenerate||generatingAll||loading!==null}
           style={{width:'100%',padding:'15px',borderRadius:12,border:'none',fontSize:15,fontWeight:700,fontFamily:'var(--font-body,inherit)',cursor:canGenerate&&!generatingAll&&!loading?'pointer':'not-allowed',transition:'all 0.2s',display:'flex',alignItems:'center',justifyContent:'center',gap:10,
-            background:canGenerate&&!generatingAll&&!loading?(mode==='clientcare'?'linear-gradient(135deg,#7C3AED,#0D9488)':'linear-gradient(135deg,#1E3A8A,#0D9488)'):'rgba(45,55,72,0.6)',
+            background:canGenerate&&!generatingAll&&!loading?(mode==='clientcare'?'linear-gradient(135deg,#7C3AED,#16836D)':'linear-gradient(135deg,#0A4A3E,#16836D)'):'rgba(45,55,72,0.6)',
             color:canGenerate?'#fff':'rgba(255,255,255,0.4)'}}>
           {generatingAll?<><div style={{width:20,height:20,border:'2px solid rgba(255,255,255,0.3)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Generating {activeChapters.find(c=>c.id===loading)?.title||'…'}</>
             :mode==='clientcare'?`🏥 Generate All ${totalChapters} Care Study Chapters`:`🚀 Generate All ${totalChapters} Chapters At Once`}
@@ -1388,7 +1388,7 @@ ${chapterText}
             <div style={{display:'flex',justifyContent:'space-between',alignItems:'center',marginBottom:8,flexWrap:'wrap',gap:8}}>
               <span style={{fontSize:13,fontWeight:700,color:'var(--text-primary,#e2e8f0)'}}>{generatedCount}/{totalChapters} chapter{generatedCount>1?'s':''} generated {generatedCount===totalChapters&&<span style={{marginLeft:8,color:'#16A34A'}}>✅ Complete</span>}</span>
               <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
-                <button onClick={copyAll} style={{background:'#1E3A8A',color:'#fff',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',fontWeight:700,fontSize:12}}>📋 Copy All</button>
+                <button onClick={copyAll} style={{background:'#0A4A3E',color:'#fff',border:'none',borderRadius:8,padding:'7px 14px',cursor:'pointer',fontWeight:700,fontSize:12}}>📋 Copy All</button>
                 {chapters.ch5&&(
                   <button onClick={handleVerifyReferences} disabled={verifyingRefs} style={{background:verifyingRefs?'rgba(124,58,237,0.5)':'#7C3AED',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:verifyingRefs?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
                     {verifyingRefs?<><div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Checking…</>:'🔎 Verify References'}
@@ -1399,7 +1399,7 @@ ${chapterText}
                     🧬 Check Originality
                   </button>
                 )}
-                <button onClick={downloadDocx} disabled={downloadingDocx} style={{background:downloadingDocx?'rgba(13,148,136,0.5)':'#0D9488',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:downloadingDocx?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
+                <button onClick={downloadDocx} disabled={downloadingDocx} style={{background:downloadingDocx?'rgba(22,131,109,0.5)':'#16836D',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:downloadingDocx?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
                   {downloadingDocx?<><div style={{width:12,height:12,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Building…</>:'⬇️ Word (.docx)'}
                 </button>
                 <button onClick={downloadPdf} disabled={downloadingPdf} style={{background:downloadingPdf?'rgba(220,38,38,0.5)':'#DC2626',color:'#fff',border:'none',borderRadius:8,padding:'7px 16px',cursor:downloadingPdf?'not-allowed':'pointer',fontWeight:700,fontSize:12,display:'flex',alignItems:'center',gap:6}}>
@@ -1408,7 +1408,7 @@ ${chapterText}
               </div>
             </div>
             <div style={{background:'var(--bg-tertiary,#2d3748)',borderRadius:20,height:8,overflow:'hidden'}}>
-              <div style={{height:'100%',width:`${(generatedCount/totalChapters)*100}%`,background:`linear-gradient(90deg,${mode==='clientcare'?'#7C3AED':'#1E3A8A'},#0D9488)`,borderRadius:20,transition:'width 0.5s ease'}}/>
+              <div style={{height:'100%',width:`${(generatedCount/totalChapters)*100}%`,background:`linear-gradient(90deg,${mode==='clientcare'?'#7C3AED':'#0A4A3E'},#16836D)`,borderRadius:20,transition:'width 0.5s ease'}}/>
             </div>
             {refResults&&(()=>{
               const counts = refResults.reduce((a,r)=>{a[r.status]=(a[r.status]||0)+1;return a;},{});
@@ -1512,11 +1512,11 @@ ${chapterText}
             const lines = rawText.split('\n');
             const elements = [];
             let key = 0;
-            const tableColors = ['#2563EB','#7C3AED','#0D9488','#D97706','#DC2626','#16A34A'];
+            const tableColors = ['#2563EB','#7C3AED','#16836D','#D97706','#DC2626','#16A34A'];
 
             const ChartBar = ({tbl}) => {
               const max = Math.max(...tbl.chartValues,1);
-              const barColors = ['#2563EB','#7C3AED','#0D9488','#D97706','#DC2626','#16A34A','#0891B2','#9333EA'];
+              const barColors = ['#2563EB','#7C3AED','#16836D','#D97706','#DC2626','#16A34A','#0891B2','#9333EA'];
               return (
                 <div style={{background:'#fff',borderRadius:10,padding:'18px 16px 12px',border:'1px solid #e2e8f0',margin:'8px 0'}}>
                   <div style={{fontWeight:700,fontSize:13,color:'#1e293b',textAlign:'center',marginBottom:14}}>{tbl.chartTitle}</div>
@@ -1542,7 +1542,7 @@ ${chapterText}
               const cols = Math.max(tbl.headers.length,...tbl.dataRows.map(r=>r.length));
               return (
                 <div style={{overflowX:'auto',margin:'8px 0',borderRadius:8,boxShadow:'0 2px 8px rgba(0,0,0,0.18)'}}>
-                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,fontFamily:"'Times New Roman',Georgia,serif"}}>
+                  <table style={{width:'100%',borderCollapse:'collapse',fontSize:12,fontFamily:"var(--font-body)"}}>
                     <thead>
                       <tr>
                         {tbl.headers.map((h,i)=>(
@@ -1581,44 +1581,44 @@ ${chapterText}
               if (/^Table\s+4[\.\d]+/i.test(t)) {
                 const tbl = ch4Tables[tblIdx];
                 const col = tableColors[tblIdx%tableColors.length];
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#1e293b',marginTop:14,fontFamily:"'Times New Roman',serif"}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#1e293b',marginTop:14,fontFamily:"var(--font-body)"}}>{t}</div>);
                 if (tbl) { elements.push(<StyledTable key={key++} tbl={tbl} colorHex={col}/>); tblIdx++; }
                 i++; continue;
               }
               if (/^Figure\s+4[\.\d]+/i.test(t)) {
                 const tbl = ch4Tables[figIdx];
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:12,color:'#374151',textAlign:'center',marginTop:8,fontFamily:"'Times New Roman',serif"}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:12,color:'#374151',textAlign:'center',marginTop:8,fontFamily:"var(--font-body)"}}>{t}</div>);
                 if (tbl) { elements.push(<ChartBar key={key++} tbl={tbl}/>); figIdx++; }
                 i++; continue;
               }
               if (/^CHAPTER\s+(ONE|TWO|THREE|FOUR|FIVE)$/i.test(t)) {
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:17,textAlign:'center',textTransform:'uppercase',color:'#1e293b',margin:'12px 0 4px',fontFamily:"'Times New Roman',serif",letterSpacing:1}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:17,textAlign:'center',textTransform:'uppercase',color:'#1e293b',margin:'12px 0 4px',fontFamily:"var(--font-body)",letterSpacing:1}}>{t}</div>);
                 i++; continue;
               }
               if (t===t.toUpperCase()&&/^[A-Z][A-Z\s,&/\-]+$/.test(t)&&t.length>=4&&t.length<90&&!/^\d/.test(t)) {
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:14,textAlign:'center',color:'#1e293b',margin:'6px 0',fontFamily:"'Times New Roman',serif"}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:14,textAlign:'center',color:'#1e293b',margin:'6px 0',fontFamily:"var(--font-body)"}}>{t}</div>);
                 i++; continue;
               }
               if (/^\d+\.\d+(\.\d+)?\s+\S/.test(t)) {
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#1e293b',margin:'10px 0 4px',fontFamily:"'Times New Roman',serif"}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#1e293b',margin:'10px 0 4px',fontFamily:"var(--font-body)"}}>{t}</div>);
                 i++; continue;
               }
               if (/^H[₀oO0][₁₂₃123][:.\s]/.test(t)||/^H[₁1][₁₂₃123][:.\s]/.test(t)) {
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#1e293b',margin:'6px 0',fontFamily:"'Times New Roman',serif"}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#1e293b',margin:'6px 0',fontFamily:"var(--font-body)"}}>{t}</div>);
                 i++; continue;
               }
               if (/^(Decision Rule|Inference:|Source:|Hypothesis (One|Two)|Broad Objective|Research Question (One|Two|Three))/i.test(t)) {
-                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#374151',margin:'8px 0 2px',fontFamily:"'Times New Roman',serif"}}>{t}</div>);
+                elements.push(<div key={key++} style={{fontWeight:700,fontSize:13,color:'#374151',margin:'8px 0 2px',fontFamily:"var(--font-body)"}}>{t}</div>);
                 i++; continue;
               }
               // bold-colon lines
               if (/^[A-Z][A-Za-z\s]+:/.test(t)&&t.length<140&&t.split(':')[0].split(' ').length<=10) {
                 const ci=t.indexOf(':');
-                elements.push(<div key={key++} style={{fontSize:13,color:'#1e293b',margin:'4px 0',lineHeight:1.8,fontFamily:"'Times New Roman',serif"}}><strong>{t.slice(0,ci+1)}</strong>{t.slice(ci+1)}</div>);
+                elements.push(<div key={key++} style={{fontSize:13,color:'#1e293b',margin:'4px 0',lineHeight:1.8,fontFamily:"var(--font-body)"}}><strong>{t.slice(0,ci+1)}</strong>{t.slice(ci+1)}</div>);
                 i++; continue;
               }
               // body paragraph
-              elements.push(<p key={key++} style={{fontSize:14,color:'#1e293b',lineHeight:2,margin:'4px 0 8px',textAlign:'justify',fontFamily:"'Times New Roman',Georgia,serif"}}>{t}</p>);
+              elements.push(<p key={key++} style={{fontSize:14,color:'#1e293b',lineHeight:2,margin:'4px 0 8px',textAlign:'justify',fontFamily:"var(--font-body)"}}>{t}</p>);
               i++;
             }
             return elements;
@@ -1633,7 +1633,7 @@ ${chapterText}
                 </div>
                 <div style={{display:'flex',gap:8,flexWrap:'wrap'}}>
                   <button onClick={()=>copyChapter(activeChapter)} style={{background:ch.color,color:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:'pointer',fontWeight:700,fontSize:13}}>📋 Copy</button>
-                  <button onClick={downloadDocx} disabled={downloadingDocx} style={{background:downloadingDocx?'rgba(13,148,136,0.4)':'#0D9488',color:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:downloadingDocx?'not-allowed':'pointer',fontWeight:700,fontSize:13,display:'flex',alignItems:'center',gap:5}}>
+                  <button onClick={downloadDocx} disabled={downloadingDocx} style={{background:downloadingDocx?'rgba(22,131,109,0.4)':'#16836D',color:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:downloadingDocx?'not-allowed':'pointer',fontWeight:700,fontSize:13,display:'flex',alignItems:'center',gap:5}}>
                     {downloadingDocx?<><div style={{width:11,height:11,border:'2px solid rgba(255,255,255,0.4)',borderTop:'2px solid #fff',borderRadius:'50%',animation:'spin 0.8s linear infinite'}}/>Saving…</>:'⬇️ .docx'}
                   </button>
                   <button onClick={downloadPdf} disabled={downloadingPdf} style={{background:downloadingPdf?'rgba(220,38,38,0.4)':'#DC2626',color:'#fff',border:'none',borderRadius:8,padding:'8px 14px',cursor:downloadingPdf?'not-allowed':'pointer',fontWeight:700,fontSize:13,display:'flex',alignItems:'center',gap:5}}>
@@ -1646,7 +1646,7 @@ ${chapterText}
                 {isCh4
                   ? <div style={{maxWidth:'100%'}}>{renderCh4(chapters[activeChapter])}</div>
                   : <textarea value={chapters[activeChapter]} onChange={e=>setChapters(prev=>({...prev,[activeChapter]:e.target.value}))}
-                      style={{width:'100%',minHeight:600,background:'transparent',border:'none',outline:'none',resize:'vertical',color:'var(--text-secondary,#cbd5e0)',fontFamily:"'Times New Roman', Georgia, serif",fontSize:15,lineHeight:1.9,boxSizing:'border-box'}}/>
+                      style={{width:'100%',minHeight:600,background:'transparent',border:'none',outline:'none',resize:'vertical',color:'var(--text-secondary,#cbd5e0)',fontFamily:"var(--font-body)",fontSize:15,lineHeight:1.9,boxSizing:'border-box'}}/>
                 }
               </div>
             </div>
@@ -1658,7 +1658,7 @@ ${chapterText}
             <div style={{fontSize:'3.5rem',marginBottom:16}}>{mode==='clientcare'?'🏥':'🤖'}</div>
             <h3 style={{fontFamily:'var(--font-display,serif)',fontSize:20,color:'var(--text-primary,#e2e8f0)',marginBottom:8}}>{mode==='clientcare'?'Ready to Write Care Study':'Ready to Write'}</h3>
             <p style={{color:'var(--text-muted,#718096)',fontSize:14,maxWidth:460,margin:'0 auto 24px',lineHeight:1.7}}>
-              Fill in your topic and objectives, upload a format guide, then generate. Chapter 4 downloads with <strong style={{color:'#0D9488'}}>colored tables</strong> and <strong style={{color:'#0D9488'}}>bar charts</strong> in both Word and PDF.
+              Fill in your topic and objectives, upload a format guide, then generate. Chapter 4 downloads with <strong style={{color:'#16836D'}}>colored tables</strong> and <strong style={{color:'#16836D'}}>bar charts</strong> in both Word and PDF.
             </p>
             <div style={{display:'flex',gap:10,justifyContent:'center',flexWrap:'wrap'}}>
               {activeChapters.map(ch=><div key={ch.id} style={{padding:'7px 14px',borderRadius:20,border:`1px solid ${ch.border}`,fontSize:12,fontWeight:600,color:ch.color,background:ch.bg}}>{ch.title}</div>)}

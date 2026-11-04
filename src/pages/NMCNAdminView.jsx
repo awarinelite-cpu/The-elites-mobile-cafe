@@ -6,7 +6,7 @@ export default function NMCNAdminView({ request }) {
     navigator.clipboard.writeText(val || '').then(() => {}).catch(() => {});
     const el = document.createElement('div');
     el.textContent = '📋 Copied!';
-    el.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#0D9488;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none;';
+    el.style.cssText = 'position:fixed;bottom:70px;left:50%;transform:translateX(-50%);background:#16836D;color:#fff;padding:8px 20px;border-radius:20px;font-size:13px;font-weight:700;z-index:9999;pointer-events:none;';
     document.body.appendChild(el);
     setTimeout(() => el.remove(), 1800);
   };
@@ -75,7 +75,7 @@ export default function NMCNAdminView({ request }) {
   return (
     <div>
       {/* Header badge */}
-      <div style={{ background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', borderRadius: 10, padding: '12px 16px', marginBottom: 18 }}>
+      <div style={{ background: 'linear-gradient(135deg,#0A4A3E,#16836D)', borderRadius: 10, padding: '12px 16px', marginBottom: 18 }}>
         <div style={{ fontSize: 10, color: 'rgba(255,255,255,0.7)', textTransform: 'uppercase', letterSpacing: 1 }}>NMCN</div>
         <div style={{ fontWeight: 700, fontSize: 16, color: '#fff' }}>{request.nmcnType} — {request.nmcnSubType}</div>
         <div style={{ fontSize: 12, color: 'rgba(255,255,255,0.75)', marginTop: 2 }}>{request.name} · {request.email}</div>
@@ -103,7 +103,7 @@ export default function NMCNAdminView({ request }) {
         [['Exam Body',d.examBody],['Exam Type',d.examType],['Exam No',d.examinationNumber],['Exam Year',d.examYear],['Scratch Serial',d.scratchSerial],['Scratch PIN',d.scratchPin],['NECO Token',d.necoToken]].forEach(([l,v])=>{ if(v) lines.push(`${l}: ${v}`); });
         navigator.clipboard.writeText(lines.join('\n'));
         copyField('copied');
-      }} style={{ width: '100%', background: '#1E3A8A', color: '#fff', border: 'none', borderRadius: 8, padding: '11px', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'var(--font-body)', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+      }} style={{ width: '100%', background: '#0A4A3E', color: '#fff', border: 'none', borderRadius: 8, padding: '11px', cursor: 'pointer', fontWeight: 700, fontSize: 13, fontFamily: 'var(--font-body)', marginBottom: 18, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
         📋 Copy All Data (for NMCN Website)
       </button>
 
@@ -154,7 +154,7 @@ export default function NMCNAdminView({ request }) {
                 const docName = key.replace('docFile_', '').replace(/_/g, ' ');
                 const isImage = val.startsWith('data:image');
                 return (
-                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(13,148,136,0.06)', borderRadius: 8, border: '1px solid rgba(13,148,136,0.2)' }}>
+                  <div key={key} style={{ display: 'flex', alignItems: 'center', gap: 10, padding: '8px 12px', background: 'rgba(22,131,109,0.06)', borderRadius: 8, border: '1px solid rgba(22,131,109,0.2)' }}>
                     <span style={{ fontSize: 20 }}>{isImage ? '🖼️' : '📄'}</span>
                     <span style={{ flex: 1, fontSize: 13, color: 'var(--text-primary)', fontWeight: 600, textTransform: 'capitalize' }}>{docName}</span>
                     <button onClick={() => {

@@ -983,7 +983,7 @@ export default function AdminPage() {
           .admin-menu-btn { display: none !important; }
         }
         .admin-menu-btn { display: none; }
-        .admin-nav-btn:hover { background: rgba(13,148,136,0.09) !important; }
+        .admin-nav-btn:hover { background: rgba(22,131,109,0.09) !important; }
       `}</style>
 
       {/* ── Sidebar ─────────────────────────────────── */}
@@ -1016,7 +1016,7 @@ export default function AdminPage() {
                   const badge  = navBadge(n.key);
                   return (
                     <button key={n.key} className="admin-nav-btn" onClick={() => handleNav(n.key)}
-                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 8, background: active ? 'rgba(13,148,136,0.15)' : 'transparent', border: `1px solid ${active ? 'var(--teal)' : 'transparent'}`, color: active ? 'var(--teal)' : 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginBottom: 2, textAlign: 'left', transition: 'all 0.18s', fontWeight: active ? 700 : 400 }}>
+                      style={{ width: '100%', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 8, padding: '9px 12px', borderRadius: 8, background: active ? 'rgba(22,131,109,0.15)' : 'transparent', border: `1px solid ${active ? 'var(--teal)' : 'transparent'}`, color: active ? 'var(--teal)' : 'var(--text-secondary)', fontSize: 13, fontFamily: 'var(--font-body)', cursor: 'pointer', marginBottom: 2, textAlign: 'left', transition: 'all 0.18s', fontWeight: active ? 700 : 400 }}>
                       <span>{n.label}</span>
                       {badge && <span style={{ background: active ? 'var(--teal)' : '#EF4444', color: '#fff', borderRadius: 20, padding: '1px 7px', fontSize: 10, fontWeight: 700 }}>{badge}</span>}
                     </button>
@@ -1743,7 +1743,7 @@ export default function AdminPage() {
                 <button
                   type="button"
                   onClick={downloadTopicTemplate}
-                  style={{ ...s.btn('#0D9488'), width: '100%', marginBottom: 16, padding: '10px', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
+                  style={{ ...s.btn('#16836D'), width: '100%', marginBottom: 16, padding: '10px', fontSize: 13, display: 'flex', alignItems: 'center', justifyContent: 'center', gap: 8 }}>
                   ⬇️ Download CSV Template
                 </button>
 
@@ -2143,7 +2143,7 @@ export default function AdminPage() {
         {/* ══════════════ USERS ══════════════ */}
         {tab === 'users' && (
           <div>
-            <div style={{ background: 'rgba(201,168,76,0.06)', border: '1px solid rgba(201,168,76,0.25)', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
+            <div style={{ background: 'rgba(245,184,46,0.06)', border: '1px solid rgba(245,184,46,0.25)', borderRadius: 12, padding: '16px 20px', marginBottom: 24 }}>
               <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--gold)', marginBottom: 6 }}>🔗 Your Admin Referral Link</div>
               <div style={{ fontSize: 12, color: 'var(--text-muted)', marginBottom: 10 }}>
                 Share this link. Clients who register through it will be assigned to you. You earn <strong style={{ color: 'var(--gold)' }}>95%</strong> if you write it, or writers get <strong style={{ color: 'var(--gold)' }}>95%</strong> if you push to them.
@@ -2201,7 +2201,7 @@ export default function AdminPage() {
 
       {/* Toast */}
       {toast && (
-        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', color: '#fff', padding: '12px 24px', borderRadius: 24, fontSize: 14, fontWeight: 600, zIndex: 9999, backdropFilter: 'blur(10px)', border: '1px solid rgba(13,148,136,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', whiteSpace: 'nowrap', fontFamily: 'var(--font-body)' }}>
+        <div style={{ position: 'fixed', bottom: 24, left: '50%', transform: 'translateX(-50%)', background: 'rgba(15,23,42,0.95)', color: '#fff', padding: '12px 24px', borderRadius: 24, fontSize: 14, fontWeight: 600, zIndex: 9999, backdropFilter: 'blur(10px)', border: '1px solid rgba(22,131,109,0.4)', boxShadow: '0 8px 32px rgba(0,0,0,0.4)', whiteSpace: 'nowrap', fontFamily: 'var(--font-body)' }}>
           {toast}
         </div>
       )}

@@ -33,7 +33,7 @@ export default function ExitPrompt({ visible, onDismiss }) {
         left:        '50%',
         transform:   'translateX(-50%)',
         background:  'rgba(2,11,24,0.97)',
-        border:      '1px solid rgba(201,168,76,0.45)',
+        border:      '1px solid rgba(245,184,46,0.45)',
         borderRadius: 12,
         padding:     '14px 26px',
         color:       '#F1F5F9',

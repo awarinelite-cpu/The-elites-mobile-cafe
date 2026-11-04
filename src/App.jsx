@@ -98,9 +98,9 @@ function NotFound() {
     <div style={{
       minHeight: '100vh',
       display: 'flex', alignItems: 'center', justifyContent: 'center',
-      background: 'linear-gradient(135deg, #172554 0%, #1E3A8A 55%, #0F766E 100%)',
+      background: 'linear-gradient(135deg, #06342C 0%, #0A4A3E 55%, #0F5C4D 100%)',
       textAlign: 'center', padding: '100px 16px',
-      fontFamily: "'Times New Roman', Georgia, serif",
+      fontFamily: "var(--font-body)",
       position: 'relative', overflow: 'hidden',
     }}>
       <div style={{
@@ -108,16 +108,16 @@ function NotFound() {
         background: "url(\"data:image/svg+xml,%3Csvg width='60' height='60' viewBox='0 0 60 60' xmlns='http://www.w3.org/2000/svg'%3E%3Cg fill='none'%3E%3Cg fill='%23ffffff' fill-opacity='0.025'%3E%3Cpath d='M36 34v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6 34v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6 4V0H4v4H0v2h4v4h2V6h4V4H6z'/%3E%3C/g%3E%3C/g%3E%3C/svg%3E\")",
       }} />
       <div style={{ position: 'relative', zIndex: 1 }}>
-        <div style={{ fontSize: 'clamp(80px,18vw,140px)', fontWeight: 700, color: '#0D9488', opacity: 0.10, lineHeight: 1, marginBottom: 4, userSelect: 'none' }}>404</div>
-        <div style={{ width: 60, height: 3, background: 'linear-gradient(90deg,transparent,#0D9488,transparent)', margin: '0 auto 24px', borderRadius: 2 }} />
+        <div style={{ fontSize: 'clamp(80px,18vw,140px)', fontWeight: 700, color: '#16836D', opacity: 0.10, lineHeight: 1, marginBottom: 4, userSelect: 'none' }}>404</div>
+        <div style={{ width: 60, height: 3, background: 'linear-gradient(90deg,transparent,#16836D,transparent)', margin: '0 auto 24px', borderRadius: 2 }} />
         <h2 style={{ color: '#FFFFFF', fontSize: 'clamp(20px,4vw,28px)', marginBottom: 12 }}>Page Not Found</h2>
         <p style={{ color: 'rgba(255,255,255,0.70)', fontSize: 15, maxWidth: 360, margin: '0 auto 36px', lineHeight: 1.75 }}>
           The page you're looking for doesn't exist or may have been moved.
         </p>
         <a href="/"
-          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#0D9488', color: '#FFFFFF', fontFamily: "'Times New Roman',serif", fontWeight: 700, fontSize: 15, padding: '12px 32px', borderRadius: 8, textDecoration: 'none', boxShadow: '0 4px 20px rgba(13,148,136,0.35)' }}
-          onMouseEnter={e => { e.currentTarget.style.background='#0F766E'; e.currentTarget.style.transform='translateY(-1px)'; }}
-          onMouseLeave={e => { e.currentTarget.style.background='#0D9488'; e.currentTarget.style.transform='translateY(0)'; }}
+          style={{ display: 'inline-flex', alignItems: 'center', gap: 8, background: '#16836D', color: '#FFFFFF', fontFamily: "var(--font-body)", fontWeight: 700, fontSize: 15, padding: '12px 32px', borderRadius: 8, textDecoration: 'none', boxShadow: '0 4px 20px rgba(22,131,109,0.35)' }}
+          onMouseEnter={e => { e.currentTarget.style.background='#0F5C4D'; e.currentTarget.style.transform='translateY(-1px)'; }}
+          onMouseLeave={e => { e.currentTarget.style.background='#16836D'; e.currentTarget.style.transform='translateY(0)'; }}
         >← Return Home</a>
       </div>
     </div>
@@ -142,8 +142,8 @@ export default function App() {
               background: '#FFFFFF',
               color: '#1F2937',
               border: '1px solid #E2E8F0',
-              borderLeft: '4px solid #0D9488',
-              fontFamily: "'Times New Roman', Georgia, serif",
+              borderLeft: '4px solid #16836D',
+              fontFamily: "var(--font-body)",
               fontSize: 14,
               borderRadius: 8,
               boxShadow: '0 4px 20px rgba(0,0,0,0.10)',

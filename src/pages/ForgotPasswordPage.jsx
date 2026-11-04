@@ -1,5 +1,6 @@
 // src/pages/ForgotPasswordPage.jsx
 import { useState } from 'react';
+import PageHero from '../components/shared/PageHero';
 import { Link } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import { BookOpen, ArrowLeft, CheckCircle } from 'lucide-react';
@@ -20,17 +21,13 @@ export default function ForgotPasswordPage() {
   };
 
   return (
-    <div style={{ minHeight: '100vh', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--dark)', padding: '32px 16px 40px', position: 'relative' }}>
-      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(201,168,76,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
+    <>
+    <PageHero eyebrow="Account" title="Reset" accent="Password" subtitle="We'll email you a secure reset link." />
+    <div style={{
+      minHeight: '60vh', display: 'flex', alignItems: 'flex-start', justifyContent: 'center',
+      background: 'var(--bg-primary)', padding: '0 16px 40px', marginTop: -24, position: 'relative' }}>
+      <div style={{ position: 'absolute', inset: 0, background: 'radial-gradient(ellipse 60% 50% at 50% 30%, rgba(245,184,46,0.05) 0%, transparent 70%)', pointerEvents: 'none' }} />
       <div style={{ width: '100%', maxWidth: 420 }} className="animate-fade-up">
-        <div style={{ textAlign: 'center', marginBottom: 36 }}>
-          <Link to="/" style={{ textDecoration: 'none', display: 'inline-flex', flexDirection: 'column', alignItems: 'center', gap: 8 }}>
-            <div style={{ width: 44, height: 44, borderRadius: '50%', border: '1.5px solid var(--gold)', display: 'flex', alignItems: 'center', justifyContent: 'center', background: 'var(--gold-glow)' }}>
-              <BookOpen size={18} color="var(--gold)" />
-            </div>
-            <div style={{ fontFamily: 'var(--font-display)', fontSize: 18, color: 'var(--gold)', fontWeight: 600 }}>The Elites Mobile Cafe</div>
-          </Link>
-        </div>
 
         <div style={{ background: 'var(--dark-card)', border: '1px solid var(--border)', borderRadius: 'var(--radius-lg)', padding: '36px', boxShadow: '0 20px 60px rgba(0,0,0,0.4)' }}>
           {sent ? (
@@ -65,5 +62,6 @@ export default function ForgotPasswordPage() {
         </div>
       </div>
     </div>
+    </>
   );
 }

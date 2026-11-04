@@ -23,7 +23,7 @@ import { useAuth } from '../context/AuthContext';
 const btnStyle = (bg, color = '#fff', extra = {}) => ({
   background: bg, color, border: 'none', borderRadius: 10, padding: '11px 18px',
   cursor: 'pointer', fontSize: 14, fontWeight: 700,
-  fontFamily: "'Times New Roman', Georgia, serif",
+  fontFamily: "var(--font-body)",
   transition: 'all 0.2s', ...extra,
 });
 
@@ -159,7 +159,7 @@ export default function ManualPaymentUpload({ order, paymentStage = 'advance', o
   /* ── upload form ───────────────────────────────────────── */
   return (
     <div style={{ borderRadius: 12, border: '1.5px solid var(--border, #e2e8f0)', overflow: 'hidden' }}>
-      <div style={{ background: 'linear-gradient(135deg,#172554,#0D9488)', padding: '12px 16px' }}>
+      <div style={{ background: 'linear-gradient(135deg,#06342C,#16836D)', padding: '12px 16px' }}>
         <div style={{ fontWeight: 700, color: '#fff', fontSize: 14 }}>
           💳 Pay Manually — {paymentStage === 'advance' ? '50% Advance' : '50% Final Balance'}
         </div>
@@ -171,8 +171,8 @@ export default function ManualPaymentUpload({ order, paymentStage = 'advance', o
       <div style={{ padding: '14px 16px', background: 'var(--bg-card, #fff)', display: 'flex', flexDirection: 'column', gap: 14 }}>
 
         {/* Bank details */}
-        <div style={{ background: 'rgba(13,148,136,0.07)', border: '1px solid rgba(13,148,136,0.2)', borderRadius: 10, padding: '12px 14px' }}>
-          <div style={{ fontSize: 11, fontWeight: 700, color: '#0D9488', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Bank Account Details</div>
+        <div style={{ background: 'rgba(22,131,109,0.07)', border: '1px solid rgba(22,131,109,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+          <div style={{ fontSize: 11, fontWeight: 700, color: '#16836D', textTransform: 'uppercase', letterSpacing: 0.6, marginBottom: 8 }}>Bank Account Details</div>
           {[['Bank','Moniepoint'],['Account No.','7054641287'],['Account Name','Awarin Elite']].map(([l, v]) => (
             <div key={l} style={{ display: 'flex', justifyContent: 'space-between', fontSize: 13, marginBottom: 5 }}>
               <span style={{ color: '#64748b', fontWeight: 600 }}>{l}</span>
@@ -185,13 +185,13 @@ export default function ManualPaymentUpload({ order, paymentStage = 'advance', o
         {/* File picker */}
         <label style={{
           display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center',
-          border: `2px dashed ${file ? 'rgba(13,148,136,0.55)' : 'var(--border, #cbd5e1)'}`,
+          border: `2px dashed ${file ? 'rgba(22,131,109,0.55)' : 'var(--border, #cbd5e1)'}`,
           borderRadius: 10, padding: '22px 12px', cursor: 'pointer',
-          background: file ? 'rgba(13,148,136,0.04)' : 'var(--bg-tertiary, #f8fafc)',
+          background: file ? 'rgba(22,131,109,0.04)' : 'var(--bg-tertiary, #f8fafc)',
           gap: 7, transition: 'all 0.2s',
         }}>
           <span style={{ fontSize: 32 }}>{file ? (file.type.startsWith('image/') ? '🖼️' : '📄') : '🧾'}</span>
-          <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'center', color: file ? '#0D9488' : 'var(--text-secondary, #475569)', wordBreak: 'break-word', maxWidth: '90%' }}>
+          <span style={{ fontSize: 13, fontWeight: 600, textAlign: 'center', color: file ? '#16836D' : 'var(--text-secondary, #475569)', wordBreak: 'break-word', maxWidth: '90%' }}>
             {file ? file.name : 'Tap to select receipt'}
           </span>
           <span style={{ fontSize: 11, color: 'var(--text-muted, #94a3b8)' }}>
@@ -208,7 +208,7 @@ export default function ManualPaymentUpload({ order, paymentStage = 'advance', o
 
         {/* Non-image indicator */}
         {file && !preview && (
-          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(13,148,136,0.07)', border: '1px solid rgba(13,148,136,0.2)', borderRadius: 10, padding: '12px 14px' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10, background: 'rgba(22,131,109,0.07)', border: '1px solid rgba(22,131,109,0.2)', borderRadius: 10, padding: '12px 14px' }}>
             <span style={{ fontSize: 28 }}>📎</span>
             <div>
               <div style={{ fontSize: 13, fontWeight: 700, color: 'var(--text-primary, #0f172a)', wordBreak: 'break-word' }}>{file.name}</div>
@@ -225,7 +225,7 @@ export default function ManualPaymentUpload({ order, paymentStage = 'advance', o
 
         <div style={{ display: 'flex', gap: 10 }}>
           {file && (
-            <button style={{ ...btnStyle('#0D9488'), flex: 1, opacity: sending ? 0.7 : 1 }} onClick={handleSend} disabled={sending}>
+            <button style={{ ...btnStyle('#16836D'), flex: 1, opacity: sending ? 0.7 : 1 }} onClick={handleSend} disabled={sending}>
               {sending ? (
                 <><span style={{ display: 'inline-block', width: 14, height: 14, border: '2px solid rgba(255,255,255,0.35)', borderTop: '2px solid #fff', borderRadius: '50%', animation: 'mpuSpin 0.8s linear infinite', verticalAlign: 'middle', marginRight: 6 }} />Sending…</>
               ) : '📤 Send Receipt to Admin'}
