@@ -1055,12 +1055,9 @@ export default function AdminPage() {
 
         <PortalBanner eyebrow="Admin Panel" title={(NAV.find(n => n.key === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Manage orders, writers, topics and payments." />
         {/* Mobile top bar */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
           <button className="admin-menu-btn" onClick={() => setSidebarOpen(o => !o)}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 13px', cursor: 'pointer', fontSize: 18, color: 'var(--text-primary)', alignItems: 'center', justifyContent: 'center' }}>☰</button>
-          <span className="admin-menu-btn" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-primary)' }}>
-            {NAV.find(n => n.key === tab)?.label || ''}
-          </span>
         </div>
 
         {/* ══════════════ DASHBOARD ══════════════ */}

@@ -332,7 +332,7 @@ export default function DashboardPage() {
           />
         )}
         {/* Animated Hamburger + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: (tab === 'topics' || tab === 'overview') ? 0 : 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
           <button
             className="hamburger"
             onClick={() => setSidebarOpen(prev => !prev)}
@@ -344,14 +344,9 @@ export default function DashboardPage() {
             <span></span>
           </button>
 
-          {tab !== 'topics' && tab !== 'overview' && (
-            <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>
-              {NAV.find(n => n.id === tab)?.label || '🏠 Dashboard'}
-            </span>
-          )}
         </div>
 
-        <div style={{ marginBottom: (tab === 'topics' || tab === 'overview') ? 0 : 16 }}>
+        <div style={{ marginBottom: 0 }}>
           {tab === 'overview' && <Overview stats={stats} orders={orders} loading={loading} s={s} onSelectOrder={setSelectedOrder} />}
           {tab === 'orders' && <OrdersTab orders={orders} loading={loading} s={s} user={user} profile={profile} onSelectOrder={setSelectedOrder} onDeleteOrder={async (id) => { if (window.confirm('Delete this order permanently?')) { try { await deleteDoc(doc(db, 'serviceRequests', id)); } catch(e) { alert('Failed to delete.'); } } }} />}
           {tab === 'topics' && <TopicsTab user={user} profile={profile} onOrderCreated={() => setTab('orders')} s={s} />}
@@ -789,8 +784,7 @@ function OrdersTab({ orders, loading, s, onSelectOrder, onDeleteOrder }) {
   if (loading) return <div style={{ padding: 60, textAlign: 'center' }}><div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTop: '3px solid var(--teal)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto' }} /></div>;
   return (
     <div>
-      <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: 24 }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)' }}>My Orders</h2>
+      <div style={{ display: 'flex', justifyContent: 'flex-end', alignItems: 'center', marginBottom: 20 }}>
         <Link to="/request" style={{ background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '9px 18px', cursor: 'pointer', fontSize: 13, fontWeight: 600, fontFamily: 'var(--font-body)', textDecoration: 'none', display: 'inline-flex', alignItems: 'center', gap: 6 }}>＋ New Request</Link>
       </div>
       {orders.length === 0 ? (
@@ -942,8 +936,6 @@ function MessagesTab({ user, profile }) {
   return (
     <div style={{ display: 'flex', flexDirection: 'column', height: 'calc(100vh - 130px)' }}>
       <style>{`@keyframes pulse { 0%,100% { opacity: 1; transform: scale(1); } 50% { opacity: 0.4; transform: scale(1.3); } }`}</style>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 4, color: 'var(--text-primary)', flexShrink: 0 }}>Messages</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 16, flexShrink: 0 }}>General chat with our team. For order-specific chat, tap any order.</p>
       <div style={{ flex: 1, background: 'var(--bg-card)', borderRadius: 12, border: '1px solid var(--border)', display: 'flex', flexDirection: 'column', overflow: 'hidden' }}>
         <div style={{ flex: 1, overflowY: 'auto', padding: 16, display: 'flex', flexDirection: 'column', gap: 10 }}>
           {messages.length === 0 && (<div style={{ textAlign: 'center', color: 'var(--text-muted)', marginTop: 60, fontSize: 14 }}><div style={{ fontSize: '3rem', marginBottom: 12 }}>👋</div>No messages yet. Send us a message!</div>)}
@@ -1036,7 +1028,6 @@ function PaymentsTab({ orders, stats }) {
   const pending = orders.filter(o => o.status === 'priced');
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>Payments</h2>
       <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>Total paid: <span style={{ color: 'var(--gold)', fontWeight: 700 }}>₦{stats.spent.toLocaleString()}</span></p>
       {pending.length > 0 && (
         <div style={{ marginBottom: 28 }}>
@@ -1227,8 +1218,6 @@ function ServicesTab({ user, profile, onOrderCreated, s }) {
 
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>Our Services</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 24 }}>Choose a service — admin will review and send you a price quote.</p>
       <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
         {SERVICES.map(sv => (
           <button key={sv.key} onClick={() => { setSelected(sv.key); setForm({}); setSubmitted(false); }}

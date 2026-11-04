@@ -241,12 +241,9 @@ export default function WriterPage() {
       {/* Main */}
       <main className="writer-main" style={{ flex: 1, padding: 'clamp(20px,3vw,36px)', overflowY: 'auto', minWidth: 0 }}>
         {tab !== 'ai_writer' && <PortalBanner eyebrow="Writer Portal" title={(NAV.find(n => n.id === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Your projects, new orders and earnings." />}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
           <button className="writer-menu-btn" onClick={() => setSidebarOpen(o => !o)}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 18, color: 'var(--text-primary)', alignItems: 'center', justifyContent: 'center' }}>☰</button>
-          <span className="writer-menu-btn" style={{ fontFamily: 'var(--font-display)', fontWeight: 700, fontSize: 15, color: 'var(--text-primary)', alignItems: 'center' }}>
-            {NAV.find(n => n.id === tab)?.label || ''}
-          </span>
         </div>
 
         {tab === 'overview'    && <Overview stats={{ totalEarned, pendingPay, activeCount, doneCount, referredClients }} projects={projects} newOrders={newOrders} notifications={notifications} user={user} s={s} onTabChange={handleTabChange} />}
