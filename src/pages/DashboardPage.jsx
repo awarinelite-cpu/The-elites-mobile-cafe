@@ -1,5 +1,6 @@
 // src/pages/DashboardPage.jsx
 import { useState, useEffect, useRef } from 'react';
+import PortalBanner from '../components/shared/PortalBanner';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { onSnapshot, query, orderBy, where } from 'firebase/firestore';
@@ -323,6 +324,13 @@ export default function DashboardPage() {
 
       {/* Main Content */}
       <main className="dash-main" style={{ flex: 1, padding: 'clamp(20px,3vw,36px)', overflowY: 'auto', minWidth: 0 }}>
+        {tab !== 'topics' && (
+          <PortalBanner
+            eyebrow="Client Portal"
+            title={tab === 'overview' ? `Welcome${profile?.name ? ', ' + profile.name.split(' ')[0] : ''}` : (NAV.find(n => n.id === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')}
+            subtitle="Track your orders, topics, messages and payments in one place."
+          />
+        )}
         {/* Animated Hamburger + Title */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
           <button

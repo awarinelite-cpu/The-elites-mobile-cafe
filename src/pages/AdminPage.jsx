@@ -1,5 +1,6 @@
 // src/pages/AdminPage.jsx
 import { useState, useEffect, useRef } from 'react';
+import PortalBanner from '../components/shared/PortalBanner';
 import { useAuth } from '../context/AuthContext';
 import AIResearchWriterPage from './AIResearchWriterPage';
 import {
@@ -1052,6 +1053,7 @@ export default function AdminPage() {
       {/* ── Main content ────────────────────────────────── */}
       <main className="admin-main" style={{ flex: 1, padding: 'clamp(18px,3vw,32px)', overflowY: 'auto', minWidth: 0, animation: 'fadeIn 0.25s ease' }}>
 
+        <PortalBanner eyebrow="Admin Panel" title={(NAV.find(n => n.key === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Manage orders, writers, topics and payments." />
         {/* Mobile top bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 20 }}>
           <button className="admin-menu-btn" onClick={() => setSidebarOpen(o => !o)}

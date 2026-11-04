@@ -1,5 +1,6 @@
 // src/pages/WriterPage.jsx
 import { useState, useEffect, useRef } from 'react';
+import PortalBanner from '../components/shared/PortalBanner';
 import AIResearchWriterPage from './AIResearchWriterPage';
 import { useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
@@ -239,6 +240,7 @@ export default function WriterPage() {
 
       {/* Main */}
       <main className="writer-main" style={{ flex: 1, padding: 'clamp(20px,3vw,36px)', overflowY: 'auto', minWidth: 0 }}>
+        {tab !== 'ai_writer' && <PortalBanner eyebrow="Writer Portal" title={(NAV.find(n => n.id === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Your projects, new orders and earnings." />}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 16 }}>
           <button className="writer-menu-btn" onClick={() => setSidebarOpen(o => !o)}
             style={{ background: 'var(--bg-secondary)', border: '1px solid var(--border)', borderRadius: 8, padding: '8px 12px', cursor: 'pointer', fontSize: 18, color: 'var(--text-primary)', alignItems: 'center', justifyContent: 'center' }}>☰</button>

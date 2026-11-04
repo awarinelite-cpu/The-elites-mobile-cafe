@@ -1209,7 +1209,7 @@ ${chapterText}
     <div style={{minHeight:'100vh',background:'var(--bg-primary,#0f172a)',paddingTop:64,paddingBottom:60}}>
       <style>{`@keyframes spin{to{transform:rotate(360deg)}} .ai-ch-btn{transition:all 0.2s} .ai-ch-btn:hover:not(:disabled){transform:translateY(-2px);opacity:0.9}`}</style>
 
-      <div style={{background:mode==='clientcare'?'linear-gradient(135deg,#7C3AED,#16836D)':'linear-gradient(135deg,#0A4A3E,#16836D)',padding:'24px 20px',transition:'background 0.4s'}}>
+      <div style={{background:mode==='clientcare'?'linear-gradient(135deg,#7C3AED,#16836D)':'linear-gradient(135deg,#0A4A3E,#16836D)',padding:'24px 20px 34px',borderRadius:'0 0 50% 50% / 0 0 28px 28px',transition:'background 0.4s'}}>
         <div style={{maxWidth:900,margin:'0 auto',display:'flex',alignItems:'flex-start',justifyContent:'space-between',gap:12,flexWrap:'wrap'}}>
           <div style={{display:'flex',alignItems:'center',gap:12}}>
             <span style={{fontSize:30}}>{mode==='clientcare'?'🏥':'🤖'}</span>
