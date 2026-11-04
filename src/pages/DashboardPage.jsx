@@ -332,7 +332,7 @@ export default function DashboardPage() {
           />
         )}
         {/* Animated Hamburger + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: tab === 'topics' ? 0 : 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: (tab === 'topics' || tab === 'overview') ? 0 : 24 }}>
           <button
             className="hamburger"
             onClick={() => setSidebarOpen(prev => !prev)}
@@ -344,14 +344,14 @@ export default function DashboardPage() {
             <span></span>
           </button>
 
-          {tab !== 'topics' && (
+          {tab !== 'topics' && tab !== 'overview' && (
             <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>
               {NAV.find(n => n.id === tab)?.label || '🏠 Dashboard'}
             </span>
           )}
         </div>
 
-        <div style={{ marginBottom: tab === 'topics' ? 0 : 16 }}>
+        <div style={{ marginBottom: (tab === 'topics' || tab === 'overview') ? 0 : 16 }}>
           {tab === 'overview' && <Overview stats={stats} orders={orders} loading={loading} s={s} onSelectOrder={setSelectedOrder} />}
           {tab === 'orders' && <OrdersTab orders={orders} loading={loading} s={s} user={user} profile={profile} onSelectOrder={setSelectedOrder} onDeleteOrder={async (id) => { if (window.confirm('Delete this order permanently?')) { try { await deleteDoc(doc(db, 'serviceRequests', id)); } catch(e) { alert('Failed to delete.'); } } }} />}
           {tab === 'topics' && <TopicsTab user={user} profile={profile} onOrderCreated={() => setTab('orders')} s={s} />}
@@ -737,8 +737,6 @@ function OrderDetailView({ order: initialOrder, user, profile, onBack }) {
 function Overview({ stats, orders, loading, s, onSelectOrder }) {
   return (
     <div>
-      <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 28, fontWeight: 700, marginBottom: 6, color: 'var(--text-primary)' }}>Overview</h2>
-      <p style={{ color: 'var(--text-muted)', fontSize: 13, marginBottom: 28 }}>Your activity at a glance.</p>
       <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit,minmax(140px,1fr))', gap: 14, marginBottom: 36 }}>
         {[['Total Orders', stats.total, 'var(--gold)'],['Active', stats.active, 'var(--teal)'],['Completed', stats.complete, '#16A34A'],['Spent', `₦${stats.spent.toLocaleString()}`, 'var(--gold)']].map(([label, val, color]) => (
           <div key={label} style={s.card}>
