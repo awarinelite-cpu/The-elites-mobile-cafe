@@ -47,7 +47,7 @@ function Layout() {
     }
   }, []);
 
-  const isHome = loc.pathname === '/';
+  const isHome = loc.pathname === '/' || loc.pathname === '/topics';
   const isAuthPage = ['/login', '/register', '/forgot-password'].includes(loc.pathname);
   const isDash = loc.pathname.startsWith('/dashboard') || loc.pathname.startsWith('/admin') || loc.pathname.startsWith('/writer');
 
