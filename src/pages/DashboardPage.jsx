@@ -7,6 +7,11 @@ import { db } from '../firebase/config';
 import { subscribeToClientOrders } from '../firebase/orderService';
 import { doc, updateDoc, addDoc, collection, serverTimestamp as ts, writeBatch, getDocs, deleteDoc } from 'firebase/firestore';
 import ManualPaymentUpload from '../components/ManualPaymentUpload';
+import {
+  Search as SearchIcon, ArrowRight, ChevronDown, LayoutGrid, Star, RotateCcw, Filter,
+  FileText, BookOpen, Stethoscope, ClipboardPlus, FlaskConical, HeartPulse, Baby, Brain,
+  Pill, Scale, GraduationCap, Cpu, Briefcase,
+} from 'lucide-react';
 
 const NAV = [
   { id: 'overview', label: '🏠 Overview' },
@@ -1397,16 +1402,7 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
   const [ordering, setOrdering] = useState(false);
   const [details, setDetails] = useState('');
   const [ordered, setOrdered] = useState(false);
-  const [dropdownOpen, setDropdownOpen] = useState(false);
-  const dropdownRef = useRef(null);
-
-  useEffect(() => {
-    const handler = (e) => {
-      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) setDropdownOpen(false);
-    };
-    document.addEventListener('mousedown', handler);
-    return () => document.removeEventListener('mousedown', handler);
-  }, []);
+  const [sortBy, setSortBy] = useState('newest');
 
   const CATEGORY_GROUPS = [
     { group: '🏥 Health Sciences', color: '#0D9488', bg: 'rgba(13,148,136,0.1)', cats: ['Nursing Science','Midwifery','Medicine & Surgery','Public Health','Community Health','Mental Health','Pharmacology','Medical Laboratory Science','Physiotherapy','Radiography','Nutrition & Dietetics','Environmental Health','Health Information Management','Optometry','Dental Surgery','Medical Rehabilitation','Veterinary Medicine'] },
@@ -1430,11 +1426,21 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
     return unsub;
   }, []);
 
+  const priceNum = (t) => Number(String(t.price || '').replace(/[^0-9]/g, '')) || 0;
   const filtered = topics.filter(t => {
     const matchCat = activeCategory === 'All' || t.category === activeCategory;
-    const matchSrch = !search.trim() || t.title?.toLowerCase().includes(search.toLowerCase()) || t.description?.toLowerCase().includes(search.toLowerCase());
+    const term = search.toLowerCase().trim();
+    const matchSrch = !term || t.title?.toLowerCase().includes(term) || t.description?.toLowerCase().includes(term) || t.category?.toLowerCase().includes(term);
     return matchCat && matchSrch;
+  }).sort((a, b) => {
+    switch (sortBy) {
+      case 'price-low':  return priceNum(a) - priceNum(b);
+      case 'price-high': return priceNum(b) - priceNum(a);
+      case 'a-z':        return (a.title || '').localeCompare(b.title || '');
+      default:           return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
+    }
   });
+  const resetFilters = () => { setSearch(''); setActiveCategory('All'); setSortBy('newest'); };
 
   const submitOrder = async () => {
     if (!user) { alert('Please log in first.'); return; }
@@ -1499,89 +1505,154 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
   );
 
   return (
-    <div>
-      <div style={{ marginBottom: 20 }}>
-        <h2 style={{ fontFamily: 'var(--font-display)', fontSize: 26, fontWeight: 700, color: 'var(--text-primary)', marginBottom: 4 }}>Research Library</h2>
-        <p style={{ color: 'var(--text-muted)', fontSize: 13 }}>Browse pre-researched topics — select one and we'll write it to your specifications.</p>
-      </div>
-      <div style={{ position: 'relative', marginBottom: 16 }}>
-        <span style={{ position: 'absolute', left: 12, top: '50%', transform: 'translateY(-50%)', fontSize: 16, color: 'var(--text-muted)', pointerEvents: 'none' }}>🔍</span>
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search topics..." style={{ width: '100%', padding: '11px 14px 11px 38px', background: 'var(--bg-card)', border: '1.5px solid var(--border)', borderRadius: 10, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, outline: 'none', boxSizing: 'border-box' }} onFocus={e => e.target.style.borderColor = 'var(--teal)'} onBlur={e => e.target.style.borderColor = 'var(--border)'} />
-      </div>
-      <div style={{ position: 'relative', marginBottom: 20 }} ref={dropdownRef}>
-        <button onClick={() => setDropdownOpen(v => !v)} style={{ width: '100%', padding: '11px 16px', background: 'var(--bg-card)', border: `1.5px solid ${activeCategory !== 'All' ? 'var(--teal)' : 'var(--border)'}`, borderRadius: 10, color: 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 14, fontWeight: 600, cursor: 'pointer', display: 'flex', alignItems: 'center', justifyContent: 'space-between', gap: 10 }}>
-          <span style={{ display: 'flex', alignItems: 'center', gap: 8 }}>
-            {activeCategory === 'All' ? <span style={{ color: 'var(--text-muted)' }}>🗂️ All Departments</span> : <><span style={{ width: 10, height: 10, borderRadius: '50%', background: getCategoryGroup(activeCategory)?.color || 'var(--teal)', display: 'inline-block', flexShrink: 0 }} /><span style={{ color: 'var(--teal)' }}>{activeCategory}</span></>}
-          </span>
-          <span style={{ fontSize: 12, color: 'var(--text-muted)', transform: dropdownOpen ? 'rotate(180deg)' : 'none', display: 'inline-block' }}>▾</span>
-        </button>
-        {dropdownOpen && (
-          <div style={{ position: 'absolute', top: 'calc(100% + 6px)', left: 0, right: 0, background: 'var(--bg-card)', border: '1px solid var(--border-card)', borderRadius: 12, boxShadow: '0 8px 32px rgba(0,0,0,0.3)', zIndex: 200, maxHeight: 400, overflowY: 'auto' }}>
-            <button onClick={() => { setActiveCategory('All'); setDropdownOpen(false); }} style={{ width: '100%', padding: '11px 16px', background: activeCategory === 'All' ? 'var(--teal-glow)' : 'transparent', border: 'none', borderBottom: '1px solid var(--border)', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 10, color: activeCategory === 'All' ? 'var(--teal)' : 'var(--text-primary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: activeCategory === 'All' ? 700 : 500, textAlign: 'left' }}>
-              🗂️ All Departments {activeCategory === 'All' && <span style={{ marginLeft: 'auto', color: 'var(--teal)', fontSize: 14 }}>✓</span>}
-            </button>
-            {CATEGORY_GROUPS.map((grp, gi) => (
-              <div key={grp.group}>
-                <div style={{ padding: '8px 16px 5px', fontSize: 10, fontWeight: 800, color: grp.color, textTransform: 'uppercase', letterSpacing: 1, background: grp.bg, borderTop: gi > 0 ? '1px solid var(--border)' : 'none' }}>{grp.group}</div>
-                {grp.cats.map(cat => {
-                  const isActive = activeCategory === cat;
-                  return (
-                    <button key={cat} onClick={() => { setActiveCategory(cat); setDropdownOpen(false); }}
-                      style={{ width: '100%', padding: '9px 16px 9px 24px', background: isActive ? grp.bg : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: isActive ? grp.color : 'var(--text-secondary)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: isActive ? 700 : 400, textAlign: 'left' }}
-                      onMouseEnter={e => { if (!isActive) e.currentTarget.style.background = 'var(--bg-secondary)'; }}
-                      onMouseLeave={e => { if (!isActive) e.currentTarget.style.background = 'transparent'; }}>
-                      <span style={{ width: 6, height: 6, borderRadius: '50%', background: isActive ? grp.color : 'transparent', flexShrink: 0 }} />
-                      {cat}
-                      {isActive && <span style={{ marginLeft: 'auto', color: grp.color, fontSize: 14 }}>✓</span>}
-                    </button>
-                  );
-                })}
-              </div>
+    <div className="dt">
+      <section className="dt-hero">
+        <div className="dt-hero-img"><img src="/landing/topics-hero.png" alt="" /></div>
+        <div className="dt-hero-in">
+          <div className="dt-eyebrow"><BookOpen size={26} strokeWidth={1.6} /><span className="serif">RESEARCH LIBRARY</span><i /></div>
+          <h1 className="serif">Browse <em>Topics</em></h1>
+          <p>Choose from our curated collection of pre-researched topics.</p>
+        </div>
+      </section>
+
+      <form className="dt-search" onSubmit={e => e.preventDefault()}>
+        <SearchIcon size={22} className="si" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by topic title, keywords, or department..." aria-label="Search topics" />
+        <button type="submit"><SearchIcon size={20} /> Search</button>
+      </form>
+
+      <div className="dt-filters">
+        <span className="lbl"><Filter size={22} fill="currentColor" /> Filter By:</span>
+        <label className="sel">
+          <LayoutGrid size={20} fill="currentColor" className="l" />
+          <select value={activeCategory} onChange={e => setActiveCategory(e.target.value)} aria-label="Category">
+            <option value="All">All Categories</option>
+            {CATEGORY_GROUPS.map(grp => (
+              <optgroup key={grp.group} label={grp.group}>
+                {grp.cats.map(cat => <option key={cat} value={cat}>{cat}</option>)}
+              </optgroup>
             ))}
-            <div style={{ borderTop: '1px solid var(--border)' }}>
-              <button onClick={() => { setActiveCategory('Other'); setDropdownOpen(false); }} style={{ width: '100%', padding: '10px 16px', background: activeCategory === 'Other' ? 'rgba(148,163,184,0.1)' : 'transparent', border: 'none', cursor: 'pointer', display: 'flex', alignItems: 'center', gap: 8, color: activeCategory === 'Other' ? 'var(--text-primary)' : 'var(--text-muted)', fontFamily: 'var(--font-body)', fontSize: 13, fontWeight: activeCategory === 'Other' ? 700 : 400, textAlign: 'left' }}>
-                <span style={{ width: 6, height: 6, borderRadius: '50%', background: 'var(--text-muted)', flexShrink: 0 }} />Other
-                {activeCategory === 'Other' && <span style={{ marginLeft: 'auto', fontSize: 14 }}>✓</span>}
-              </button>
-            </div>
-          </div>
-        )}
+            <option value="Other">Other</option>
+          </select>
+          <ChevronDown size={20} className="r" />
+        </label>
+        <label className="sel">
+          <Star size={20} fill="#F5B82E" color="#F5B82E" className="l" />
+          <select value={sortBy} onChange={e => setSortBy(e.target.value)} aria-label="Sort">
+            <option value="newest">Newest First</option>
+            <option value="price-low">Price: Low to High</option>
+            <option value="price-high">Price: High to Low</option>
+            <option value="a-z">A - Z</option>
+          </select>
+          <ChevronDown size={20} className="r" />
+        </label>
+        <button className="reset" onClick={resetFilters}><RotateCcw size={18} /> Reset</button>
       </div>
-      {!loadingTopics && <div style={{ fontSize: 13, color: 'var(--text-muted)', marginBottom: 16 }}>{filtered.length} topic{filtered.length !== 1 ? 's' : ''} {activeCategory !== 'All' ? `in \( {activeCategory}` : 'available'}{search && ` matching " \){search}"`}</div>}
+
+      {!loadingTopics && <div className="dt-count"><FileText size={20} />Showing {filtered.length} of {topics.length} topics</div>}
+
       {loadingTopics && <div style={{ textAlign: 'center', padding: 60, color: 'var(--text-muted)' }}><div style={{ width: 36, height: 36, border: '3px solid var(--border)', borderTop: '3px solid var(--teal)', borderRadius: '50%', animation: 'spin 0.8s linear infinite', margin: '0 auto 16px' }} />Loading topics…</div>}
       {!loadingTopics && filtered.length === 0 && (
-        <div style={{ textAlign: 'center', padding: '48px 24px', background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border-card)' }}>
+        <div style={{ textAlign: 'center', padding: '48px 24px', background: 'var(--bg-card)', borderRadius: 14, border: '1px solid var(--border-card)', marginTop: 14 }}>
           <div style={{ fontSize: '3rem', marginBottom: 12 }}>📭</div>
           <div style={{ fontWeight: 700, fontSize: 16, color: 'var(--text-primary)', marginBottom: 6 }}>No topics found</div>
-          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{search ? `No topics match "${search}"` : `No topics available in this category yet.`}</div>
+          <div style={{ color: 'var(--text-muted)', fontSize: 13 }}>{search ? `No topics match "${search}"` : 'No topics available in this category yet.'}</div>
           {search && <button onClick={() => setSearch('')} style={{ marginTop: 14, background: 'var(--teal)', color: '#fff', border: 'none', borderRadius: 8, padding: '8px 20px', cursor: 'pointer', fontWeight: 600, fontSize: 13 }}>Clear Search</button>}
         </div>
       )}
+
       {!loadingTopics && filtered.length > 0 && (
-        <div style={{ display: 'flex', flexDirection: 'column', gap: 10 }}>
-          {filtered.map(t => (
-            <button key={t.id} onClick={() => { setSelectedTopic(t); setDetails(''); setOrdered(false); }}
-              style={{ ...s.card, display: 'flex', alignItems: 'flex-start', gap: 14, cursor: 'pointer', border: '1px solid var(--border-card)', textAlign: 'left', width: '100%', transition: 'border-color 0.2s, background 0.2s', padding: '16px' }}
-              onMouseEnter={e => { e.currentTarget.style.borderColor = 'var(--teal)'; e.currentTarget.style.background = 'var(--teal-glow)'; }}
-              onMouseLeave={e => { e.currentTarget.style.borderColor = 'var(--border-card)'; e.currentTarget.style.background = 'var(--bg-card)'; }}>
-              <div style={{ width: 44, height: 44, borderRadius: 10, background: 'linear-gradient(135deg,#1E3A8A,#0D9488)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontSize: 20, flexShrink: 0 }}>📄</div>
-              <div style={{ flex: 1, minWidth: 0 }}>
-                <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'flex-start', gap: 8, marginBottom: 4 }}>
-                  <div style={{ fontWeight: 700, fontSize: 14, color: 'var(--text-primary)', lineHeight: 1.4 }}>{t.title}</div>
-                  {t.badge && <span style={{ flexShrink: 0, fontSize: 10, fontWeight: 700, padding: '2px 8px', borderRadius: 20, background: t.badge === 'Popular' ? 'rgba(13,148,136,0.12)' : t.badge === 'New' ? 'rgba(37,99,235,0.12)' : 'var(--bg-tertiary)', color: t.badge === 'Popular' ? 'var(--teal)' : t.badge === 'New' ? '#2563EB' : 'var(--text-muted)' }}>{t.badge === 'Popular' ? '🔥 Popular' : t.badge === 'New' ? '✨ New' : t.badge}</span>}
+        <div className="dt-list">
+          {filtered.map(t => {
+            const { th, Icon } = topicStyle(t.category);
+            return (
+              <article key={t.id} className="dt-card" style={{ '--bar': th.bar }}>
+                <div className="ico"><Icon size={40} strokeWidth={1.7} /></div>
+                <div className="body">
+                  {t.category && <span className="badge" style={{ background: th.bg, color: th.fg }}>{t.category}</span>}
+                  <h3 className="serif">{t.title}</h3>
+                  <div className="meta">
+                    {t.badge === 'Popular' && <span>🔥 Popular</span>}
+                    {t.badge === 'New' && <span>✨ New</span>}
+                    {t.pages && <span><FileText size={16} /> {t.pages} pages</span>}
+                    {t.price && <span className="price">{t.price}</span>}
+                  </div>
                 </div>
-                <div style={{ display: 'flex', gap: 12, alignItems: 'center', flexWrap: 'wrap' }}>
-                  <span style={{ fontSize: 11, color: 'var(--text-muted)', background: 'var(--bg-tertiary)', padding: '2px 8px', borderRadius: 12 }}>{t.category}</span>
-                  {t.pages && <span style={{ fontSize: 11, color: 'var(--text-muted)' }}>📄 {t.pages} pages</span>}
-                  {t.price && <span style={{ fontSize: 12, fontWeight: 700, color: 'var(--gold)' }}>{t.price}</span>}
+                <div className="side">
+                  <button onClick={() => { setSelectedTopic(t); setDetails(''); setOrdered(false); }}>View Topic <ArrowRight size={16} /></button>
                 </div>
-                {t.description && <div style={{ fontSize: 12, color: 'var(--text-muted)', marginTop: 6, lineHeight: 1.5, overflow: 'hidden', display: '-webkit-box', WebkitLineClamp: 2, WebkitBoxOrient: 'vertical' }}>{t.description}</div>}
-              </div>
-              <span style={{ color: 'var(--teal)', fontSize: 20, flexShrink: 0, alignSelf: 'center' }}>›</span>
-            </button>
-          ))}
+              </article>
+            );
+          })}
         </div>
       )}
+      <style>{TOPICS_TAB_CSS}</style>
     </div>
   );
 }
+
+const TOPIC_THEMES = {
+  gold:   { bar: '#0F8A6D', bg: '#FFE7A3', fg: '#5B3F00' },
+  blue:   { bar: '#2E9BFF', bg: '#D6EBFF', fg: '#0B3C73' },
+  purple: { bar: '#A58BFF', bg: '#E6DEFF', fg: '#3B1F8C' },
+  green:  { bar: '#0F8A6D', bg: '#D3F3E8', fg: '#0B4A3C' },
+  rose:   { bar: '#F07C9B', bg: '#FFE0E8', fg: '#7A1634' },
+};
+function topicStyle(cat = '') {
+  const c = cat.toLowerCase();
+  if (c.includes('nursing') && !c.includes('public') && !c.includes('community')) return { th: TOPIC_THEMES.gold, Icon: Stethoscope };
+  if (c.includes('public') || c.includes('community') || c.includes('environment')) return { th: TOPIC_THEMES.blue, Icon: ClipboardPlus };
+  if (c.includes('patho') || c.includes('lab') || c.includes('medicine') || c.includes('health sci')) return { th: TOPIC_THEMES.purple, Icon: FlaskConical };
+  if (c.includes('midwi') || c.includes('maternal') || c.includes('pediatric')) return { th: TOPIC_THEMES.rose, Icon: Baby };
+  if (c.includes('mental') || c.includes('psych')) return { th: TOPIC_THEMES.purple, Icon: Brain };
+  if (c.includes('pharma') || c.includes('nutri')) return { th: TOPIC_THEMES.green, Icon: Pill };
+  if (c.includes('law') || c.includes('socio')) return { th: TOPIC_THEMES.blue, Icon: Scale };
+  if (c.includes('tech') || c.includes('computer')) return { th: TOPIC_THEMES.blue, Icon: Cpu };
+  if (c.includes('business') || c.includes('econ') || c.includes('account')) return { th: TOPIC_THEMES.gold, Icon: Briefcase };
+  if (c.includes('educ')) return { th: TOPIC_THEMES.green, Icon: GraduationCap };
+  return { th: TOPIC_THEMES.green, Icon: HeartPulse };
+}
+
+const TOPICS_TAB_CSS = `
+@import url('https://fonts.googleapis.com/css2?family=Playfair+Display:wght@600;700;800&family=Lato:wght@400;700&display=swap');
+.dt, .dt * { font-family:'Lato',system-ui,sans-serif; box-sizing:border-box; }
+.dt .serif { font-family:'Playfair Display',Georgia,serif; font-weight:700; }
+.dt { --g900:#06342C; --g800:#0A4A3E; --g700:#0F5C4D; --gold:#F5B82E; --card:#fff; --ink:#10332C; --line:#DCEBE6; --panel:#DDF3EC; color:var(--ink); }
+[data-theme="dark"] .dt { --card:#0E211B; --ink:#E6F5EF; --line:#1B3B31; --panel:#10302A; }
+.dt-hero { position:relative; padding:34px 0 52px; background:radial-gradient(120% 120% at 70% 20%,#0F6B58 0%,#0A4A3E 50%,#06342C 100%); border-radius:22px 22px 50% 50% / 22px 22px 36px 36px; overflow:hidden; color:#fff; }
+.dt-hero-img { position:absolute; right:0; top:0; bottom:0; width:min(56%,420px); }
+.dt-hero-img img { width:100%; height:100%; object-fit:cover; object-position:left center; -webkit-mask-image:linear-gradient(90deg,transparent 0,#000 28%); mask-image:linear-gradient(90deg,transparent 0,#000 28%); }
+.dt-hero-in { position:relative; z-index:2; padding:0 22px; }
+.dt-eyebrow { display:flex; align-items:center; gap:10px; color:var(--gold); margin-bottom:2px; }
+.dt-eyebrow span { font-size:1rem; letter-spacing:3px; }
+.dt-eyebrow i { flex:0 0 70px; height:2px; background:var(--gold); }
+.dt-hero h1 { font-family:'Playfair Display',Georgia,serif; font-weight:700; font-size:clamp(2.2rem,8vw,3.4rem); line-height:1.05; color:#fff; margin:0; }
+.dt-hero h1 em { font-style:normal; color:var(--gold); }
+.dt-hero p { max-width:330px; font-size:1.1rem; line-height:1.3; margin:12px 0 0; color:#fff; }
+.dt-search { position:relative; z-index:3; display:flex; align-items:center; gap:8px; margin:-30px 10px 0; background:var(--card); border:3px solid #CDEBE2; border-radius:999px; padding:6px 6px 6px 18px; box-shadow:0 10px 26px rgba(15,92,77,.18); }
+.dt-search .si { color:var(--g800); flex-shrink:0; }
+.dt-search input { flex:1; min-width:0; border:0; outline:0; background:transparent; font-size:1rem; color:var(--ink); padding:11px 4px; }
+.dt-search input::placeholder { color:#6D8179; }
+.dt-search button { display:inline-flex; align-items:center; gap:8px; background:var(--g800); color:#fff; border:0; border-radius:999px; padding:13px 24px; font-size:1.05rem; font-weight:700; cursor:pointer; }
+.dt-filters { margin-top:18px; background:var(--panel); border:1px solid #C9E8DE; border-radius:20px; padding:12px; display:flex; align-items:center; gap:12px; flex-wrap:wrap; }
+.dt-filters .lbl { display:flex; align-items:center; gap:10px; color:var(--g800); font-size:1.1rem; font-weight:700; }
+[data-theme="dark"] .dt-filters .lbl { color:#7FD1BA; }
+.dt-filters .sel { position:relative; display:flex; align-items:center; background:var(--card); border:1.5px solid #BFE2D6; border-radius:999px; flex:1 1 160px; color:var(--g800); }
+.dt-filters .sel select { appearance:none; -webkit-appearance:none; width:100%; background:transparent; border:0; outline:0; color:var(--ink); font-size:1rem; font-weight:700; padding:12px 38px 12px 44px; cursor:pointer; text-overflow:ellipsis; }
+.dt-filters .sel .l { position:absolute; left:15px; pointer-events:none; } .dt-filters .sel .r { position:absolute; right:13px; pointer-events:none; }
+.dt-filters .reset { display:inline-flex; align-items:center; gap:8px; background:transparent; border:1.5px solid var(--g800); color:var(--g800); border-radius:999px; padding:11px 20px; font-size:1rem; font-weight:700; cursor:pointer; }
+[data-theme="dark"] .dt-filters .reset { color:#7FD1BA; border-color:#7FD1BA; }
+.dt-count { display:inline-flex; align-items:center; gap:10px; background:var(--g800); color:#fff; border-radius:999px; padding:11px 22px; font-size:1rem; font-weight:700; margin-top:16px; }
+.dt-list { margin-top:14px; display:grid; grid-template-columns:repeat(auto-fill,minmax(min(100%,420px),1fr)); gap:14px; }
+.dt-card { display:grid; grid-template-columns:auto minmax(0,1fr); gap:14px; align-items:center; background:var(--card); border:1px solid var(--line); border-left:6px solid var(--bar); border-radius:16px; padding:14px; box-shadow:0 4px 14px rgba(15,92,77,.10); }
+.dt-card .ico { width:72px; height:72px; border-radius:16px; background:#CFF1E6; color:var(--g800); display:flex; align-items:center; justify-content:center; }
+.dt-card .badge { display:inline-block; font-size:.74rem; font-weight:700; text-transform:uppercase; padding:4px 10px; border-radius:8px; margin-bottom:4px; }
+.dt-card h3 { font-size:1.05rem; line-height:1.25; color:var(--ink); margin:0; }
+.dt-card .meta { display:flex; align-items:center; gap:12px; margin-top:8px; font-size:.88rem; font-weight:700; color:#33504A; flex-wrap:wrap; }
+[data-theme="dark"] .dt-card .meta { color:#9CC2B6; }
+.dt-card .meta span { display:inline-flex; align-items:center; gap:6px; }
+.dt-card .meta .price { color:#B7791F; }
+.dt-card .side { grid-column:1 / -1; display:flex; justify-content:flex-end; }
+.dt-card .side button { display:inline-flex; align-items:center; gap:8px; background:var(--g800); color:#fff; border:0; border-radius:999px; padding:11px 20px; font-size:.95rem; font-weight:700; cursor:pointer; box-shadow:0 4px 10px rgba(6,52,44,.3); white-space:nowrap; }
+.dt-card .side button:hover { background:var(--g700); }
+`;
