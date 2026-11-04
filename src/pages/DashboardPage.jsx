@@ -332,7 +332,7 @@ export default function DashboardPage() {
           />
         )}
         {/* Animated Hamburger + Title */}
-        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 24 }}>
+        <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: tab === 'topics' ? 0 : 24 }}>
           <button
             className="hamburger"
             onClick={() => setSidebarOpen(prev => !prev)}
@@ -344,12 +344,14 @@ export default function DashboardPage() {
             <span></span>
           </button>
 
-          <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>
-            {NAV.find(n => n.id === tab)?.label || '🏠 Dashboard'}
-          </span>
+          {tab !== 'topics' && (
+            <span style={{ fontFamily: 'var(--font-display)', fontSize: 18, fontWeight: 700, color: 'var(--text-primary)', flex: 1 }}>
+              {NAV.find(n => n.id === tab)?.label || '🏠 Dashboard'}
+            </span>
+          )}
         </div>
 
-        <div style={{ marginBottom: 16 }}>
+        <div style={{ marginBottom: tab === 'topics' ? 0 : 16 }}>
           {tab === 'overview' && <Overview stats={stats} orders={orders} loading={loading} s={s} onSelectOrder={setSelectedOrder} />}
           {tab === 'orders' && <OrdersTab orders={orders} loading={loading} s={s} user={user} profile={profile} onSelectOrder={setSelectedOrder} onDeleteOrder={async (id) => { if (window.confirm('Delete this order permanently?')) { try { await deleteDoc(doc(db, 'serviceRequests', id)); } catch(e) { alert('Failed to delete.'); } } }} />}
           {tab === 'topics' && <TopicsTab user={user} profile={profile} onOrderCreated={() => setTab('orders')} s={s} />}
