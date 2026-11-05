@@ -11,6 +11,7 @@ import BrandMark from '../BrandMark';
 const NAV_LINKS = [
   { label: 'Home', to: '/' },
   { label: 'Topics', to: '/topics' },
+  { label: 'Case Studies', to: '/case-studies' },
   { label: 'Services', to: '/services' },
   { label: 'AI Writer', to: '/ai-writer' },
 ];

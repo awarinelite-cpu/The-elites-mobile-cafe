@@ -80,6 +80,7 @@ export default function HomePage() {
           <p>Connect with expert Nigerian writers for projects, data analysis, and more. From research proposals to NMCN CBT preparation — we've got you covered!</p>
           <div className="lp-hero-cta">
             <Link to="/topics" className="lp-btn lp-btn-gold lp-btn-lg">Browse Research Topics <ArrowRight size={16} /></Link>
+            <Link to="/case-studies" className="lp-btn lp-btn-case lp-btn-lg">Browse Case Study Topics <ArrowRight size={16} /></Link>
           </div>
           <div className="lp-stats">
             <div><Users size={34} /><span><b>10K+</b>Happy Clients</span></div>
@@ -232,6 +233,12 @@ const CSS = `
 [data-theme="dark"] .lp-btn-outline { border-color:#7FD1BA; color:#7FD1BA; }
 .lp-btn-dark { background:rgba(4,40,32,.78); color:#fff; border-color:rgba(255,255,255,.55); }
 .lp-btn-lg { padding:14px 26px; font-size:.98rem; }
+.lp-btn-case { background:rgba(255,255,255,.12); color:#fff; border-color:#52E0B5; }
+.lp-btn-case:hover { background:#52E0B5; color:#06342C; transform:translateY(-1px); }
+@media (max-width: 560px) {
+  .lp-hero .lp-hero-cta { display:grid; grid-template-columns:1fr 1fr; gap:10px; max-width:100%; }
+  .lp-hero .lp-hero-cta .lp-btn-lg { white-space:normal; text-align:center; justify-content:center; padding:12px 10px; font-size:.84rem; line-height:1.2; gap:5px; }
+}
 .lp-btn-sm { padding:7px 16px; font-size:.78rem; }
 .play { width:26px; height:26px; border-radius:50%; background:#fff; color:var(--g800); display:inline-flex; align-items:center; justify-content:center; }
 

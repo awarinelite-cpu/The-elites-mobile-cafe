@@ -14,6 +14,7 @@ import HomePage           from './pages/HomePage';
 import LoginPage          from './pages/LoginPage';
 import RegisterPage       from './pages/RegisterPage';
 import TopicsPage         from './pages/TopicsPage';
+import CaseStudiesPage    from './pages/CaseStudiesPage';
 import RequestPage        from './pages/RequestPage';
 import DashboardPage      from './pages/DashboardPage';
 import AdminPage          from './pages/AdminPage';
@@ -61,6 +62,7 @@ function Layout() {
           <Route path="/login"           element={<LoginPage />} />
           <Route path="/register"        element={<RegisterPage />} />
           <Route path="/topics"          element={<TopicsPage />} />
+          <Route path="/case-studies"    element={<CaseStudiesPage />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/request"         element={<RequestPage />} />
 

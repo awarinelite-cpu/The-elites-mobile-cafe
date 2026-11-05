@@ -12,6 +12,7 @@ import { db } from '../firebase/config';
 import AdminDashboard  from './AdminDashboard';
 import WithdrawalsTab  from './WithdrawalsTab';
 import NMCNAdminView   from './NMCNAdminView';
+import AdminCaseStudies from './AdminCaseStudies';
 import { STATUS_OPTIONS, STATUS_COLORS, CATEGORIES, NAV } from './adminConstants';
 
 export default function AdminPage() {
@@ -137,7 +138,22 @@ export default function AdminPage() {
       const req = requests.find(r => r.id === id);
 
       // ── Auto-add to research topics when completed ──────
-      if (data.status === 'completed' && req?.serviceTitle) {
+      if (data.status === 'completed' && req?.serviceTitle && req?.projectType === 'case') {
+        const dup = await getDocs(query(collection(db, 'caseStudyTopics'), where('title', '==', req.serviceTitle)));
+        if (dup.empty) {
+          await addDoc(collection(db, 'caseStudyTopics'), {
+            title:       req.serviceTitle,
+            category:    req.category || 'Other',
+            pages:       req.pages    || '',
+            price:       req.agreedPrice ? `₦${Number(req.agreedPrice).toLocaleString()}` : '',
+            description: req.description || '',
+            badge:       'New',
+            autoAdded:   true,
+            sourceOrderId: id,
+            createdAt:   serverTimestamp(),
+          });
+        }
+      } else if (data.status === 'completed' && req?.serviceTitle) {
         const exists = topics.some(t => t.title?.toLowerCase() === req.serviceTitle?.toLowerCase());
         if (!exists) {
           await addDoc(collection(db, 'researchTopics'), {
@@ -929,7 +945,7 @@ export default function AdminPage() {
   const totalPendingPay  = paymentSplits.filter(p => p.status !== 'paid').reduce((s, p) => s + (p.writerAmount || 0), 0);
 
   const navGroups = [
-    { label: 'Main',    keys: ['dashboard','requests','topics'] },
+    { label: 'Main',    keys: ['dashboard','requests','topics','casestudies'] },
     { label: 'Comms',   keys: ['messages'] },
     { label: 'Finance', keys: ['withdrawals','payments'] },
     { label: 'Manage',  keys: ['users'] },
@@ -1056,7 +1072,7 @@ export default function AdminPage() {
       {/* ── Main content ────────────────────────────────── */}
       <main className="admin-main" style={{ flex: 1, padding: 'clamp(18px,3vw,32px)', overflowY: 'auto', minWidth: 0, animation: 'fadeIn 0.25s ease' }}>
 
-        <PortalBanner eyebrow="Admin Panel" title={(NAV.find(n => n.key === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Manage orders, writers, topics and payments." pill={tab === 'topics' || tab === 'dashboard'} accent={tab === 'topics'} cta={tab === 'dashboard' ? { label: 'Go to Management', onClick: () => handleNav('requests') } : null} />
+        <PortalBanner eyebrow="Admin Panel" title={(NAV.find(n => n.key === tab)?.label || 'Dashboard').replace(/^[^A-Za-z]+/, '')} subtitle="Manage orders, writers, topics and payments." pill={tab === 'topics' || tab === 'casestudies' || tab === 'dashboard'} accent={tab === 'topics' || tab === 'casestudies'} cta={tab === 'dashboard' ? { label: 'Go to Management', onClick: () => handleNav('requests') } : null} />
         {/* Mobile top bar */}
         <div style={{ display: 'flex', alignItems: 'center', gap: 12, marginBottom: 0 }}>
           <button className="admin-menu-btn" onClick={() => setSidebarOpen(o => !o)}
@@ -1979,6 +1995,9 @@ export default function AdminPage() {
             })()}
           </div>
         )}
+
+        {/* ══════════════ CASE STUDY TOPICS ══════════════ */}
+        {tab === 'casestudies' && <AdminCaseStudies />}
 
         {/* ══════════════ MESSAGES ══════════════ */}
         {tab === 'messages' && (

@@ -6,7 +6,7 @@ import {
   FileText, Users, Eye, BookOpen, Menu, X, Stethoscope, ClipboardPlus, FlaskConical,
   HeartPulse, Baby, Brain, Pill, Microscope, Scale, GraduationCap, Cpu, Briefcase, Copy, Check,
 } from 'lucide-react';
-import { subscribeToTopics, createOrder } from '../firebase/orderService';
+import { subscribeToTopics, subscribeToCaseStudies, createOrder } from '../firebase/orderService';
 import { useAuth } from '../context/AuthContext';
 import { Spinner, EmptyState } from '../components/shared/UI';
 import toast from 'react-hot-toast';
@@ -51,7 +51,31 @@ function styleFor(cat = '') {
 }
 const fmtViews = (n) => { n = Number(n); if (!n) return null; return n >= 1000 ? `${(n / 1000).toFixed(1).replace(/\.0$/, '')}k` : String(n); };
 
-export default function TopicsPage() {
+const VARIANTS = {
+  research: {
+    subscribe: subscribeToTopics,
+    eyebrow: 'RESEARCH LIBRARY',
+    title: 'Topics',
+    sub: 'Choose from our curated collection of pre-researched topics.',
+    noun: 'topics',
+    search: 'Search by topic title, keywords, or department...',
+    projectType: 'research',
+    orderLabel: 'Order This Topic',
+  },
+  case: {
+    subscribe: subscribeToCaseStudies,
+    eyebrow: 'CASE STUDY LIBRARY',
+    title: 'Case Study Topics',
+    sub: 'Browse case study and care study topics ready for your next assignment.',
+    noun: 'case studies',
+    search: 'Search case study topics, keywords, or department...',
+    projectType: 'case',
+    orderLabel: 'Order This Case Study',
+  },
+};
+
+export default function TopicsPage({ variant = 'research' }) {
+  const V = VARIANTS[variant] || VARIANTS.research;
   const [topics, setTopics] = useState([]);
   const [loading, setLoading] = useState(true);
   const [search, setSearch] = useState('');
@@ -64,12 +88,13 @@ export default function TopicsPage() {
   const dash = profile?.isAdmin ? '/admin' : profile?.isWriter ? '/writer' : '/dashboard';
 
   useEffect(() => {
-    const unsub = subscribeToTopics(data => {
-      setTopics(data.filter(t => t.available !== false));
+    setLoading(true);
+    const unsub = V.subscribe(data => {
+      setTopics(data.filter(t => t.available !== false && t.badge !== 'Hidden'));
       setLoading(false);
     });
     return unsub;
-  }, []);
+  }, [variant]);
 
   const filteredTopics = useMemo(() => {
     let result = [...topics];
@@ -102,6 +127,7 @@ export default function TopicsPage() {
         details: topic.description || '',
         pages: topic.pages || '',
         referredBy: profile?.referredBy || null,
+        projectType: V.projectType,
       });
       toast.success('Order placed successfully! Awaiting quote from our team.');
       navigate('/dashboard');
@@ -129,7 +155,8 @@ export default function TopicsPage() {
       <aside className={`tp-drawer ${menu ? 'open' : ''}`}>
         <button className="tp-x" onClick={() => setMenu(false)} aria-label="Close"><X size={22} /></button>
         <Link to="/" onClick={() => setMenu(false)}>Home</Link>
-        <Link to="/topics" onClick={() => setMenu(false)}>Topics</Link>
+        <Link to="/topics" onClick={() => setMenu(false)}>Research Topics</Link>
+        <Link to="/case-studies" onClick={() => setMenu(false)}>Case Study Topics</Link>
         <Link to="/services" onClick={() => setMenu(false)}>Services</Link>
         <Link to="/request" onClick={() => setMenu(false)}>Custom Request</Link>
         {profile ? <Link to={dash} onClick={() => setMenu(false)}>Dashboard</Link>
@@ -141,16 +168,16 @@ export default function TopicsPage() {
         <div className="tp-hero-img"><img src="/landing/topics-hero.png" alt="" /></div>
         <div className="tp-hero-in">
           <button className="tp-back" onClick={() => navigate(-1)}><ArrowLeft size={20} /> Back</button>
-          <div className="tp-eyebrow"><BookOpen size={30} strokeWidth={1.6} /><span className="serif">RESEARCH LIBRARY</span><i /></div>
-          <h1 className="serif">Browse <em>Topics</em></h1>
-          <p>Choose from our curated collection of pre-researched topics.</p>
+          <div className="tp-eyebrow"><BookOpen size={30} strokeWidth={1.6} /><span className="serif">{V.eyebrow}</span><i /></div>
+          <h1 className="serif">Browse <em>{V.title}</em></h1>
+          <p>{V.sub}</p>
         </div>
       </section>
 
       {/* SEARCH */}
       <form className="tp-search" onSubmit={e => e.preventDefault()}>
         <Search size={24} className="si" />
-        <input value={search} onChange={e => setSearch(e.target.value)} placeholder="Search by topic title, keywords, or department..." aria-label="Search topics" />
+        <input value={search} onChange={e => setSearch(e.target.value)} placeholder={V.search} aria-label="Search topics" />
         <button type="submit"><Search size={22} /> Search</button>
       </form>
 
@@ -174,7 +201,7 @@ export default function TopicsPage() {
         <button className="reset" onClick={reset}><RotateCcw size={18} /> Reset</button>
       </div>
 
-      <div className="tp-count"><FileText size={20} />Showing {filteredTopics.length} of {topics.length} topics</div>
+      <div className="tp-count"><FileText size={20} />Showing {filteredTopics.length} of {topics.length} {V.noun}</div>
 
       {/* LIST */}
       <main className="tp-list">
@@ -182,7 +209,7 @@ export default function TopicsPage() {
           <div style={{ textAlign: 'center', padding: 80, gridColumn: '1/-1' }}><Spinner size={40} /></div>
         ) : filteredTopics.length === 0 ? (
           <div style={{ gridColumn: '1/-1' }}>
-            <EmptyState title="No topics found" desc={search || department !== 'All' ? `No results for "${search || department}"` : 'No topics available yet.'} />
+            <EmptyState title={`No ${V.noun} found`} desc={search || department !== 'All' ? `No results for "${search || department}"` : `No ${V.noun} available yet.`} />
           </div>
         ) : filteredTopics.map(t => <TopicCard key={t.id} topic={t} onView={() => setSelected(t)} />)}
       </main>
@@ -211,7 +238,7 @@ export default function TopicsPage() {
             {selected.description && <p>{selected.description}</p>}
             {selected.pages && <div className="meta-line">{selected.pages} pages</div>}
             <button className="order" onClick={() => { const t = selected; setSelected(null); handleOrder(t); }}>
-              {user ? 'Order This Topic' : 'Sign Up to Order'} <ArrowRight size={16} />
+              {user ? V.orderLabel : 'Sign Up to Order'} <ArrowRight size={16} />
             </button>
           </div>
         </div>

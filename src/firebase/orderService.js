@@ -12,7 +12,7 @@ import { db } from './config';
 export const createOrder = async ({
   clientId, clientName, clientEmail,
   topicId, topicTitle, customTopic,
-  details, pages, serviceKey, serviceTitle, referredBy,
+  details, pages, serviceKey, serviceTitle, referredBy, projectType,
 }) => {
   const ref = await addDoc(collection(db, 'serviceRequests'), {
     userId:      clientId,        // DashboardPage reads as userId
@@ -35,6 +35,7 @@ export const createOrder = async ({
     agreedPrice:    null,
     adminNote:      '',
     referredBy:     referredBy || null,
+    projectType:    projectType || 'research',
     draftFileUrl:   null,
     finalFileUrl:   null,
     createdAt:      serverTimestamp(),
@@ -141,6 +142,14 @@ export const updateTopic = async (id, data) =>
 
 export const subscribeToTopics = (callback) => {
   const q = query(collection(db, 'researchTopics'), orderBy('createdAt', 'desc'));
+  return onSnapshot(q, snap =>
+    callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
+  );
+};
+
+// Case / care study topics (separate collection, managed by admin)
+export const subscribeToCaseStudies = (callback) => {
+  const q = query(collection(db, 'caseStudyTopics'), orderBy('createdAt', 'desc'));
   return onSnapshot(q, snap =>
     callback(snap.docs.map(d => ({ id: d.id, ...d.data() })))
   );

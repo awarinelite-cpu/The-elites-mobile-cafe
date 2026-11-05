@@ -38,6 +38,7 @@ export const NAV = [
   { key: 'dashboard',   label: '🏠 Dashboard',       group: 'main'    },
   { key: 'requests',    label: '📋 Service Requests', group: 'main'    },
   { key: 'topics',      label: '📚 Research Topics',  group: 'main'    },
+  { key: 'casestudies', label: '🩺 Case Study Topics', group: 'main'    },
   { key: 'messages',    label: '💬 Messages',          group: 'comms'   },
   { key: 'withdrawals', label: '💸 Withdrawals',       group: 'finance' },
   { key: 'payments',    label: '💰 Payment Splits',    group: 'finance' },
