@@ -69,7 +69,7 @@ self.addEventListener('notificationclick', (event) => {
           writeFileSync(resolve(publicDir, 'firebase-messaging-sw.js'), swContent);
 
           // ── sw.js (PWA cache — separate from FCM sw) ───────
-          const pwaSwContent = `const CACHE = 'elites-v1';
+          const pwaSwContent = `const CACHE = 'elites-v2';
 const PRECACHE = ['/', '/index.html'];
 
 self.addEventListener('install', e => {

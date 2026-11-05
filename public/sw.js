@@ -1,4 +1,4 @@
-const CACHE = 'elites-v1';
+const CACHE = 'elites-v2';
 const PRECACHE = ['/', '/index.html'];
 
 self.addEventListener('install', e => {
