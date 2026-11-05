@@ -1431,8 +1431,6 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
     return matchCat && matchSrch;
   }).sort((a, b) => {
     switch (sortBy) {
-      case 'price-low':  return priceNum(a) - priceNum(b);
-      case 'price-high': return priceNum(b) - priceNum(a);
       case 'a-z':        return (a.title || '').localeCompare(b.title || '');
       default:           return (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0);
     }
@@ -1483,7 +1481,6 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
             {selectedTopic.description && <p style={{ color: 'rgba(255,255,255,0.75)', fontSize: 13, marginTop: 8, lineHeight: 1.6 }}>{selectedTopic.description}</p>}
           </div>
           <div style={{ textAlign: 'right', flexShrink: 0 }}>
-            {selectedTopic.price && <div style={{ fontFamily: 'var(--font-display)', fontSize: 24, fontWeight: 700, color: 'var(--gold)' }}>{selectedTopic.price}</div>}
             {selectedTopic.badge && <div style={{ marginTop: 6, display: 'inline-block', background: 'rgba(255,255,255,0.15)', color: '#fff', borderRadius: 20, padding: '3px 12px', fontSize: 11, fontWeight: 700 }}>{selectedTopic.badge}</div>}
           </div>
         </div>
@@ -1537,8 +1534,6 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
           <Star size={20} fill="#F5B82E" color="#F5B82E" className="l" />
           <select value={sortBy} onChange={e => setSortBy(e.target.value)} aria-label="Sort">
             <option value="newest">Newest First</option>
-            <option value="price-low">Price: Low to High</option>
-            <option value="price-high">Price: High to Low</option>
             <option value="a-z">A - Z</option>
           </select>
           <ChevronDown size={20} className="r" />
@@ -1572,7 +1567,6 @@ function TopicsTab({ user, profile, onOrderCreated, s }) {
                     {t.badge === 'Popular' && <span>🔥 Popular</span>}
                     {t.badge === 'New' && <span>✨ New</span>}
                     {t.pages && <span><FileText size={16} /> {t.pages} pages</span>}
-                    {t.price && <span className="price">{t.price}</span>}
                   </div>
                 </div>
                 <div className="side">

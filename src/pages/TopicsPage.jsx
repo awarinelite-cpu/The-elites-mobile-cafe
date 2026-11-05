@@ -22,8 +22,6 @@ const DEPARTMENTS = [
 
 const SORT_OPTIONS = [
   { value: 'newest', label: 'Newest First' },
-  { value: 'price-low', label: 'Price: Low to High' },
-  { value: 'price-high', label: 'Price: High to Low' },
   { value: 'a-z', label: 'A - Z' },
 ];
 
@@ -107,8 +105,6 @@ export default function TopicsPage({ variant = 'research' }) {
     }
     if (department !== 'All') result = result.filter(t => t.category === department);
     switch (sortBy) {
-      case 'price-low':  result.sort((a, b) => (Number(a.price) || 0) - (Number(b.price) || 0)); break;
-      case 'price-high': result.sort((a, b) => (Number(b.price) || 0) - (Number(a.price) || 0)); break;
       case 'a-z':        result.sort((a, b) => (a.title || '').localeCompare(b.title || '')); break;
       default:           result.sort((a, b) => (b.createdAt?.seconds || 0) - (a.createdAt?.seconds || 0));
     }
