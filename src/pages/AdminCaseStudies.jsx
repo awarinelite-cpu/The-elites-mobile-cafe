@@ -24,7 +24,7 @@ const s = {
   lbl:   { display: 'block', fontSize: 12, fontWeight: 600, color: 'var(--text-muted)', marginBottom: 4, textTransform: 'uppercase', letterSpacing: 0.5 },
 };
 
-const blank = () => ({ title: '', category: 'Nursing Science', pages: '', price: '', description: '', badge: '' });
+const blank = () => ({ title: '', category: 'Nursing Science', pages: '', description: '', badge: '' });
 
 // ── Parse one pasted / uploaded line into a topic ────────────────────────
 function parseLine(rawLine) {
@@ -36,21 +36,24 @@ function parseLine(rawLine) {
   else {
     const c = line.split(',').map(p => p.trim());
     // CSV only when it clearly looks like Title, Category, Pages, Price ...
-    if (c.length >= 4 && /^\d{1,3}$/.test(c[2]) && /^(₦|N)?\s?[\d,]+$/i.test(c[3].replace(/^"|"$/g, '')) && !/pages?/i.test(line)) parts = c;
+    if (c.length >= 3 && /^\d{1,3}$/.test(c[2]) && !/pages?/i.test(line)) parts = c;
   }
   if (parts) {
     const c = parts.map(p => p.trim().replace(/^"|"$/g, ''));
     if (!c[0]) return null;
+    // columns: Title, Category, Pages, Description, Badge (an old-style price column is skipped)
+    let rest = c.slice(3);
+    if (rest.length && /^(₦|N|#)?\s?\d[\d,]{2,}$/i.test(rest[0])) rest = rest.slice(1);
     return {
       title: c[0], category: c[1] || 'Nursing Science', pages: c[2] || '',
-      price: c[3] || '', description: c[4] || '', badge: BADGES.includes(c[5]) ? c[5] : '',
+      description: rest[0] || '', badge: BADGES.includes(rest[1]) ? rest[1] : '',
     };
   }
   // Freeform: pull price, pages, category, badge out of the sentence
   let text = line.replace(/^\s*(\d+[.)]|[-•*])\s+/, '');
-  let price = '', pages = '', category = '', badge = '';
+  let pages = '', category = '', badge = '';
   const pm = text.match(/(₦|N)\s?([\d,]{3,})/i);
-  if (pm) { price = '₦' + pm[2]; text = text.replace(pm[0], ' '); }
+  if (pm) { text = text.replace(pm[0], ' '); }
   const gm = text.match(/(\d{1,3})\s*pages?/i);
   if (gm) { pages = gm[1]; text = text.replace(gm[0], ' '); }
   const lower = text.toLowerCase();
@@ -61,7 +64,7 @@ function parseLine(rawLine) {
   }
   const title = text.replace(/[\s,;—–-]+$/g, '').replace(/\s{2,}/g, ' ').replace(/[(),]+\s*$/, '').trim();
   if (!title) return null;
-  return { title, category: category || 'Nursing Science', pages, price, description: '', badge };
+  return { title, category: category || 'Nursing Science', pages, description: '', badge };
 }
 
 export default function AdminCaseStudies() {
@@ -144,7 +147,7 @@ export default function AdminCaseStudies() {
   // ── Bulk file / paste parsing ───────────────────────────
   const parseText = (raw) => {
     const lines = raw.split('\n').map(l => l.trim()).filter(l => l.length > 2);
-    if (lines.length && /title|topic/.test(lines[0].toLowerCase()) && /(category|price|pages)/.test(lines[0].toLowerCase())) lines.shift();
+    if (lines.length && /title|topic/.test(lines[0].toLowerCase()) && /(category|pages)/.test(lines[0].toLowerCase())) lines.shift();
     const rows = lines.map(parseLine).filter(Boolean);
     setParsed(rows);
     showToast(rows.length ? `✅ Parsed ${rows.length} case studies. Review and upload.` : '⚠️ No case studies found. One per line please.');
@@ -158,9 +161,9 @@ export default function AdminCaseStudies() {
 
   const downloadTemplate = () => {
     const csv = [
-      'Title,Category,Pages,Price,Description,Badge',
-      '"Nursing care of a patient with severe malaria: a case study","Nursing Science",35,10000,"Case study covering assessment, diagnosis, care plan and evaluation.","Popular"',
-      '"Care study of a pregnant woman with pre-eclampsia","Midwifery",30,10000,"Antenatal care study with nursing process.",""',
+      'Title,Category,Pages,Description,Badge',
+      '"Nursing care of a patient with severe malaria: a case study","Nursing Science",35,"Case study covering assessment, diagnosis, care plan and evaluation.","Popular"',
+      '"Care study of a pregnant woman with pre-eclampsia","Midwifery",30,"Antenatal care study with nursing process.",""',
     ].join('\n');
     const url = URL.createObjectURL(new Blob([csv], { type: 'text/csv;charset=utf-8;' }));
     const a = document.createElement('a');
@@ -273,11 +276,11 @@ export default function AdminCaseStudies() {
             <button style={s.btn('#94A3B8')} onClick={() => { setPasteMode(false); setPasteText(''); }}>✕ Close</button>
           </div>
           <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
-            One case study per line. Use <strong>Title | Category | Pages | Price | Description | Badge</strong> (pipe, tab or comma separated), or just type freely
-            such as <em>"Care study of a patient with stroke, Nursing Science, 30 pages, ₦10,000"</em> and the category, pages and price are picked out automatically.
+            One case study per line. Use <strong>Title | Category | Pages | Description | Badge</strong> (pipe, tab or comma separated), or just type freely
+            such as <em>"Care study of a patient with stroke, Nursing Science, 30 pages"</em> and the category and pages are picked out automatically.
           </div>
           <textarea value={pasteText} onChange={e => setPasteText(e.target.value)} rows={12}
-            placeholder={'Nursing care of a patient with severe malaria | Nursing Science | 35 | ₦10,000 | | Popular\nCare study of a pregnant woman with pre-eclampsia | Midwifery | 30 | ₦10,000\n1. Case study on diabetic foot ulcer, Nursing Science, 28 pages, ₦8,000'}
+            placeholder={'Nursing care of a patient with severe malaria | Nursing Science | 35 | | Popular\nCare study of a pregnant woman with pre-eclampsia | Midwifery | 30\n1. Case study on diabetic foot ulcer, Nursing Science, 28 pages'}
             style={{ ...s.input, resize: 'vertical', fontFamily: 'monospace', fontSize: 12, lineHeight: 1.7 }} />
           <div style={{ display: 'flex', gap: 10 }}>
             <button onClick={() => parseText(pasteText)} disabled={!pasteText.trim()}
@@ -318,7 +321,7 @@ export default function AdminCaseStudies() {
           <div style={{ maxHeight: 380, overflow: 'auto', border: '1px solid var(--border)', borderRadius: 8 }}>
             <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 760 }}>
               <thead style={{ background: 'var(--bg-secondary)', position: 'sticky', top: 0 }}>
-                <tr>{['#', 'Title', 'Category', 'Pages', 'Price', 'Badge', ''].map(h => (
+                <tr>{['#', 'Title', 'Category', 'Pages', 'Badge', ''].map(h => (
                   <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)' }}>{h}</th>
                 ))}</tr>
               </thead>
@@ -339,10 +342,6 @@ export default function AdminCaseStudies() {
                     <td style={{ padding: '6px 10px', width: 70 }}>
                       <input value={r.pages} onChange={e => patchRow(i, { pages: e.target.value })} placeholder="30"
                         style={{ background: 'transparent', border: 'none', width: 50, fontSize: 12, outline: 'none', color: 'var(--text-secondary)' }} />
-                    </td>
-                    <td style={{ padding: '6px 10px', width: 90 }}>
-                      <input value={r.price} onChange={e => patchRow(i, { price: e.target.value })} placeholder="₦10,000"
-                        style={{ background: 'transparent', border: 'none', width: 78, fontSize: 12, outline: 'none', color: 'var(--gold)', fontWeight: 700 }} />
                     </td>
                     <td style={{ padding: '6px 10px', width: 110 }}>
                       <select value={r.badge} onChange={e => patchRow(i, { badge: e.target.value })}
@@ -375,10 +374,6 @@ export default function AdminCaseStudies() {
             <div style={{ gridColumn: '1/-1' }}>
               <label style={s.lbl}>Title</label>
               <input type="text" placeholder="Case study title" value={form.title || ''} onChange={e => setForm(p => ({ ...p, title: e.target.value }))} style={s.input} />
-            </div>
-            <div>
-              <label style={s.lbl}>Price (₦)</label>
-              <input type="text" placeholder="e.g. ₦10,000" value={form.price || ''} onChange={e => setForm(p => ({ ...p, price: e.target.value }))} style={s.input} />
             </div>
             <div>
               <label style={s.lbl}>Pages</label>

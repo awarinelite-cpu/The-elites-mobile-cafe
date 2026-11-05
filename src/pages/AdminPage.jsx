@@ -145,7 +145,6 @@ export default function AdminPage() {
             title:       req.serviceTitle,
             category:    req.category || 'Other',
             pages:       req.pages    || '',
-            price:       req.agreedPrice ? `₦${Number(req.agreedPrice).toLocaleString()}` : '',
             description: req.description || '',
             badge:       'New',
             autoAdded:   true,
@@ -160,7 +159,6 @@ export default function AdminPage() {
             title:       req.serviceTitle,
             category:    req.category || 'Other',
             pages:       req.pages    || '',
-            price:       req.agreedPrice ? `₦${Number(req.agreedPrice).toLocaleString()}` : '',
             description: req.description || '',
             badge:       'New',
             autoAdded:   true,
@@ -581,9 +579,9 @@ export default function AdminPage() {
   // ── Bulk topic upload ───────────────────────────────────
   // ── Download a starter CSV template for bulk topic upload ──
   const downloadTopicTemplate = () => {
-    const header = 'Title,Category,Pages,Price,Description,Badge';
-    const example1 = '"Effect of malaria on under-5 children in Lagos","Nursing Science",65,15000,"A study on malaria prevalence and its effects on children under five in Lagos State.","Popular"';
-    const example2 = '"Impact of social media on academic performance of secondary school students","Education",50,12000,"Examines how social media usage affects study habits and academic outcomes.",""';
+    const header = 'Title,Category,Pages,Description,Badge';
+    const example1 = '"Effect of malaria on under-5 children in Lagos","Nursing Science",65,"A study on malaria prevalence and its effects on children under five in Lagos State.","Popular"';
+    const example2 = '"Impact of social media on academic performance of secondary school students","Education",50,"Examines how social media usage affects study habits and academic outcomes.",""';
     const csv = [header, example1, example2].join('\n');
     const blob = new Blob([csv], { type: 'text/csv;charset=utf-8;' });
     const url = URL.createObjectURL(blob);
@@ -605,19 +603,21 @@ export default function AdminPage() {
       const lines = text.split('\n').map(l => l.trim()).filter(Boolean);
       // Detect if first line is a header
       const firstLower = lines[0].toLowerCase();
-      const hasHeader = firstLower.includes('title') || firstLower.includes('topic') || firstLower.includes('price');
+      const hasHeader = firstLower.includes('title') || firstLower.includes('topic');
       const dataLines = hasHeader ? lines.slice(1) : lines;
       rows = dataLines.map(line => {
         // Support comma, tab, or pipe delimited
         const parts = line.includes('\t') ? line.split('\t') : line.includes('|') ? line.split('|') : line.split(',');
         const clean = parts.map(p => p.trim().replace(/^"|"$/g, ''));
+        // columns: Title, Category, Pages, Description, Badge (an old-style price column is skipped)
+        let rest = clean.slice(3);
+        if (rest.length && /^[₦N#]?\d[\d,]{2,}$/.test(rest[0])) rest = rest.slice(1);
         return {
           title:       clean[0] || '',
           category:    clean[1] || 'Nursing',
           pages:       clean[2] || '',
-          price:       clean[3] || '',
-          description: clean[4] || '',
-          badge:       clean[5] || '',
+          description: rest[0] || '',
+          badge:       rest[1] || '',
         };
       });
     } else if (ext === 'xlsx' || ext === 'xls') {
@@ -637,7 +637,6 @@ export default function AdminPage() {
           title:       k('title') || k('topic') || k('name'),
           category:    k('category') || k('cat') || 'Nursing',
           pages:       k('page'),
-          price:       k('price') || k('amount') || k('cost'),
           description: k('desc') || k('description') || k('about'),
           badge:       k('badge') || k('tag') || '',
         };
@@ -649,7 +648,7 @@ export default function AdminPage() {
       // Plain text paste — treat each non-empty line as a topic title
       const text = await file.text();
       rows = text.split('\n').map(l => l.trim()).filter(Boolean).map(line => ({
-        title: line, category: 'Nursing', pages: '', price: '', description: '', badge: '',
+        title: line, category: 'Nursing', pages: '', description: '', badge: '',
       }));
     }
 
@@ -832,7 +831,7 @@ export default function AdminPage() {
         if (!catMatch) catMatch = 'Nursing Science';
       }
 
-      return { title, category: catMatch, pages, price, description: '', badge };
+      return { title, category: catMatch, pages, description: '', badge };
     };
 
     // ── Detect multi-line vs structured formats ────────────
@@ -853,13 +852,15 @@ export default function AdminPage() {
         if (!title || /^(title|topic|s\/n|sn|#)/i.test(title)) continue;
         const catRaw = parts[1] || '';
         const cat    = CAT_LIST.find(c => c.toLowerCase() === catRaw.toLowerCase()) || 'Nursing Science';
+        // columns: Title, Category, Pages, Description, Badge (an old-style price column is skipped)
+        let rest = parts.slice(3);
+        if (rest.length && fmtPrice(rest[0])) rest = rest.slice(1);
         parsed.push({
           title,
           category:    cat,
           pages:       parts[2] ? parts[2].replace(/\D/g,'') : '',
-          price:       fmtPrice(parts[3] || ''),
-          description: parts[4] || '',
-          badge:       parts[5] ? (BADGE_MAP[parts[5].toLowerCase().trim()] || '') : '',
+          description: rest[0] || '',
+          badge:       rest[1] ? (BADGE_MAP[rest[1].toLowerCase().trim()] || '') : '',
         });
       }
     } else if (pipeCount > lines.length * 0.4) {
@@ -870,13 +871,15 @@ export default function AdminPage() {
         if (!title || title.length < 4 || /^(title|topic|s\/n)/i.test(title)) continue;
         const catRaw = parts[1] || '';
         const cat    = CAT_LIST.find(c => c.toLowerCase() === catRaw.toLowerCase()) || 'Nursing Science';
+        // columns: Title, Category, Pages, Description, Badge (an old-style price column is skipped)
+        let rest = parts.slice(3);
+        if (rest.length && fmtPrice(rest[0])) rest = rest.slice(1);
         parsed.push({
           title,
           category:    cat,
           pages:       parts[2] ? parts[2].replace(/\D/g,'') : '',
-          price:       fmtPrice(parts[3] || ''),
-          description: parts[4] || '',
-          badge:       parts[5] ? (BADGE_MAP[parts[5].toLowerCase().trim()] || '') : '',
+          description: rest[0] || '',
+          badge:       rest[1] ? (BADGE_MAP[rest[1].toLowerCase().trim()] || '') : '',
         });
       }
     } else {
@@ -1561,7 +1564,7 @@ export default function AdminPage() {
                 <span className="tp-ico"><ClipboardList size={32} /></span>
                 <span><b>Paste Topics</b><small>Paste from text</small></span>
               </button>
-              <button className="tp-act add" onClick={() => { setTopicForm({ title: '', category: 'Nursing Science', pages: '', price: '', description: '', badge: '' }); setBulkMode(false); setPasteMode(false); }}>
+              <button className="tp-act add" onClick={() => { setTopicForm({ title: '', category: 'Nursing Science', pages: '', description: '', badge: '' }); setBulkMode(false); setPasteMode(false); }}>
                 <span className="tp-ico circ"><Plus size={20} /></span>
                 <span><b>Add New Topic</b><small>Create a new topic</small></span>
               </button>
@@ -1592,13 +1595,13 @@ export default function AdminPage() {
                 {bulkParsed.length === 0 && (
                   <>
                     <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 8, padding: '10px 14px', marginBottom: 14, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.8 }}>
-                      The system auto-detects and parses <strong style={{ color: 'var(--text-primary)' }}>title, category, pages, price, and badge</strong> from your pasted text. Supports 4 formats:
+                      The system auto-detects and parses <strong style={{ color: 'var(--text-primary)' }}>title, category, pages, and badge</strong> from your pasted text. Supports 4 formats:
                       <div style={{ marginTop: 8, display: 'flex', flexDirection: 'column', gap: 4 }}>
                         {[
-                          ['📋 Tab / Excel', 'Title [TAB] Category [TAB] Pages [TAB] Price [TAB] Description [TAB] Badge'],
-                          ['| Pipe',         'Title | Category | Pages | Price | Description | Badge'],
-                          [', CSV',          'Title, Category, Pages, Price, Description, Badge'],
-                          ['🔤 Freeform',    '1. Topic title — Nursing Science, 65 pages, ₦5,000 (price/pages/category extracted automatically)'],
+                          ['📋 Tab / Excel', 'Title [TAB] Category [TAB] Pages [TAB] Description [TAB] Badge'],
+                          ['| Pipe',         'Title | Category | Pages | Description | Badge'],
+                          [', CSV',          'Title, Category, Pages, Description, Badge'],
+                          ['🔤 Freeform',    '1. Topic title — Nursing Science, 65 pages (pages/category extracted automatically)'],
                         ].map(([label, ex]) => (
                           <div key={label} style={{ display: 'flex', gap: 8, flexWrap: 'wrap' }}>
                             <span style={{ fontWeight: 700, color: '#7C3AED', minWidth: 90, fontSize: 12 }}>{label}</span>
@@ -1607,14 +1610,14 @@ export default function AdminPage() {
                         ))}
                       </div>
                       <div style={{ marginTop: 8, fontSize: 12, color: 'var(--text-muted)' }}>
-                        Category is auto-detected from title keywords (e.g. "nursing", "accounting", "computer"). Price and pages are extracted from anywhere in the line.
+                        Category is auto-detected from title keywords (e.g. "nursing", "accounting", "computer"). Pages are extracted from anywhere in the line.
                       </div>
                     </div>
 
                     <textarea
                       value={pasteText}
                       onChange={e => setPasteText(e.target.value)}
-                      placeholder={`Examples of all 4 supported formats:\n\n— Tab/Excel (copy directly from spreadsheet):\nEffect of malaria on pregnancy\tNursing Science\t65\t₦5,000\t\tNew\n\n— Pipe separated:\nKnowledge of infection control among nurses | Nursing Science | 75 | ₦6,000 | | Popular\n\n— CSV:\nAntenatal care utilization among pregnant women, Public Health, 80, ₦7,500, , New\n\n— Freeform (auto-detect everything):\n1. Prevalence of hypertension among adults — Nursing Science, 65 pages, ₦5,000\n2. Impact of community health education on child mortality ₦6,500 80 pages\n3. Knowledge and practice of hand hygiene among healthcare workers`}
+                      placeholder={`Examples of all 4 supported formats:\n\n— Tab/Excel (copy directly from spreadsheet):\nEffect of malaria on pregnancy\tNursing Science\t65\t\tNew\n\n— Pipe separated:\nKnowledge of infection control among nurses | Nursing Science | 75 | | Popular\n\n— CSV:\nAntenatal care utilization among pregnant women, Public Health, 80, , New\n\n— Freeform (auto-detect everything):\n1. Prevalence of hypertension among adults — Nursing Science, 65 pages\n2. Impact of community health education on child mortality 80 pages\n3. Knowledge and practice of hand hygiene among healthcare workers`}
                       rows={14}
                       style={{ ...s.input, resize: 'vertical', fontFamily: 'monospace', fontSize: 12, lineHeight: 1.7, marginBottom: 12 }}
                     />
@@ -1664,7 +1667,7 @@ export default function AdminPage() {
                       </div>
                     </div>
 
-                    {/* Global defaults bar — set category/price/badge for all rows at once */}
+                    {/* Global defaults bar — set category/badge for all rows at once */}
                     <div style={{ background: 'rgba(124,58,237,0.06)', border: '1px solid rgba(124,58,237,0.2)', borderRadius: 10, padding: '12px 14px', marginBottom: 14 }}>
                       <div style={{ fontSize: 11, fontWeight: 700, color: '#7C3AED', textTransform: 'uppercase', letterSpacing: 0.8, marginBottom: 10 }}>
                         ⚡ Apply to All Rows
@@ -1679,14 +1682,6 @@ export default function AdminPage() {
                             <option value="">— set for all —</option>
                             {CATEGORIES.map(c => <option key={c}>{c}</option>)}
                           </select>
-                        </div>
-                        <div style={{ flex: 1, minWidth: 90 }}>
-                          <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Price (₦)</div>
-                          <input
-                            placeholder="e.g. ₦5,000"
-                            style={{ ...s.input, marginBottom: 0, fontSize: 12, padding: '7px 10px' }}
-                            onBlur={e => { if (e.target.value.trim()) setBulkParsed(p => p.map(r => ({ ...r, price: e.target.value.trim() }))); }}
-                          />
                         </div>
                         <div style={{ flex: 1, minWidth: 90 }}>
                           <div style={{ fontSize: 11, color: 'var(--text-muted)', marginBottom: 4 }}>Pages</div>
@@ -1717,7 +1712,7 @@ export default function AdminPage() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 860 }}>
                         <thead style={{ background: 'var(--bg-secondary)', position: 'sticky', top: 0, zIndex: 2 }}>
                           <tr>
-                            {['#', 'Title', 'Category', 'Pages', 'Price (₦)', 'Description', 'Badge', ''].map(h => (
+                            {['#', 'Title', 'Category', 'Pages', 'Description', 'Badge', ''].map(h => (
                               <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
@@ -1742,11 +1737,6 @@ export default function AdminPage() {
                                 <input value={t.pages}
                                   onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, pages: e.target.value} : r))}
                                   placeholder="65" style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', width: 50, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
-                              </td>
-                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', width: 90 }}>
-                                <input value={t.price}
-                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, price: e.target.value} : r))}
-                                  placeholder="₦5,000" style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontWeight: 700, width: 75, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
                               </td>
                               <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', minWidth: 180 }}>
                                 <input value={t.description}
@@ -1794,7 +1784,7 @@ export default function AdminPage() {
 
                 <div style={{ background: 'var(--bg-tertiary)', borderRadius: 8, padding: '12px 16px', marginBottom: 16, fontSize: 13, color: 'var(--text-muted)', lineHeight: 1.7 }}>
                   <strong style={{ color: 'var(--text-secondary)' }}>Supported formats:</strong><br />
-                  • <strong>.csv / .txt</strong> — columns: <code>Title, Category, Pages, Price, Description, Badge</code><br />
+                  • <strong>.csv / .txt</strong> — columns: <code>Title, Category, Pages, Description, Badge</code><br />
                   • <strong>.xlsx / .xls</strong> — same columns as headers (order doesn't matter)<br />
                   • <strong>Plain .txt</strong> — one topic title per line (fill details in preview table below)<br />
                   • Word docs (.docx) — save as .txt or .csv first
@@ -1827,7 +1817,7 @@ export default function AdminPage() {
                       <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 12, minWidth: 860 }}>
                         <thead style={{ background: 'var(--bg-secondary)', position: 'sticky', top: 0 }}>
                           <tr>
-                            {['#','Title','Category','Pages','Price (₦)','Description','Badge','Del'].map(h => (
+                            {['#','Title','Category','Pages','Description','Badge','Del'].map(h => (
                               <th key={h} style={{ padding: '8px 10px', textAlign: 'left', fontSize: 10, fontWeight: 700, textTransform: 'uppercase', color: 'var(--text-muted)', borderBottom: '1px solid var(--border)', whiteSpace: 'nowrap' }}>{h}</th>
                             ))}
                           </tr>
@@ -1855,12 +1845,6 @@ export default function AdminPage() {
                                 <input value={t.pages}
                                   onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, pages: e.target.value} : r))}
                                   placeholder="65" style={{ background: 'transparent', border: 'none', color: 'var(--text-secondary)', width: 50, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
-                              </td>
-                              {/* Price */}
-                              <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', width: 90 }}>
-                                <input value={t.price}
-                                  onChange={e => setBulkParsed(p => p.map((r,j) => j===i ? {...r, price: e.target.value} : r))}
-                                  placeholder="₦5,000" style={{ background: 'transparent', border: 'none', color: 'var(--gold)', fontWeight: 700, width: 75, fontFamily: 'var(--font-body)', fontSize: 12, outline: 'none' }} />
                               </td>
                               {/* Description */}
                               <td style={{ padding: '6px 10px', borderBottom: '1px solid var(--border)', minWidth: 180 }}>
@@ -1904,7 +1888,7 @@ export default function AdminPage() {
                   {topicForm.id ? '✏️ Edit Topic' : '➕ Add New Topic'}
                 </h3>
                 <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 12 }}>
-                  {[{ key: 'title', label: 'Title', placeholder: 'Topic title' },{ key: 'price', label: 'Price (₦)', placeholder: 'e.g. ₦5,000' },{ key: 'pages', label: 'Pages', placeholder: 'e.g. 65 pages' }].map(f => (
+                  {[{ key: 'title', label: 'Title', placeholder: 'Topic title' },{ key: 'pages', label: 'Pages', placeholder: 'e.g. 65 pages' }].map(f => (
                     <div key={f.key} style={f.key === 'title' ? { gridColumn: '1/-1' } : {}}>
                       <label style={s.lbl}>{f.label}</label>
                       <input type="text" placeholder={f.placeholder} value={topicForm[f.key] || ''}
